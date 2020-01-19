@@ -4,7 +4,7 @@
  */
 
 
-class DT_Starter_Plugin_Endpoints
+class DT_Export_Plugin_Endpoints
 {
     public $permissions = [ 'view_any_contacts', 'view_project_metrics' ];
 

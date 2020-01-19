@@ -2,7 +2,7 @@
 msgid ""
 msgstr ""
 "Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;\n"
-"Project-Id-Version: Disciple Tools - Starter_Plugin\n"
+"Project-Id-Version: Disciple Tools - Export_Plugin\n"
 "POT-Creation-Date: 2018-01-29 05:56-0700\n"
 "PO-Revision-Date: 2018-01-29 05:53-0700\n"
 "Last-Translator: \n"
@@ -13,7 +13,7 @@ msgstr ""
 "X-Generator: Poedit 2.0.6\n"
 "X-Poedit-Basepath: ../../../../..\n"
 "X-Poedit-Flags-xgettext: --add-comments=translators:\n"
-"X-Poedit-WPHeader: disciple-tools-starter-plugin.php\n"
+"X-Poedit-WPHeader: disciple-tools-export-plugin.php\n"
 "X-Poedit-SourceCharset: UTF-8\n"
 "X-Poedit-KeywordsList: __;_e;_n:1,2;_x:1,2c;_ex:1,2c;_nx:4c,1,2;esc_attr__;"
 "esc_attr_e;esc_attr_x:1,2c;esc_html__;esc_html_e;esc_html_x:1,2c;_n_noop:1,2;"
@@ -22,19 +22,19 @@ msgstr ""
 "X-Poedit-SearchPathExcluded-0: *.js\n"
 "X-Poedit-SearchPathExcluded-1: */libraries/*\n"
 
-#: disciple-tools-starter-plugin.php:226 disciple-tools-starter-plugin.php:237
+#: disciple-tools-export-plugin.php:226 disciple-tools-export-plugin.php:237
 msgid "Whoah, partner!"
 msgstr ""
 
-#: disciple-tools-starter-plugin.php:249
+#: disciple-tools-export-plugin.php:249
 msgid "Method does not exist."
 msgstr ""
 
-#: disciple-tools-starter-plugin.php:267
+#: disciple-tools-export-plugin.php:267
 msgid ""
-"'Disciple Tools - Starter_Plugin' requires 'Disciple Tools' theme to work. "
+"'Disciple Tools - Export_Plugin' requires 'Disciple Tools' theme to work. "
 "Please activate 'Disciple Tools' theme or deactivate 'Disciple Tools - "
-"Starter_Plugin' plugin."
+"Export_Plugin' plugin."
 msgstr ""
 
 #: includes/admin/admin-menu-and-tabs.php:61
@@ -50,7 +50,7 @@ msgid "You do not have sufficient permissions to access this page."
 msgstr ""
 
 #: includes/admin/admin-menu-and-tabs.php:90
-msgid "DISCIPLE TOOLS - STARTER PLUGIN"
+msgid "DISCIPLE TOOLS - EXPORT PLUGIN"
 msgstr ""
 
 #: includes/admin/admin-menu-and-tabs.php:92
@@ -107,16 +107,16 @@ msgid "There is no changelog available."
 msgstr ""
 
 #. Plugin Name of the plugin/theme
-msgid "Disciple Tools - Starter_Plugin"
+msgid "Disciple Tools - Export_Plugin"
 msgstr ""
 
 #. Plugin URI of the plugin/theme
-msgid "https://github.com/ZumeProject/disciple-tools-starter_plugin"
+msgid "https://github.com/ZumeProject/disciple-tools-export_plugin"
 msgstr ""
 
 #. Description of the plugin/theme
 msgid ""
-"Disciple Tools - Starter Plugin is intended to help developers and "
+"Disciple Tools - Export Plugin is intended to help developers and "
 "integrator jumpstart their extension"
 msgstr ""
 
