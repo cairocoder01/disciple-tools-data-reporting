@@ -1,0 +1,125 @@
+#, fuzzy
+msgid ""
+msgstr ""
+"Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;\n"
+"Project-Id-Version: Disciple Tools - Starter_Plugin\n"
+"POT-Creation-Date: 2018-01-29 05:56-0700\n"
+"PO-Revision-Date: 2018-01-29 05:53-0700\n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: Poedit 2.0.6\n"
+"X-Poedit-Basepath: ../../../../..\n"
+"X-Poedit-Flags-xgettext: --add-comments=translators:\n"
+"X-Poedit-WPHeader: disciple-tools-starter-plugin.php\n"
+"X-Poedit-SourceCharset: UTF-8\n"
+"X-Poedit-KeywordsList: __;_e;_n:1,2;_x:1,2c;_ex:1,2c;_nx:4c,1,2;esc_attr__;"
+"esc_attr_e;esc_attr_x:1,2c;esc_html__;esc_html_e;esc_html_x:1,2c;_n_noop:1,2;"
+"_nx_noop:3c,1,2;__ngettext_noop:1,2\n"
+"X-Poedit-SearchPath-0: .\n"
+"X-Poedit-SearchPathExcluded-0: *.js\n"
+"X-Poedit-SearchPathExcluded-1: */libraries/*\n"
+
+#: disciple-tools-starter-plugin.php:226 disciple-tools-starter-plugin.php:237
+msgid "Whoah, partner!"
+msgstr ""
+
+#: disciple-tools-starter-plugin.php:249
+msgid "Method does not exist."
+msgstr ""
+
+#: disciple-tools-starter-plugin.php:267
+msgid ""
+"'Disciple Tools - Starter_Plugin' requires 'Disciple Tools' theme to work. "
+"Please activate 'Disciple Tools' theme or deactivate 'Disciple Tools - "
+"Starter_Plugin' plugin."
+msgstr ""
+
+#: includes/admin/admin-menu-and-tabs.php:61
+msgid "Extensions (DT)"
+msgstr ""
+
+#: includes/admin/admin-menu-and-tabs.php:62
+msgid "Facebook"
+msgstr ""
+
+#: includes/admin/admin-menu-and-tabs.php:77
+msgid "You do not have sufficient permissions to access this page."
+msgstr ""
+
+#: includes/admin/admin-menu-and-tabs.php:90
+msgid "DISCIPLE TOOLS - STARTER PLUGIN"
+msgstr ""
+
+#: includes/admin/admin-menu-and-tabs.php:92
+#: includes/admin/admin-menu-and-tabs.php:93
+msgid "nav-tab-active"
+msgstr ""
+
+#: includes/admin/admin-menu-and-tabs.php:92
+msgid "General"
+msgstr ""
+
+#: includes/admin/admin-menu-and-tabs.php:93
+msgid "Second"
+msgstr ""
+
+#: includes/admin/libraries/plugin-update-checker/Puc/v4p4/Plugin/UpdateChecker.php:395
+msgid "Check for updates"
+msgstr ""
+
+#: includes/admin/libraries/plugin-update-checker/Puc/v4p4/Plugin/UpdateChecker.php:432
+msgid "View details"
+msgstr ""
+
+#: includes/admin/libraries/plugin-update-checker/Puc/v4p4/Plugin/UpdateChecker.php:455
+#, php-format
+msgid "More information about %s"
+msgstr ""
+
+#: includes/admin/libraries/plugin-update-checker/Puc/v4p4/Plugin/UpdateChecker.php:548
+#, php-format
+msgctxt "the plugin title"
+msgid "The %s plugin is up to date."
+msgstr ""
+
+#: includes/admin/libraries/plugin-update-checker/Puc/v4p4/Plugin/UpdateChecker.php:550
+#, php-format
+msgctxt "the plugin title"
+msgid "A new version of the %s plugin is available."
+msgstr ""
+
+#: includes/admin/libraries/plugin-update-checker/Puc/v4p4/Plugin/UpdateChecker.php:552
+#, php-format
+msgctxt "the plugin title"
+msgid "Could not determine if updates are available for %s."
+msgstr ""
+
+#: includes/admin/libraries/plugin-update-checker/Puc/v4p4/Plugin/UpdateChecker.php:558
+#, php-format
+msgid "Unknown update checker status \"%s\""
+msgstr ""
+
+#: includes/admin/libraries/plugin-update-checker/Puc/v4p4/Vcs/PluginUpdateChecker.php:98
+msgid "There is no changelog available."
+msgstr ""
+
+#. Plugin Name of the plugin/theme
+msgid "Disciple Tools - Starter_Plugin"
+msgstr ""
+
+#. Plugin URI of the plugin/theme
+msgid "https://github.com/ZumeProject/disciple-tools-starter_plugin"
+msgstr ""
+
+#. Description of the plugin/theme
+msgid ""
+"Disciple Tools - Starter Plugin is intended to help developers and "
+"integrator jumpstart their extension"
+msgstr ""
+
+#. Author URI of the plugin/theme
+msgid "https://github.com/DiscipleTools"
+msgstr ""

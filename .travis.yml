@@ -1,0 +1,21 @@
+language: php
+php:
+  - '7.0'
+  - '7.1'
+  - '7.2'
+dist: trusty
+sudo: required # this seems to be required for some reason to get MySQL to work
+services:
+  - mysql
+cache:
+  directories:
+    - $HOME/.composer/cache/files
+before_install:
+  - mysql -e 'CREATE DATABASE IF NOT EXISTS testdb'
+  - mysql -e "GRANT ALL ON testdb.* TO 'travis'@'localhost'"
+before_script:
+  - composer install --no-interaction
+script:
+  - includes/admin/test/test_for_syntax_errors.sh
+  - includes/admin/test/test_installation.sh
+  - includes/admin/test/test_phpcs.sh
