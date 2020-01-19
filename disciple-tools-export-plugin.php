@@ -1,18 +1,18 @@
 <?php
 /**
  * Plugin Name: Disciple Tools - Export Plugin
- * Plugin URI: https://github.com/DiscipleTools/disciple-tools-export-plugin
+ * Plugin URI: https://github.com/cairocoder01/disciple-tools-data-export
  * Description: Disciple Tools - Export Plugin is intended to help developers and integrator jumpstart their extension
  * of the Disciple Tools system.
  * Version:  0.1.0
- * Author URI: https://github.com/DiscipleTools
- * GitHub Plugin URI: https://github.com/DiscipleTools/disciple-tools-export-plugin
+ * Author URI: https://github.com/cairocoder01
+ * GitHub Plugin URI: https://github.com/cairocoder01/disciple-tools-data-export
  * Requires at least: 4.7.0
  * (Requires 4.7+ because of the integration of the REST API at 4.7 and the security requirements of this milestone version.)
  * Tested up to: 4.9
  *
  * @package Disciple_Tools
- * @link    https://github.com/DiscipleTools
+ * @link    https://github.com/cairocoder01
  * @license GPL-2.0 or later
  *          https://www.gnu.org/licenses/gpl-2.0.html
  */
@@ -22,16 +22,6 @@
  * The Disciple Tools export plugin is intended to accelerate integrations and extensions to the Disciple Tools system.
  * This basic plugin export has some of the basic elements to quickly launch and extension project in the pattern of
  * the Disciple Tools system.
- */
-
-/**
- * Refactoring (renaming) this plugin as your own:
- * 1. Refactor all occurrences of the name DT_Export, dt_export, dt-export and Export Plugin with you're own
- * name for the `disciple-tools-export-plugin.php and menu-and-tabs.php files.
- * 2. Update the README.md and LICENSE
- * 3. Update the default.pot file if you intend to make your plugin multilingual. Use a tool like POEdit
- * 4. Change the translation domain to in the phpcs.xml your plugin's domain: @todo
- * 5 Replace 'sample' in this and the rest-api.php files
  */
 
 /**

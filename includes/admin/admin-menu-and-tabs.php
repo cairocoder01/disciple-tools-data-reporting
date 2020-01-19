@@ -157,7 +157,7 @@ class DT_Export_Tab_General
             <tbody>
             <tr>
                 <td>
-                    Content
+                    <a href="<?php echo plugins_url('../../exports/csv.php', __FILE__ ) ?>">Export CSV</a>
                 </td>
             </tr>
             </tbody>
