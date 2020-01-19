@@ -25,8 +25,57 @@ require( $_SERVER[ 'DOCUMENT_ROOT' ] . '/wp-load.php' ); // loads the wp framewo
 function getLabel($result, $key) {
     return array_key_exists($key, $result) && array_key_exists('label', $result[$key]) ? $result[$key]['label'] : '';
 }
-$type = '';
+function get_post_activity( $post_type ) {
+    global $wpdb;
+    $post_settings = apply_filters( "dt_get_post_type_settings", [], $post_type );
+    $fields = $post_settings["fields"];
+    $hidden_fields = [];
+    foreach ( $fields as $field_key => $field ){
+        if ( isset( $field["hidden"] ) && $field["hidden"] === true ){
+            $hidden_fields[] = $field_key;
+        }
+    }
+    $hidden_keys = dt_array_to_sql( $hidden_fields );
+    // phpcs:disable
+    // WordPress.WP.PreparedSQL.NotPrepared
+    $activity = $wpdb->get_results( $wpdb->prepare(
+        "SELECT
+                *
+            FROM
+                `$wpdb->dt_activity_log`
+            WHERE
+                `object_type` = %s
+                AND meta_key NOT IN ( $hidden_keys )
+            ORDER BY hist_time DESC",
+        $post_type
+    ) );
+    //@phpcs:enable
+    $activity_simple = [];
+    foreach ( $activity as $a ) {
+        $a->object_note = DT_Posts::format_activity_message( $a, $post_settings );
+        if ( !empty( $a->object_note ) ){
+            $activity_simple[] = [
+                "meta_key" => $a->meta_key,
+                "object_id" => $a->object_id,
+                "user_id" => $a->user_id,
+                "object_note" => $a->object_note,
+                "hist_time" => $a->hist_time,
+                "meta_id" => $a->meta_id,
+                "histid" => $a->histid,
+                "action" => $a->action,
+            ];
+        }
+    }
+
+//    $paged = array_slice( $activity_simple, $args["offset"] ?? 0, $args["number"] ?? 1000 );
+    return [
+        "activity" => $activity_simple,
+        "total" => sizeof( $activity_simple )
+    ];
+}
+$type = $_GET['type'];
 switch( $type ) {
+    case 'contacts':
     default:
         $filter = [
 //            'limit' => 10,
@@ -48,6 +97,22 @@ switch( $type ) {
         }
 //        print_r($items);
         $columns = array('ID', 'Overall Status', 'Gender', 'Age', 'Type', 'Seeker Path');
+        break;
+    case 'contactactivity':
+        $activity = get_post_activity('contacts');
+        $items = [];
+        foreach ($activity['activity'] as $index => $result) {
+            $items[] = [
+                'ID' => $result['meta_id'],
+                'Contact ID' => $result['object_id'],
+                'User ID' => $result['user_id'],
+                'Action Type' => $result['action'],
+                'Action Field' => $result['meta_key'],
+                'Note' => $result['object_note'],
+                'Time' => $result['hist_time'],
+            ];
+        }
+        $columns = array('ID', 'Contact ID', 'User ID', 'Action Type', 'Action Field', 'Note', 'Time');
         break;
     case 'cities':
         $places = [];

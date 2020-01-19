@@ -152,12 +152,17 @@ class DT_Export_Tab_General
         <!-- Box -->
         <table class="widefat striped">
             <thead>
-            <th>Header</th>
+            <th>CSV Export</th>
             </thead>
             <tbody>
             <tr>
                 <td>
-                    <a href="<?php echo plugins_url('../../exports/csv.php', __FILE__ ) ?>">Export CSV</a>
+                    <a href="<?php echo plugins_url('../../exports/csv.php?type=contacts', __FILE__ ) ?>">Export Contacts</a>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <a href="<?php echo plugins_url('../../exports/csv.php?type=contactactivity', __FILE__ ) ?>">Export Contact Activity</a>
                 </td>
             </tr>
             </tbody>
