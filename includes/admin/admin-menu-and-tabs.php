@@ -50,9 +50,19 @@ class DT_Export_Plugin_Menu {
     public function __construct() {
 
         add_action( "admin_menu", array( $this, "register_menu" ) );
-
+        add_action( "admin_head", array( $this, "add_styles" ) );
     } // End __construct()
 
+
+    function add_styles() {
+        echo
+        '<style>
+            body.wp-admin.extensions-dt_page_dt_export_plugin
+            #post-body-content {
+              overflow-y: auto;
+            }
+          </style>';
+    }
 
     /**
      * Loads the subnav page
@@ -83,6 +93,11 @@ class DT_Export_Plugin_Menu {
         } else {
             $tab = 'general';
         }
+        if ( isset( $_GET["type"] ) ) {
+            $type = sanitize_key( wp_unslash( $_GET["type"] ) );
+        } else {
+            $type = null;
+        }
 
         $link = 'admin.php?page='.$this->token.'&tab=';
 
@@ -91,17 +106,19 @@ class DT_Export_Plugin_Menu {
             <h2><?php esc_attr_e( 'Export Plugin', 'dt_export_plugin' ) ?></h2>
             <h2 class="nav-tab-wrapper">
                 <a href="<?php echo esc_attr( $link ) . 'general' ?>" class="nav-tab <?php ( $tab == 'general' || ! isset( $tab ) ) ? esc_attr_e( 'nav-tab-active', 'dt_export_plugin' ) : print ''; ?>"><?php esc_attr_e( 'General', 'dt_export_plugin' ) ?></a>
-                <a href="<?php echo esc_attr( $link ) . 'second' ?>" class="nav-tab <?php ( $tab == 'second' ) ? esc_attr_e( 'nav-tab-active', 'dt_export_plugin' ) : print ''; ?>"><?php esc_attr_e( 'Second', 'dt_export_plugin' ) ?></a>
+                <?php if ($tab === 'preview' ): ?>
+                    <a href="<?php echo esc_attr( $link ) . 'preview' ?>" class="nav-tab <?php ( $tab == 'preview' ) ? esc_attr_e( 'nav-tab-active', 'dt_export_plugin' ) : print ''; ?>"><?php esc_attr_e( 'Preview', 'dt_export_plugin' ) ?></a>
+                <?php endif; ?>
             </h2>
 
             <?php
             switch ($tab) {
                 case "general":
-                    $object = new DT_Export_Tab_General();
+                    $object = new DT_Export_Tab_General( $this->token );
                     $object->content();
                     break;
-                case "second":
-                    $object = new DT_Export_Tab_Second();
+                case "preview":
+                    $object = new DT_Export_Tab_Preview( $type );
                     $object->content();
                     break;
                 default:
@@ -120,6 +137,11 @@ class DT_Export_Plugin_Menu {
  */
 class DT_Export_Tab_General
 {
+    public $token;
+    public function __construct( $token ) {
+        $this->token = $token;
+    }
+
     public function content() {
         ?>
         <div class="wrap">
@@ -133,11 +155,6 @@ class DT_Export_Tab_General
                         <!-- End Main Column -->
                     </div><!-- end post-body-content -->
                     <div id="postbox-container-1" class="postbox-container">
-                        <!-- Right Column -->
-
-                        <?php $this->right_column() ?>
-
-                        <!-- End Right Column -->
                     </div><!-- postbox-container 1 -->
                     <div id="postbox-container-2" class="postbox-container">
                     </div><!-- postbox-container 2 -->
@@ -148,6 +165,7 @@ class DT_Export_Tab_General
     }
 
     public function main_column() {
+        $preview_link = 'admin.php?page='.$this->token.'&tab=preview&type=';
         ?>
         <!-- Box -->
         <table class="widefat striped">
@@ -157,7 +175,12 @@ class DT_Export_Tab_General
             <tbody>
             <tr>
                 <td>
-                    <a href="<?php echo plugins_url('../../exports/csv.php?type=contacts', __FILE__ ) ?>">Export Contacts</a>
+                    Export Contacts
+
+                    <div class="alignright">
+                        <a href="<?php echo esc_attr( $preview_link ) . 'contacts' ?>">Preview</a> |
+                        <a href="<?php echo plugins_url('../../exports/csv.php?type=contacts', __FILE__ ) ?>">CSV</a>
+                    </div>
                 </td>
             </tr>
             <tr>
@@ -172,38 +195,26 @@ class DT_Export_Tab_General
         <?php
     }
 
-    public function right_column() {
-        ?>
-        <!-- Box -->
-        <table class="widefat striped">
-            <thead>
-            <th>Information</th>
-            </thead>
-            <tbody>
-            <tr>
-                <td>
-                    Content
-                </td>
-            </tr>
-            </tbody>
-        </table>
-        <br>
-        <!-- End Box -->
-        <?php
-    }
-
 }
 
 /**
- * Class DT_Export_Tab_Second
+ * Class DT_Export_Tab_Preview
  */
-class DT_Export_Tab_Second
+class DT_Export_Tab_Preview
 {
+    public $type = 'contacts';
+
+    public function __construct( $type )
+    {
+        $this->type = $type;
+        require_once( plugin_dir_path( __FILE__ ) . '../data-tools.php' );
+    }
+
     public function content() {
         ?>
         <div class="wrap">
             <div id="poststuff">
-                <div id="post-body" class="metabox-holder columns-2">
+                <div id="post-body" class="metabox-holder columns-1">
                     <div id="post-body-content">
                         <!-- Main Column -->
 
@@ -211,15 +222,6 @@ class DT_Export_Tab_Second
 
                         <!-- End Main Column -->
                     </div><!-- end post-body-content -->
-                    <div id="postbox-container-1" class="postbox-container">
-                        <!-- Right Column -->
-
-                        <?php $this->right_column() ?>
-
-                        <!-- End Right Column -->
-                    </div><!-- postbox-container 1 -->
-                    <div id="postbox-container-2" class="postbox-container">
-                    </div><!-- postbox-container 2 -->
                 </div><!-- post-body meta box container -->
             </div><!--poststuff end -->
         </div><!-- wrap end -->
@@ -227,38 +229,24 @@ class DT_Export_Tab_Second
     }
 
     public function main_column() {
+        // This is just a preview, so get the first 25 contacts only
+        [$columns, $rows] = DT_Export_Data_Tools::get_contacts(25);
         ?>
         <!-- Box -->
         <table class="widefat striped">
             <thead>
-            <th>Header</th>
+            <?php foreach( $columns as $column ): ?>
+                <th><?php echo esc_html( $column ) ?></th>
+            <?php endforeach; ?>
             </thead>
             <tbody>
+            <?php foreach( $rows as $row ): ?>
             <tr>
-                <td>
-                    Content
-                </td>
+                <?php foreach( $row as $rowValue ): ?>
+                    <td><?php echo esc_html($rowValue) ?></td>
+                <?php endforeach; ?>
             </tr>
-            </tbody>
-        </table>
-        <br>
-        <!-- End Box -->
-        <?php
-    }
-
-    public function right_column() {
-        ?>
-        <!-- Box -->
-        <table class="widefat striped">
-            <thead>
-            <th>Information</th>
-            </thead>
-            <tbody>
-            <tr>
-                <td>
-                    Content
-                </td>
-            </tr>
+            <?php endforeach; ?>
             </tbody>
         </table>
         <br>

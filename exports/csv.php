@@ -22,9 +22,8 @@ if ( ! function_exists( 'dt_write_log' ) ) {
 }
 // @codingStandardsIgnoreLine
 require( $_SERVER[ 'DOCUMENT_ROOT' ] . '/wp-load.php' ); // loads the wp framework when called
-function getLabel($result, $key) {
-    return array_key_exists($key, $result) && array_key_exists('label', $result[$key]) ? $result[$key]['label'] : '';
-}
+require_once( plugin_dir_path( __FILE__ ) . '../includes/data-tools.php' );
+
 function get_post_activity( $post_type ) {
     global $wpdb;
     $post_settings = apply_filters( "dt_get_post_type_settings", [], $post_type );
@@ -77,26 +76,7 @@ $type = $_GET['type'];
 switch( $type ) {
     case 'contacts':
     default:
-        $filter = [
-//            'limit' => 10,
-        ];
-        $contacts = DT_Posts::list_posts('contacts', $filter);
-//        print_r($contacts);
-        $items = [];
-
-        foreach ($contacts['posts'] as $index => $result) {
-            $items[] = [
-                'ID' => $result['ID'],
-                'Overall Status' => getLabel($result, 'overall_status'),
-                'Gender' => getLabel($result, 'gender'),
-                'Age' => getLabel($result, 'age'),
-                'Type' => getLabel($result, 'type'),
-                'Seeker Path' => getLabel($result, 'seeker_path'),
-            ];
-            //todo: milestones
-        }
-//        print_r($items);
-        $columns = array('ID', 'Overall Status', 'Gender', 'Age', 'Type', 'Seeker Path');
+        [$columns, $items] = DT_Export_Data_Tools::get_contacts();
         break;
     case 'contactactivity':
         $activity = get_post_activity('contacts');
