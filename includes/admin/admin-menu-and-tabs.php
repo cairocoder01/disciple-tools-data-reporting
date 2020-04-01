@@ -61,6 +61,12 @@ class DT_Export_Plugin_Menu {
             #post-body-content {
               overflow-y: auto;
             }
+            body.wp-admin.extensions-dt_page_dt_export_plugin
+            ul {
+              list-style: inherit;
+              padding-inline-start: 2em;
+              margin: 0;
+            }
           </style>';
     }
 
@@ -179,7 +185,8 @@ class DT_Export_Tab_General
 
                     <div class="alignright">
                         <a href="<?php echo esc_attr( $preview_link ) . 'contacts' ?>">Preview</a> |
-                        <a href="<?php echo plugins_url('../../exports/csv.php?type=contacts', __FILE__ ) ?>">CSV</a>
+                        <a href="<?php echo plugins_url('../../exports/csv.php?type=contacts', __FILE__ ) ?>">CSV</a> |
+                        <a href="<?php echo plugins_url('../../exports/json.php?type=contacts', __FILE__ ) ?>">JSON</a>
                     </div>
                 </td>
             </tr>
@@ -230,20 +237,31 @@ class DT_Export_Tab_Preview
 
     public function main_column() {
         // This is just a preview, so get the first 25 contacts only
-        [$columns, $rows] = DT_Export_Data_Tools::get_contacts(25);
+//        [$columns, $rows] = DT_Export_Data_Tools::get_contacts(false, 25);
+        [$columns, $rows] = DT_Export_Data_Tools::get_contacts(false);
         ?>
         <!-- Box -->
         <table class="widefat striped">
             <thead>
             <?php foreach( $columns as $column ): ?>
-                <th><?php echo esc_html( $column ) ?></th>
+                <th><?php echo esc_html( $column['name'] ) ?></th>
             <?php endforeach; ?>
             </thead>
             <tbody>
             <?php foreach( $rows as $row ): ?>
             <tr>
                 <?php foreach( $row as $rowValue ): ?>
-                    <td><?php echo esc_html($rowValue) ?></td>
+                    <td>
+                    <?php
+                        if (is_array($rowValue)) {
+                            if (sizeof($rowValue)) {
+                                echo "<ul><li>" . implode('</li><li>', $rowValue) . "</li></ul>";
+                            }
+                        } else {
+                            echo esc_html($rowValue);
+                        }
+                    ?>
+                    </td>
                 <?php endforeach; ?>
             </tr>
             <?php endforeach; ?>

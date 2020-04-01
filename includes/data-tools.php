@@ -3,7 +3,7 @@
 
 class DT_Export_Data_Tools
 {
-    public static function get_contacts( $limit = null ) {
+    public static function get_contacts( $flatten = false, $limit = null ) {
         $filter = array();
         if ( !empty( $limit) ) {
             $filter['limit'] = $limit;
@@ -30,7 +30,7 @@ class DT_Export_Data_Tools
                 'Seeker Path' => getLabel($result, 'seeker_path'),
             ];*/
             foreach ( $fields as $field_key => $field ){
-                if ( !isset( $field["hidden"] ) || $field["hidden"] === true ) {
+                if ( !isset( $field["hidden"] ) || $field["hidden"] === false ) {
                     $hidden_fields[] = $field_key;
 
                     $type = $field['type'];
@@ -41,7 +41,7 @@ class DT_Export_Data_Tools
                                 $fieldValue = self::getLabel($result, $field_key);
                                 break;
                             case 'multi_select':
-                                $fieldValue = implode(",", $result[$field_key]);
+                                $fieldValue = $flatten ? implode(",", $result[$field_key]) : $result[$field_key];
                                 break;
                             default:
                                 $fieldValue = $result[$field_key];
@@ -51,20 +51,38 @@ class DT_Export_Data_Tools
                                 break;
                         }
                     } else {
-                        $fieldValue = 'KeyNotFound';
+                        switch ($type) {
+                            case 'boolean':
+                                $fieldValue = $field['default'] ?? false;
+                                break;
+                            case 'multi_select':
+                                $fieldValue = $flatten ? null : array();
+                                break;
+                            default:
+                                $fieldValue = 'KeyNotFound';
+                                break;
+                        }
                     }
 
-                    $contact[$field['name']] = $fieldValue;
+                    $contact[$field_key] = $fieldValue;
                 }
             }
             $items[] = $contact;
             //todo: milestones
+            //todo: add site url
         }
 //        print_r($items);
-        $columns = array("ID");
+        $columns = array();
+        array_push( $columns, array(
+            'key' => "id",
+            'name' => "ID"
+        ));
         foreach ( $fields as $field_key => $field ){
-            if ( !isset( $field["hidden"] ) || $field["hidden"] === true ){
-                array_push($columns, $field['name']);
+            if ( !isset( $field["hidden"] ) || $field["hidden"] === false ){
+                array_push($columns, array(
+                    'key' => $field_key,
+                    'name' => $field['name']
+                ));
             }
         }
         return array( $columns, $items );
