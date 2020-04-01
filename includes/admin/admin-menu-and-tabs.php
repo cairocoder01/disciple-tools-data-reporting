@@ -237,8 +237,8 @@ class DT_Export_Tab_Preview
 
     public function main_column() {
         // This is just a preview, so get the first 25 contacts only
-//        [$columns, $rows] = DT_Export_Data_Tools::get_contacts(false, 25);
-        [$columns, $rows] = DT_Export_Data_Tools::get_contacts(false);
+        [$columns, $rows] = DT_Export_Data_Tools::get_contacts(false, 25);
+//        [$columns, $rows] = DT_Export_Data_Tools::get_contacts(false, 1000);
         ?>
         <!-- Box -->
         <table class="widefat striped">
