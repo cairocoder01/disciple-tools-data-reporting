@@ -251,7 +251,7 @@ class DT_Export_Tab_Preview
                 // This is just a preview, so get the first 25 contacts only
                 [$columns, $rows] = DT_Export_Data_Tools::get_contacts(false, 25);
                 // [$columns, $rows] = DT_Export_Data_Tools::get_contacts(false, 1000);
-                $this->main_column_contacts($columns, $rows);
+                $this->main_column_table($columns, $rows);
                 break;
         }
     }

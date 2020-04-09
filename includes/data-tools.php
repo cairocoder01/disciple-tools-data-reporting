@@ -10,8 +10,17 @@ class DT_Export_Data_Tools
         }
 
         $contacts = DT_Posts::list_posts('contacts', $filter);
-        // todo: if total is greater than length, recursively get more
         dt_write_log(sizeof($contacts['posts']) . ' of ' . $contacts['total']);
+        if ($limit == null) {
+            // if total is greater than length, recursively get more
+            while (sizeof($contacts['posts']) < $contacts['total']) {
+                $filter['offset'] = sizeof($contacts['posts']);
+                $next_contacts = DT_Posts::list_posts('contacts', $filter);
+                $contacts['posts'] = array_merge($contacts['posts'], $next_contacts['posts']);
+                dt_write_log('adding ' . sizeof($next_contacts['posts']));
+                dt_write_log(sizeof($contacts['posts']) . ' of ' . $contacts['total']);
+            }
+        }
         $items = [];
 
         $post_settings = apply_filters( "dt_get_post_type_settings", [], 'contacts' );
