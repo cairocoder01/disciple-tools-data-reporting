@@ -192,7 +192,12 @@ class DT_Export_Tab_General
             </tr>
             <tr>
                 <td>
-                    <a href="<?php echo plugins_url('../../exports/csv.php?type=contactactivity', __FILE__ ) ?>">Export Contact Activity</a>
+                    Export Contact Activity
+                    <div class="alignright">
+                        <a href="<?php echo esc_attr( $preview_link ) . 'contact_activity' ?>">Preview</a> |
+                        <a href="<?php echo plugins_url('../../exports/csv.php?type=contact_activity', __FILE__ ) ?>">CSV</a> |
+                        <a href="<?php echo plugins_url('../../exports/json.php?type=contact_activity', __FILE__ ) ?>">JSON</a>
+                    </div>
                 </td>
             </tr>
             </tbody>
@@ -236,9 +241,21 @@ class DT_Export_Tab_Preview
     }
 
     public function main_column() {
-        // This is just a preview, so get the first 25 contacts only
-        [$columns, $rows] = DT_Export_Data_Tools::get_contacts(false, 25);
-//        [$columns, $rows] = DT_Export_Data_Tools::get_contacts(false, 1000);
+        switch ($this->type) {
+            case 'contact_activity':
+                [$columns, $rows] = DT_Export_Data_Tools::get_contact_activity(false, 100);
+                $this->main_column_table($columns, $rows);
+                break;
+            case 'contacts':
+            default:
+                // This is just a preview, so get the first 25 contacts only
+                [$columns, $rows] = DT_Export_Data_Tools::get_contacts(false, 25);
+                // [$columns, $rows] = DT_Export_Data_Tools::get_contacts(false, 1000);
+                $this->main_column_contacts($columns, $rows);
+                break;
+        }
+    }
+    public function main_column_table( $columns, $rows ) {
         ?>
         <!-- Box -->
         <table class="widefat striped">

@@ -80,20 +80,8 @@ switch( $type ) {
         $columns = array_map(function ( $column ) { return $column['name']; }, $columns);
         break;
     case 'contactactivity':
-        $activity = get_post_activity('contacts');
-        $items = [];
-        foreach ($activity['activity'] as $index => $result) {
-            $items[] = [
-                'ID' => $result['meta_id'],
-                'Contact ID' => $result['object_id'],
-                'User ID' => $result['user_id'],
-                'Action Type' => $result['action'],
-                'Action Field' => $result['meta_key'],
-                'Note' => $result['object_note'],
-                'Time' => $result['hist_time'],
-            ];
-        }
-        $columns = array('ID', 'Contact ID', 'User ID', 'Action Type', 'Action Field', 'Note', 'Time');
+        [$columns, $items] = DT_Export_Data_Tools::get_contact_activity(true);
+        $columns = array_map(function ( $column ) { return $column['name']; }, $columns);
         break;
     case 'cities':
         $places = [];

@@ -26,6 +26,9 @@ require_once( plugin_dir_path( __FILE__ ) . '../includes/data-tools.php' );
 
 $type = $_GET['type'];
 switch( $type ) {
+    case 'contact_activity':
+        [$columns, $items] = DT_Export_Data_Tools::get_contact_activity();
+        break;
     case 'contacts':
     default:
         [$columns, $items] = DT_Export_Data_Tools::get_contacts();

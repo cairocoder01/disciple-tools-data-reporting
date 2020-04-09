@@ -126,6 +126,166 @@ class DT_Export_Data_Tools
         return array( $columns, $items );
     }
 
+    public static function get_contact_activity( $flatten = false, $limit = null ) {
+        $filter = array();
+        if ( !empty( $limit) ) {
+            $filter['limit'] = $limit;
+        }
+
+        $activities = self::get_post_activity('contacts', $filter);
+//        $contacts = DT_Posts::list_posts('contacts', $filter);
+        // todo: if total is greater than length, recursively get more
+        dt_write_log(sizeof($activities['activity']) . ' of ' . $activities['total']);
+        $items = [];
+
+        $base_url = self::get_current_site_base_url();
+
+        foreach ($activities['activity'] as $index => $result) {
+            $activity = $result;
+            $activity['site'] = $base_url;
+
+            $items[] = $activity;
+        }
+
+        $columns = array(
+            array(
+                'key' => "id",
+                'name' => 'ID',
+            ),
+            array(
+                'key' => "post_id",
+                'name' => 'Contact ID',
+            ),
+            array(
+                'key' => "user_id",
+                'name' => 'User ID',
+            ),
+            array(
+                'key' => "user_name",
+                'name' => 'User',
+            ),
+            array(
+                'key' => "action_type",
+                'name' => 'Action Type',
+            ),
+            array(
+                'key' => "action_field",
+                'name' => 'Action Field',
+            ),
+            array(
+                'key' => "action_value",
+                'name' => 'Action Value',
+            ),
+            array(
+                'key' => "action_old_value",
+                'name' => 'Action Old Value',
+            ),
+            array(
+                'key' => "note",
+                'name' => 'Note',
+            ),
+            array(
+                'key' => "date",
+                'name' => 'Date'
+            ),
+            array(
+                'key' => 'site',
+                'name' => 'Site'
+            ),
+        );
+
+        return array( $columns, $items );
+    }
+
+    private static function get_post_activity( $post_type, $filter ) {
+        global $wpdb;
+        $post_settings = apply_filters( "dt_get_post_type_settings", [], $post_type );
+        $fields = $post_settings["fields"];
+        $hidden_fields = [];
+        foreach ( $fields as $field_key => $field ){
+            if ( isset( $field["hidden"] ) && $field["hidden"] === true ){
+                $hidden_fields[] = $field_key;
+            }
+        }
+        $hidden_keys = dt_array_to_sql( $hidden_fields );
+        // phpcs:disable
+        // WordPress.WP.PreparedSQL.NotPrepared
+        $query_activity = "SELECT
+                meta_id,
+                object_id,
+                user_id,
+                user_caps,
+                action,
+                meta_key,
+                meta_value,
+                old_value,
+                object_subtype,
+                field_type,
+                object_note,
+                FROM_UNIXTIME(hist_time) AS date
+            FROM `$wpdb->dt_activity_log`
+            WHERE `object_type` = %s
+                 AND meta_key NOT IN ( $hidden_keys ) ";
+
+        $query_comments = "SELECT comment_ID as meta_id,
+                comment_post_ID as object_id,
+                user_id,
+                comment_author as user_caps,
+                comment_type as action,
+                NULL as meta_key,
+                NULL as meta_value,
+                NULL as old_value,
+                NULL as object_subtype,
+                NULL as field_type,
+                comment_content as object_note,
+                comment_date_gmt as date
+            FROM wp_comments c
+            LEFT JOIN wp_posts p on c.comment_post_ID=p.ID
+            WHERE comment_type not in ('comment', 'duplicate')
+                AND p.post_type=%s ";
+
+        $query = "$query_activity
+            UNION
+            $query_comments
+            ORDER BY date DESC ";
+        $params = array($post_type, $post_type);
+
+        if (isset($filter['limit'])) {
+            $query .= "LIMIT %d ";
+            $params[] = $filter['limit'];
+        }
+        $activity = $wpdb->get_results( $wpdb->prepare(
+            $query,
+            $params
+        ) );
+        //@phpcs:enable
+        $activity_simple = [];
+        foreach ( $activity as $a ) {
+            $a->object_note = DT_Posts::format_activity_message( $a, $post_settings );
+            if ( !empty( $a->object_note ) ){
+                $activity_simple[] = [
+                    "id" => $a->meta_id,
+                    "post_id" => $a->object_id,
+                    "user_id" => $a->user_id,
+                    "user_name" => $a->user_caps,
+                    "action_type" => $a->action,
+                    "action_field" => $a->meta_key,
+                    "action_value" => $a->meta_value,
+                    "action_old_value" => $a->old_value,
+                    "note" => $a->object_note,
+                    "date" => $a->date,
+                ];
+            }
+        }
+
+//    $paged = array_slice( $activity_simple, $args["offset"] ?? 0, $args["number"] ?? 1000 );
+        //todo: get the real total apart from limit
+        return [
+            "activity" => $activity_simple,
+            "total" => sizeof( $activity_simple )
+        ];
+    }
+
     private static function getLabel($result, $key) {
         return array_key_exists($key, $result) && array_key_exists('label', $result[$key]) ? $result[$key]['label'] : '';
     }
