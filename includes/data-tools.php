@@ -44,7 +44,7 @@ class DT_Export_Data_Tools
         foreach ($contacts['posts'] as $index => $result) {
             $contact = [
                 'ID' => $result['ID'],
-//                'Created' => $result['post_date'],
+                'Created' => $result['post_date'],
             ];
             foreach ( $fields as $field_key => $field ){
                 // skip if field is hidden
@@ -131,9 +131,9 @@ class DT_Export_Data_Tools
         array_push( $columns, array(
             'key' => "id",
             'name' => "ID"
-//        ), array(
-//            'key' => "created",
-//            'name' => "Created",
+        ), array(
+            'key' => "created",
+            'name' => "Created",
         ));
 
         foreach ( $fields as $field_key => $field ){
