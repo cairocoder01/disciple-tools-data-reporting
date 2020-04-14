@@ -9,8 +9,21 @@ class DT_Export_Data_Tools
             $filter['limit'] = $limit;
         }
 
+        // taken from [dt-theme]/dt-metrics/counters/counter-baptism.php::save_all_contact_generations
+        $raw_baptism_generation_list = Disciple_Tools_Counter_Baptism::query_get_all_baptism_connections();
+        $all_baptisms = Disciple_Tools_Counter_Baptism::build_baptism_generation_counts( $raw_baptism_generation_list );
+        $contact_generations = array();
+        foreach ( $all_baptisms as $baptism_generation ){
+            $generation = $baptism_generation["generation"];
+            $baptisms = $baptism_generation["ids"];
+            foreach ( $baptisms as $contact ){
+                $contact_generations[$contact] = $generation;
+            }
+        }
+
         $contacts = DT_Posts::list_posts('contacts', $filter);
         dt_write_log(sizeof($contacts['posts']) . ' of ' . $contacts['total']);
+//        dt_write_log(json_encode($contacts['posts'][0]));
         if ($limit == null) {
             // if total is greater than length, recursively get more
             while (sizeof($contacts['posts']) < $contacts['total']) {
@@ -31,6 +44,7 @@ class DT_Export_Data_Tools
         foreach ($contacts['posts'] as $index => $result) {
             $contact = [
                 'ID' => $result['ID'],
+//                'Created' => $result['post_date'],
             ];
             foreach ( $fields as $field_key => $field ){
                 // skip if field is hidden
@@ -56,7 +70,7 @@ class DT_Export_Data_Tools
                             $fieldValue = $result[$field_key]['id'];
                             break;
                         case 'date':
-                            $fieldValue = $result[$field_key]['timestamp'];
+                            $fieldValue = date("Y-m-d H:i:s", $result[$field_key]['timestamp']);
                             break;
                         case 'location':
                             $location_ids = array_map(function ( $location ) { return $location['label']; }, $result[$field_key]);
@@ -74,6 +88,7 @@ class DT_Export_Data_Tools
                             break;
                     }
                     // special cases...
+                    // last_modified is marked as a number field
                     if ( $field_key == 'last_modified' ) {
                         $fieldValue = date("Y-m-d H:i:s", $result[$field_key]);
                     }
@@ -100,6 +115,11 @@ class DT_Export_Data_Tools
                     }
                 }
 
+                // if we calculated the baptism generation, set it here
+                if ( $field_key == 'baptism_generation' && isset($contact_generations[$result['ID']]) ) {
+                    $fieldValue = $contact_generations[$result['ID']];
+                }
+
                 $fieldValue = apply_filters('dt_data_export_field_output', $type, $field_key, $fieldValue, $flatten);
                 $contact[$field_key] = $fieldValue;
             }
@@ -111,6 +131,9 @@ class DT_Export_Data_Tools
         array_push( $columns, array(
             'key' => "id",
             'name' => "ID"
+//        ), array(
+//            'key' => "created",
+//            'name' => "Created",
         ));
 
         foreach ( $fields as $field_key => $field ){
