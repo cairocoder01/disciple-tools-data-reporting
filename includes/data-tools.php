@@ -209,6 +209,14 @@ class DT_Export_Data_Tools
                 'name' => 'Action Value',
             ),
             array(
+                'key' => "action_value_friendly",
+                'name' => 'Action Value (Friendly)',
+            ),
+            array(
+                'key' => "action_value_order",
+                'name' => 'Action Value Order',
+            ),
+            array(
                 'key' => "action_old_value",
                 'name' => 'Action Old Value',
             ),
@@ -295,6 +303,21 @@ class DT_Export_Data_Tools
         foreach ( $activity as $a ) {
             $a->object_note = DT_Posts::format_activity_message( $a, $post_settings );
             if ( !empty( $a->object_note ) ){
+
+                $value_friendly = $a->meta_value;
+                $value_order = 0;
+                if (isset($fields[$a->meta_key])) {
+                    switch ($fields[$a->meta_key]["type"]) {
+                        case 'key_select':
+                        case 'multi_select':
+                            $keys = array_keys($fields[$a->meta_key]["default"]);
+                            $value_friendly = $fields[$a->meta_key]["default"][$a->meta_value]["label"] ?? $a->meta_value;
+                            $value_order = array_search($a->meta_value, $keys) + 1;
+                            break;
+                        default;
+                            break;
+                    }
+                }
                 $activity_simple[] = [
                     "id" => $a->meta_id,
                     "post_id" => $a->object_id,
@@ -303,6 +326,8 @@ class DT_Export_Data_Tools
                     "action_type" => $a->action,
                     "action_field" => $a->meta_key,
                     "action_value" => $a->meta_value,
+                    "action_value_friendly" => $value_friendly,
+                    "action_value_order" => $value_order,
                     "action_old_value" => $a->old_value,
                     "note" => $a->object_note,
                     "date" => $a->date,
