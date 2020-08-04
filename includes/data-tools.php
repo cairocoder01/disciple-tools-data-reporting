@@ -241,7 +241,7 @@ class DT_Export_Data_Tools
         global $wpdb;
         $post_settings = apply_filters( "dt_get_post_type_settings", [], $post_type );
         $fields = $post_settings["fields"];
-        $hidden_fields = [];
+        $hidden_fields = ['duplicate_of'];
         foreach ( $fields as $field_key => $field ){
             if ( isset( $field["hidden"] ) && $field["hidden"] === true ){
                 $hidden_fields[] = $field_key;
