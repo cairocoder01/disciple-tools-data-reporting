@@ -120,7 +120,7 @@ class DT_Export_Data_Tools
                     $fieldValue = $contact_generations[$result['ID']];
                 }
 
-                $fieldValue = apply_filters('dt_data_export_field_output', $type, $field_key, $fieldValue, $flatten);
+                $fieldValue = apply_filters('dt_data_export_field_output', $fieldValue, $type, $field_key, $flatten);
                 $contact[$field_key] = $fieldValue;
             }
             $contact['site'] = $base_url;
@@ -130,10 +130,16 @@ class DT_Export_Data_Tools
         $columns = array();
         array_push( $columns, array(
             'key' => "id",
-            'name' => "ID"
+            'name' => "ID",
+            'type' => 'number',
+            'bq_type' => 'INTEGER',
+            'bq_mode' => 'NULLABLE',
         ), array(
             'key' => "created",
             'name' => "Created",
+            'type' => 'date',
+            'bq_type' => 'TIMESTAMP',
+            'bq_mode' => 'NULLABLE',
         ));
 
         foreach ( $fields as $field_key => $field ){
@@ -146,14 +152,49 @@ class DT_Export_Data_Tools
                 continue;
             }
 
-            array_push($columns, array(
-                'key' => $field_key,
-                'name' => $field['name']
-            ));
+          $column = array(
+            'key' => $field_key,
+            'name' => $field['name'],
+            'type' => $field['type'],
+          );
+          switch ($type) {
+            case 'array':
+            case 'key_select':
+            case 'location':
+            case 'multi_select':
+              $column['bq_type'] = 'STRING';
+              $column['bq_mode'] = 'REPEATABLE';
+              break;
+            case 'connection':
+            case 'user_select':
+              $column['bq_type'] = 'INTEGER';
+              $column['bq_mode'] = 'REPEATABLE';
+              break;
+            case 'date':
+              $column['bq_type'] = 'TIMESTAMP';
+              $column['bq_mode'] = 'NULLABLE';
+              break;
+            case 'number':
+              $column['bq_type'] = 'INTEGER';
+              $column['bq_mode'] = 'NULLABLE';
+              break;
+            case 'boolean':
+              $column['bq_type'] = 'BOOLEAN';
+              $column['bq_mode'] = 'NULLABLE';
+              break;
+            default:
+              $column['bq_type'] = 'STRING';
+              $column['bq_mode'] = 'NULLABLE';
+              break;
+          }
+          array_push($columns, $column);
         }
         array_push( $columns, array(
             'key' => 'site',
-            'name' => 'Site'
+            'name' => 'Site',
+            'type' => 'text',
+            'bq_type' => 'STRING',
+            'bq_mode' => 'NULLABLE',
         ));
         return array( $columns, $items );
     }

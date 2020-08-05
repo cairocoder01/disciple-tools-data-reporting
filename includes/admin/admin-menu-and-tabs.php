@@ -112,8 +112,12 @@ class DT_Export_Plugin_Menu {
             <h2><?php esc_attr_e( 'Export Plugin', 'dt_export_plugin' ) ?></h2>
             <h2 class="nav-tab-wrapper">
                 <a href="<?php echo esc_attr( $link ) . 'general' ?>" class="nav-tab <?php ( $tab == 'general' || ! isset( $tab ) ) ? esc_attr_e( 'nav-tab-active', 'dt_export_plugin' ) : print ''; ?>"><?php esc_attr_e( 'General', 'dt_export_plugin' ) ?></a>
+                <a href="<?php echo esc_attr( $link ) . 'bigquery' ?>" class="nav-tab <?php ( $tab == 'bigquery' || ! isset( $tab ) ) ? esc_attr_e( 'nav-tab-active', 'dt_export_plugin' ) : print ''; ?>"><?php esc_attr_e( 'BigQuery Schema', 'dt_export_plugin' ) ?></a>
                 <?php if ($tab === 'preview' ): ?>
                     <a href="<?php echo esc_attr( $link ) . 'preview' ?>" class="nav-tab <?php ( $tab == 'preview' ) ? esc_attr_e( 'nav-tab-active', 'dt_export_plugin' ) : print ''; ?>"><?php esc_attr_e( 'Preview', 'dt_export_plugin' ) ?></a>
+                <?php endif; ?>
+                <?php if ($tab === 'api-send' ): ?>
+                  <a href="<?php echo esc_attr( $link ) . 'api-send' ?>" class="nav-tab <?php ( $tab == 'preview' ) ? esc_attr_e( 'nav-tab-active', 'dt_export_plugin' ) : print ''; ?>"><?php esc_attr_e( 'API Send', 'dt_export_plugin' ) ?></a>
                 <?php endif; ?>
             </h2>
 
@@ -123,8 +127,16 @@ class DT_Export_Plugin_Menu {
                     $object = new DT_Export_Tab_General( $this->token );
                     $object->content();
                     break;
+                case "bigquery":
+                    $object = new DT_Export_Tab_BigQuery( $this->token );
+                    $object->content();
+                    break;
                 case "preview":
                     $object = new DT_Export_Tab_Preview( $type );
+                    $object->content();
+                    break;
+                case "api-send":
+                    $object = new DT_Export_Tab_API( $type );
                     $object->content();
                     break;
                 default:
@@ -172,6 +184,7 @@ class DT_Export_Tab_General
 
     public function main_column() {
         $preview_link = 'admin.php?page='.$this->token.'&tab=preview&type=';
+        $api_action_link = 'admin.php?page='.$this->token.'&tab=api-send&type=';
         ?>
         <!-- Box -->
         <table class="widefat striped">
@@ -184,9 +197,10 @@ class DT_Export_Tab_General
                     Export Contacts
 
                     <div class="alignright">
-                        <a href="<?php echo esc_attr( $preview_link ) . 'contacts' ?>">Preview</a> |
-                        <a href="<?php echo plugins_url('../../exports/csv.php?type=contacts', __FILE__ ) ?>">CSV</a> |
-                        <a href="<?php echo plugins_url('../../exports/json.php?type=contacts', __FILE__ ) ?>">JSON</a>
+                        <a href="<?php echo esc_attr( $preview_link ) . 'contacts' ?>">Preview <span class="dashicons dashicons-admin-site-alt3"></span></a> |
+                        <a href="<?php echo plugins_url('../../exports/csv.php?type=contacts', __FILE__ ) ?>">CSV <span class="dashicons dashicons-download"></span></a> |
+                        <a href="<?php echo plugins_url('../../exports/json.php?type=contacts', __FILE__ ) ?>">JSON <span class="dashicons dashicons-download"></span></a> |
+                        <a href="<?php echo esc_attr( $api_action_link ) . 'contacts' ?>">Send to API <span class="dashicons dashicons-migrate"></span></a>
                     </div>
                 </td>
             </tr>
@@ -207,6 +221,69 @@ class DT_Export_Tab_General
         <?php
     }
 
+}
+
+class DT_Export_Tab_BigQuery
+{
+    public $token;
+    public function __construct( $token ) {
+        $this->token = $token;
+      require_once( plugin_dir_path( __FILE__ ) . '../data-tools.php' );
+    }
+
+    public function content() {
+        ?>
+        <div class="wrap">
+            <div id="poststuff">
+                <div id="post-body" class="metabox-holder columns-2">
+                    <div id="post-body-content">
+                        <!-- Main Column -->
+
+                        <?php $this->main_column() ?>
+
+                        <!-- End Main Column -->
+                    </div><!-- end post-body-content -->
+                    <div id="postbox-container-1" class="postbox-container">
+                    </div><!-- postbox-container 1 -->
+                    <div id="postbox-container-2" class="postbox-container">
+                    </div><!-- postbox-container 2 -->
+                </div><!-- post-body meta box container -->
+            </div><!--poststuff end -->
+        </div><!-- wrap end -->
+        <?php
+    }
+
+    public function main_column() {
+        ?>
+      <h2>Contacts</h2>
+      <?php $this->print_schema('contacts') ?>
+        <?php
+    }
+
+  public function print_schema( $type ) {
+    switch ($type) {
+      /*case 'contact_activity':
+          [$columns, $rows] = DT_Export_Data_Tools::get_contact_activity(false);
+          $this->export_data($columns, $rows);
+          break;*/
+      case 'contacts':
+      default:
+        // This is just a preview, so get the first 25 contacts only
+        [$columns, $rows] = DT_Export_Data_Tools::get_contacts(false, 1);
+        // [$columns, $rows] = DT_Export_Data_Tools::get_contacts(false, 1000);
+        echo "<pre><code style='display:block;'>";
+        $bqColumns = array_map(function ($col) {
+          return [
+              'name' => $col['key'],
+              'type' => $col['bq_type'],
+              'mode' => $col['bq_mode'],
+          ];
+        }, $columns);
+        echo json_encode($bqColumns, JSON_PRETTY_PRINT);
+        echo '</code></pre>';
+        break;
+    }
+  }
 }
 
 /**
@@ -287,6 +364,87 @@ class DT_Export_Tab_Preview
         <br>
         <!-- End Box -->
         <?php
+    }
+}
+
+class DT_Export_Tab_API
+{
+    public $type = 'contacts';
+
+    public function __construct( $type )
+    {
+        $this->type = $type;
+        require_once( plugin_dir_path( __FILE__ ) . '../data-tools.php' );
+    }
+
+    public function content() {
+        ?>
+        <div class="wrap">
+            <div id="poststuff">
+                <div id="post-body" class="metabox-holder columns-1">
+                    <div id="post-body-content">
+                        <!-- Main Column -->
+
+                        <?php $this->main_column() ?>
+
+                        <!-- End Main Column -->
+                    </div><!-- end post-body-content -->
+                </div><!-- post-body meta box container -->
+            </div><!--poststuff end -->
+        </div><!-- wrap end -->
+        <?php
+    }
+
+    public function main_column() {
+        switch ($this->type) {
+            /*case 'contact_activity':
+                [$columns, $rows] = DT_Export_Data_Tools::get_contact_activity(false);
+                $this->export_data($columns, $rows);
+                break;*/
+            case 'contacts':
+            default:
+                // This is just a preview, so get the first 25 contacts only
+                [$columns, $rows] = DT_Export_Data_Tools::get_contacts(false, 10);
+                // [$columns, $rows] = DT_Export_Data_Tools::get_contacts(false, 1000);
+                $this->export_data($columns, $rows, $this->type);
+                break;
+        }
+    }
+    public function export_data($columns, $rows, $type ) {
+
+      echo '<ul>';
+      echo '<li>Starting export...';
+      // todo: load this from a plugin setting
+      $url = 'https://us-central1-maarifa-logging.cloudfunctions.net/dtDataLoad';
+      $args = [
+        'method' => 'POST',
+        'headers' => array(
+          'Content-Type' => 'application/json; charset=utf-8'
+        ),
+        'body'      => json_encode([
+          'columns' => $columns,
+          'items' => $rows,
+          'type' => $type,
+        ]),
+      ];
+
+      $result = wp_remote_post( $url, $args );
+      if ( is_wp_error( $result ) ){
+        $error_message = $result->get_error_message() ?? '';
+        dt_write_log($error_message);
+        echo "<li>Error: $error_message</li>";
+      } else {
+        $result_body = json_decode($result['body']);
+        echo "<li><pre><code>".$result['body']."</code></pre>";
+//        if (!empty($result_body) && $result_body === true) {
+//          return [
+//            "success" => true,
+//            "message" => $linked,
+//          ];
+//        }
+      }
+      echo '<li>Done exporting.</li>';
+      echo '</ul>';
     }
 }
 
