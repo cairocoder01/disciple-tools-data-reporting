@@ -1,38 +1,37 @@
 <?php
 /**
- * DT_Export_Plugin_Menu class for the admin page
+ * DT_Data_Reporting_Menu class for the admin page
  *
- * @class       DT_Export_Plugin_Menu
+ * @class       DT_Data_Reporting_Menu
  * @version     0.1.0
  * @since       0.1.0
  */
 
-//@todo Replace all instances if DT_Export
 if ( ! defined( 'ABSPATH' ) ) { exit; // Exit if accessed directly
 }
 
 /**
  * Initialize menu class
  */
-DT_Export_Plugin_Menu::instance();
+DT_Data_Reporting_Menu::instance();
 
 /**
- * Class DT_Export_Plugin_Menu
+ * Class DT_Data_Reporting_Menu
  */
-class DT_Export_Plugin_Menu {
+class DT_Data_Reporting_Menu {
 
-    public $token = 'dt_export_plugin';
+    public $token = 'DT_Data_Reporting';
 
     private static $_instance = null;
 
     /**
-     * DT_Export_Plugin_Menu Instance
+     * DT_Data_Reporting_Menu Instance
      *
-     * Ensures only one instance of DT_Export_Plugin_Menu is loaded or can be loaded.
+     * Ensures only one instance of DT_Data_Reporting_Menu is loaded or can be loaded.
      *
+     * @return DT_Data_Reporting_Menu instance
      * @since 0.1.0
      * @static
-     * @return DT_Export_Plugin_Menu instance
      */
     public static function instance() {
         if ( is_null( self::$_instance ) ) {
@@ -57,11 +56,11 @@ class DT_Export_Plugin_Menu {
     function add_styles() {
         echo
         '<style>
-            body.wp-admin.extensions-dt_page_dt_export_plugin
+            body.wp-admin.extensions-dt_page_dt_data_reporting
             #post-body-content {
               overflow-y: auto;
             }
-            body.wp-admin.extensions-dt_page_dt_export_plugin
+            body.wp-admin.extensions-dt_page_dt_data_reporting
             ul {
               list-style: inherit;
               padding-inline-start: 2em;
@@ -76,7 +75,7 @@ class DT_Export_Plugin_Menu {
      */
     public function register_menu() {
         add_menu_page( __( 'Extensions (DT)', 'disciple_tools' ), __( 'Extensions (DT)', 'disciple_tools' ), 'manage_dt', 'dt_extensions', [ $this, 'extensions_menu' ], 'dashicons-admin-generic', 59 );
-        add_submenu_page( 'dt_extensions', __( 'Export Plugin', 'dt_export_plugin' ), __( 'Export Plugin', 'dt_export_plugin' ), 'manage_dt', $this->token, [ $this, 'content' ] );
+        add_submenu_page( 'dt_extensions', __( 'Data Reporting', 'DT_Data_Reporting'), __( 'Data Reporting', 'DT_Data_Reporting'), 'manage_dt', $this->token, [ $this, 'content' ] );
     }
 
     /**
@@ -109,34 +108,34 @@ class DT_Export_Plugin_Menu {
 
         ?>
         <div class="wrap">
-            <h2><?php esc_attr_e( 'Export Plugin', 'dt_export_plugin' ) ?></h2>
+            <h2><?php esc_attr_e( 'Data Reporting', 'DT_Data_Reporting') ?></h2>
             <h2 class="nav-tab-wrapper">
-                <a href="<?php echo esc_attr( $link ) . 'general' ?>" class="nav-tab <?php ( $tab == 'general' || ! isset( $tab ) ) ? esc_attr_e( 'nav-tab-active', 'dt_export_plugin' ) : print ''; ?>"><?php esc_attr_e( 'General', 'dt_export_plugin' ) ?></a>
-                <a href="<?php echo esc_attr( $link ) . 'bigquery' ?>" class="nav-tab <?php ( $tab == 'bigquery' || ! isset( $tab ) ) ? esc_attr_e( 'nav-tab-active', 'dt_export_plugin' ) : print ''; ?>"><?php esc_attr_e( 'BigQuery Schema', 'dt_export_plugin' ) ?></a>
+                <a href="<?php echo esc_attr( $link ) . 'general' ?>" class="nav-tab <?php ( $tab == 'general' || ! isset( $tab ) ) ? esc_attr_e( 'nav-tab-active', 'DT_Data_Reporting') : print ''; ?>"><?php esc_attr_e( 'General', 'DT_Data_Reporting') ?></a>
+                <a href="<?php echo esc_attr( $link ) . 'bigquery' ?>" class="nav-tab <?php ( $tab == 'bigquery' || ! isset( $tab ) ) ? esc_attr_e( 'nav-tab-active', 'DT_Data_Reporting') : print ''; ?>"><?php esc_attr_e( 'BigQuery Schema', 'DT_Data_Reporting') ?></a>
                 <?php if ($tab === 'preview' ): ?>
-                    <a href="<?php echo esc_attr( $link ) . 'preview' ?>" class="nav-tab <?php ( $tab == 'preview' ) ? esc_attr_e( 'nav-tab-active', 'dt_export_plugin' ) : print ''; ?>"><?php esc_attr_e( 'Preview', 'dt_export_plugin' ) ?></a>
+                    <a href="<?php echo esc_attr( $link ) . 'preview' ?>" class="nav-tab <?php ( $tab == 'preview' ) ? esc_attr_e( 'nav-tab-active', 'DT_Data_Reporting') : print ''; ?>"><?php esc_attr_e( 'Preview', 'DT_Data_Reporting') ?></a>
                 <?php endif; ?>
                 <?php if ($tab === 'api-send' ): ?>
-                  <a href="<?php echo esc_attr( $link ) . 'api-send' ?>" class="nav-tab <?php ( $tab == 'api-send' ) ? esc_attr_e( 'nav-tab-active', 'dt_export_plugin' ) : print ''; ?>"><?php esc_attr_e( 'API Send', 'dt_export_plugin' ) ?></a>
+                  <a href="<?php echo esc_attr( $link ) . 'api-send' ?>" class="nav-tab <?php ( $tab == 'api-send' ) ? esc_attr_e( 'nav-tab-active', 'DT_Data_Reporting') : print ''; ?>"><?php esc_attr_e( 'API Send', 'DT_Data_Reporting') ?></a>
                 <?php endif; ?>
             </h2>
 
             <?php
             switch ($tab) {
                 case "general":
-                    $object = new DT_Export_Tab_General( $this->token );
+                    $object = new DT_Data_Reporting_Tab_General( $this->token );
                     $object->content();
                     break;
                 case "bigquery":
-                    $object = new DT_Export_Tab_BigQuery( $this->token );
+                    $object = new DT_Data_Reporting_Tab_BigQuery( $this->token );
                     $object->content();
                     break;
                 case "preview":
-                    $object = new DT_Export_Tab_Preview( $type );
+                    $object = new DT_Data_Reporting_Tab_Preview( $type );
                     $object->content();
                     break;
                 case "api-send":
-                    $object = new DT_Export_Tab_API( $type );
+                    $object = new DT_Data_Reporting_Tab_API( $type );
                     $object->content();
                     break;
                 default:
@@ -150,10 +149,7 @@ class DT_Export_Plugin_Menu {
     }
 }
 
-/**
- * Class DT_Export_Tab_General
- */
-class DT_Export_Tab_General
+class DT_Data_Reporting_Tab_General
 {
     public $token;
     public function __construct( $token ) {
@@ -189,7 +185,7 @@ class DT_Export_Tab_General
         <!-- Box -->
         <table class="widefat striped">
             <thead>
-            <th>CSV Export</th>
+            <th>Data Export</th>
             </thead>
             <tbody>
             <tr>
@@ -223,7 +219,7 @@ class DT_Export_Tab_General
 
 }
 
-class DT_Export_Tab_BigQuery
+class DT_Data_Reporting_Tab_BigQuery
 {
     public $token;
     public function __construct( $token ) {
@@ -263,14 +259,14 @@ class DT_Export_Tab_BigQuery
   public function print_schema( $type ) {
     switch ($type) {
       /*case 'contact_activity':
-          [$columns, $rows] = DT_Export_Data_Tools::get_contact_activity(false);
+          [$columns, $rows] = DT_Data_Reporting_Tools::get_contact_activity(false);
           $this->export_data($columns, $rows);
           break;*/
       case 'contacts':
       default:
         // This is just a preview, so get the first 25 contacts only
-        [$columns, $rows] = DT_Export_Data_Tools::get_contacts(false, 1);
-        // [$columns, $rows] = DT_Export_Data_Tools::get_contacts(false, 1000);
+        [$columns, $rows] = DT_Data_Reporting_Tools::get_contacts(false, 1);
+        // [$columns, $rows] = DT_Data_Reporting_Tools::get_contacts(false, 1000);
         echo "<pre><code style='display:block;'>";
         $bqColumns = array_map(function ($col) {
           return [
@@ -286,10 +282,7 @@ class DT_Export_Tab_BigQuery
   }
 }
 
-/**
- * Class DT_Export_Tab_Preview
- */
-class DT_Export_Tab_Preview
+class DT_Data_Reporting_Tab_Preview
 {
     public $type = 'contacts';
 
@@ -320,14 +313,14 @@ class DT_Export_Tab_Preview
     public function main_column() {
         switch ($this->type) {
             case 'contact_activity':
-                [$columns, $rows] = DT_Export_Data_Tools::get_contact_activity(false, 100);
+                [$columns, $rows] = DT_Data_Reporting_Tools::get_contact_activity(false, 100);
                 $this->main_column_table($columns, $rows);
                 break;
             case 'contacts':
             default:
                 // This is just a preview, so get the first 25 contacts only
-                [$columns, $rows] = DT_Export_Data_Tools::get_contacts(false, 25);
-                // [$columns, $rows] = DT_Export_Data_Tools::get_contacts(false, 1000);
+                [$columns, $rows] = DT_Data_Reporting_Tools::get_contacts(false, 25);
+                // [$columns, $rows] = DT_Data_Reporting_Tools::get_contacts(false, 1000);
                 $this->main_column_table($columns, $rows);
                 break;
         }
@@ -367,7 +360,7 @@ class DT_Export_Tab_Preview
     }
 }
 
-class DT_Export_Tab_API
+class DT_Data_Reporting_Tab_API
 {
     public $type = 'contacts';
 
@@ -398,14 +391,14 @@ class DT_Export_Tab_API
     public function main_column() {
         switch ($this->type) {
             /*case 'contact_activity':
-                [$columns, $rows] = DT_Export_Data_Tools::get_contact_activity(false);
+                [$columns, $rows] = DT_Data_Reporting_Tools::get_contact_activity(false);
                 $this->export_data($columns, $rows);
                 break;*/
             case 'contacts':
             default:
                 // This is just a preview, so get the first 25 contacts only
-                [$columns, $rows] = DT_Export_Data_Tools::get_contacts(false, 10);
-                // [$columns, $rows] = DT_Export_Data_Tools::get_contacts(false, 1000);
+                [$columns, $rows] = DT_Data_Reporting_Tools::get_contacts(false, 10);
+                // [$columns, $rows] = DT_Data_Reporting_Tools::get_contacts(false, 1000);
                 $this->export_data($columns, $rows, $this->type);
                 break;
         }

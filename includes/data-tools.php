@@ -1,7 +1,7 @@
 <?php
 
 
-class DT_Export_Data_Tools
+class DT_Data_Reporting_Tools
 {
     public static function get_contacts( $flatten = false, $limit = null ) {
         $filter = array();
@@ -120,7 +120,7 @@ class DT_Export_Data_Tools
                     $fieldValue = $contact_generations[$result['ID']];
                 }
 
-                $fieldValue = apply_filters('dt_data_export_field_output', $fieldValue, $type, $field_key, $flatten);
+                $fieldValue = apply_filters('dt_data_data_reporting_field_output', $fieldValue, $type, $field_key, $flatten);
                 $contact[$field_key] = $fieldValue;
             }
             $contact['site'] = $base_url;

@@ -76,11 +76,11 @@ $type = $_GET['type'];
 switch( $type ) {
     case 'contacts':
     default:
-        [$columns, $items] = DT_Export_Data_Tools::get_contacts(true);
+        [$columns, $items] = DT_Data_Reporting_Tools::get_contacts(true);
         $columns = array_map(function ( $column ) { return $column['name']; }, $columns);
         break;
     case 'contactactivity':
-        [$columns, $items] = DT_Export_Data_Tools::get_contact_activity(true);
+        [$columns, $items] = DT_Data_Reporting_Tools::get_contact_activity(true);
         $columns = array_map(function ( $column ) { return $column['name']; }, $columns);
         break;
     case 'cities':

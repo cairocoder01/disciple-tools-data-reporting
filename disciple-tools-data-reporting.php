@@ -1,15 +1,15 @@
 <?php
 /**
- * Plugin Name: Disciple Tools - Export Plugin
- * Plugin URI: https://github.com/cairocoder01/disciple-tools-data-export
- * Description: Disciple Tools - Export Plugin is intended to help developers and integrator jumpstart their extension
+ * Plugin Name: Disciple Tools - Data Reporting
+ * Plugin URI: https://github.com/cairocoder01/disciple-tools-data-reporting
+ * Description: Disciple Tools - Data Reporting is intended to assist in exporting data to an external data reporting source, such as Google BigQuery.
  * of the Disciple Tools system.
  * Version:  0.1.0
  * Author URI: https://github.com/cairocoder01
- * GitHub Plugin URI: https://github.com/cairocoder01/disciple-tools-data-export
+ * GitHub Plugin URI: https://github.com/cairocoder01/disciple-tools-data-reporting
  * Requires at least: 4.7.0
  * (Requires 4.7+ because of the integration of the REST API at 4.7 and the security requirements of this milestone version.)
- * Tested up to: 4.9
+ * Tested up to: 5.4.2
  *
  * @package Disciple_Tools
  * @link    https://github.com/cairocoder01
@@ -17,46 +17,28 @@
  *          https://www.gnu.org/licenses/gpl-2.0.html
  */
 
-/*******************************************************************
- * Using the Export Plugin
- * The Disciple Tools export plugin is intended to accelerate integrations and extensions to the Disciple Tools system.
- * This basic plugin export has some of the basic elements to quickly launch and extension project in the pattern of
- * the Disciple Tools system.
- */
-
-/**
- * The export plugin is equipped with:
- * 1. Wordpress style requirements
- * 2. Travis Continuous Integration
- * 3. Disciple Tools Theme presence check
- * 4. Remote upgrade system for ongoing updates outside the Wordpress Directory
- * 5. Multilingual ready
- * 6. PHP Code Sniffer support (composer) @use /vendor/bin/phpcs and /vendor/bin/phpcbf
- * 7. Export Admin menu and options page with tabs.
- */
-
 if ( ! defined( 'ABSPATH' ) ) {
     exit; // Exit if accessed directly
 }
-$dt_export_required_dt_theme_version = '0.19.0';
+$dt_data_reporting_required_dt_theme_version = '0.19.0';
 
 /**
- * Gets the instance of the `DT_Export_Plugin` class.
+ * Gets the instance of the `DT_Data_Reporting_Plugin` class.
  *
  * @since  0.1
  * @access public
  * @return object
  */
-function dt_export_plugin() {
-    global $dt_export_required_dt_theme_version;
+function dt_data_reporting_plugin() {
+    global $dt_data_reporting_required_dt_theme_version;
     $wp_theme = wp_get_theme();
     $version = $wp_theme->version;
     /*
      * Check if the Disciple.Tools theme is loaded and is the latest required version
      */
     $is_theme_dt = strpos( $wp_theme->get_template(), "disciple-tools-theme" ) !== false || $wp_theme->name === "Disciple Tools";
-    if ( !$is_theme_dt || version_compare( $version, $dt_export_required_dt_theme_version, "<" ) ) {
-        add_action( 'admin_notices', 'dt_export_plugin_hook_admin_notice' );
+    if ( !$is_theme_dt || version_compare( $version, $dt_data_reporting_required_dt_theme_version, "<" ) ) {
+        add_action( 'admin_notices', 'dt_data_reporting_hook_admin_notice' );
         add_action( 'wp_ajax_dismissed_notice_handler', 'dt_hook_ajax_notice_handler' );
         return new WP_Error( 'current_theme_not_dt', 'Disciple Tools Theme not active or not latest version.' );
     }
@@ -71,10 +53,10 @@ function dt_export_plugin() {
      */
     $is_rest = dt_is_rest();
     if ( !$is_rest || strpos( dt_get_url_path(), 'sample' ) != false ){
-        return DT_Export_Plugin::get_instance();
+        return DT_Data_Reporting::get_instance();
     }
 }
-add_action( 'after_setup_theme', 'dt_export_plugin' );
+add_action( 'after_setup_theme', 'dt_data_reporting_plugin');
 
 /**
  * Singleton class for setting up the plugin.
@@ -82,7 +64,7 @@ add_action( 'after_setup_theme', 'dt_export_plugin' );
  * @since  0.1
  * @access public
  */
-class DT_Export_Plugin {
+class DT_Data_Reporting {
 
     /**
      * Declares public variables
@@ -110,7 +92,7 @@ class DT_Export_Plugin {
         static $instance = null;
 
         if ( is_null( $instance ) ) {
-            $instance = new dt_export_plugin();
+            $instance = new DT_Data_Reporting();
             $instance->setup();
             $instance->includes();
             $instance->setup_actions();
@@ -159,12 +141,8 @@ class DT_Export_Plugin {
         $this->img_uri      = trailingslashit( $this->dir_uri . 'img' );
 
         // Admin and settings variables
-        $this->token             = 'dt_export_plugin';
+        $this->token             = 'DT_Data_Reporting';
         $this->version             = '0.1';
-
-        // sample rest api class
-        require_once( 'includes/rest-api.php' );
-        DT_Export_Plugin_Endpoints::instance();
     }
 
     /**
@@ -227,7 +205,7 @@ class DT_Export_Plugin {
      * @return void
      */
     public static function deactivation() {
-        delete_option( 'dismissed-dt-export' );
+        delete_option( 'dismissed-dt-data-reporting' );
     }
 
     /**
@@ -238,7 +216,7 @@ class DT_Export_Plugin {
      * @return void
      */
     public function i18n() {
-        load_plugin_textdomain( 'dt_export_plugin', false, trailingslashit( dirname( plugin_basename( __FILE__ ) ) ). 'languages' );
+        load_plugin_textdomain( 'DT_Data_Reporting', false, trailingslashit( dirname( plugin_basename( __FILE__ ) ) ). 'languages' );
     }
 
     /**
@@ -249,7 +227,7 @@ class DT_Export_Plugin {
      * @return string
      */
     public function __toString() {
-        return 'dt_export_plugin';
+        return 'DT_Data_Reporting';
     }
 
     /**
@@ -260,7 +238,7 @@ class DT_Export_Plugin {
      * @return void
      */
     public function __clone() {
-        _doing_it_wrong( __FUNCTION__, esc_html__( 'Whoah, partner!', 'dt_export_plugin' ), '0.1' );
+        _doing_it_wrong( __FUNCTION__, esc_html__( 'Whoah, partner!', 'DT_Data_Reporting'), '0.1' );
     }
 
     /**
@@ -271,7 +249,7 @@ class DT_Export_Plugin {
      * @return void
      */
     public function __wakeup() {
-        _doing_it_wrong( __FUNCTION__, esc_html__( 'Whoah, partner!', 'dt_export_plugin' ), '0.1' );
+        _doing_it_wrong( __FUNCTION__, esc_html__( 'Whoah, partner!', 'DT_Data_Reporting'), '0.1' );
     }
 
     /**
@@ -283,7 +261,7 @@ class DT_Export_Plugin {
      */
     public function __call( $method = '', $args = array() ) {
         // @codingStandardsIgnoreLine
-        _doing_it_wrong( "dt_export_plugin::{$method}", esc_html__( 'Method does not exist.', 'dt_export_plugin' ), '0.1' );
+        _doing_it_wrong( "dt_data_reporting_plugin::{$method}", esc_html__( 'Method does not exist.', 'DT_Data_Reporting'), '0.1' );
         unset( $method, $args );
         return null;
     }
@@ -291,30 +269,30 @@ class DT_Export_Plugin {
 // end main plugin class
 
 // Register activation hook.
-register_activation_hook( __FILE__, [ 'DT_Export_Plugin', 'activation' ] );
-register_deactivation_hook( __FILE__, [ 'DT_Export_Plugin', 'deactivation' ] );
+register_activation_hook( __FILE__, ['DT_Data_Reporting', 'activation' ] );
+register_deactivation_hook( __FILE__, ['DT_Data_Reporting', 'deactivation' ] );
 
-function dt_export_plugin_hook_admin_notice() {
-    global $dt_export_required_dt_theme_version;
+function dt_data_reporting_hook_admin_notice() {
+    global $dt_data_reporting_required_dt_theme_version;
     $wp_theme = wp_get_theme();
     $current_version = $wp_theme->version;
-    $message = __( "'Disciple Tools - Export Plugin' plugin requires 'Disciple Tools' theme to work. Please activate 'Disciple Tools' theme or make sure it is latest version.", "dt_export_plugin" );
+    $message = __( "'Disciple Tools - Data Reporting Plugin' plugin requires 'Disciple Tools' theme to work. Please activate 'Disciple Tools' theme or make sure it is latest version.", "dt_data_reporting" );
     if ( $wp_theme->get_template() === "disciple-tools-theme" ){
-        $message .= sprintf( esc_html__( 'Current Disciple Tools version: %1$s, required version: %2$s', 'dt_export_plugin' ), esc_html( $current_version ), esc_html( $dt_export_required_dt_theme_version ) );
+        $message .= sprintf( esc_html__( 'Current Disciple Tools version: %1$s, required version: %2$s', 'DT_Data_Reporting'), esc_html( $current_version ), esc_html( $dt_data_reporting_required_dt_theme_version ) );
     }
     // Check if it's been dismissed...
-    if ( ! get_option( 'dismissed-dt-export', false ) ) { ?>
-        <div class="notice notice-error notice-dt-export is-dismissible" data-notice="dt-export">
+    if ( ! get_option( 'dismissed-dt-data-reporting', false ) ) { ?>
+        <div class="notice notice-error notice-dt-data-reporting is-dismissible" data-notice="dt-data-reporting">
             <p><?php echo esc_html( $message );?></p>
         </div>
         <script>
             jQuery(function($) {
-                $( document ).on( 'click', '.notice-dt-export .notice-dismiss', function () {
+                $( document ).on( 'click', '.notice-dt-data-reporting .notice-dismiss', function () {
                     $.ajax( ajaxurl, {
                         type: 'POST',
                         data: {
                             action: 'dismissed_notice_handler',
-                            type: 'dt-export',
+                            type: 'dt-data-reporting',
                             security: '<?php echo esc_html( wp_create_nonce( 'wp_rest_dismiss' ) ) ?>'
                         }
                     })

@@ -1,22 +1,6 @@
-[![Build Status](https://travis-ci.com/DiscipleTools/disciple-tools-export-plugin-template.svg?branch=master)](https://travis-ci.com/DiscipleTools/disciple-tools-export-plugin-template)
+# Disciple Tools Data Reporting
+The Disciple Tools Data Reporting is intended to assist in exporting data to an external data reporting source, such as Google BigQuery.
+The plugin allows you to manually export your data in CSV and JSON formats. It's primary use is for automating data export via a webhook URL to receive JSON formatted data. 
+It has been setup for usage with Google Cloud Platform infrastructure (Cloud Functions, Cloud Storage, and BigQuery), but could theoretically be used with anything as the single point of communication is a webhook URL that you could configure to communicate with any system.
 
-# Disciple Tools Export Plugin
-The Disciple Tools Export Plugin is intended to accelerate integrations and extensions to the Disciple Tools system.
-This basic plugin export has some of the basic elements to quickly launch and extension project in the pattern of
-the Disciple Tools system.
-
-
-### The export plugin is equipped with:
-1. Wordpress style requirements
-1. Travis Continueous Integration
-1. Disciple Tools Theme presence check
-1. Remote upgrade system for ongoing updates outside the Wordpress Directory
-1. Multilingual ready
-1. PHP Code Sniffer support (composer) @use /vendor/bin/phpcs and /vendor/bin/phpcbf
-1. Export Admin menu and options page with tabs.
-
-### Refactoring this plugin as your own:
-1. Refactor all occurences of the name `Export_Plugin`, `export_plugin`, `export-plugin`, and `Export Plugin` with you're own plugin
-name for the `disciple-tools-export-plugin.php and admin-menu-and-tabs.php files.
-1. Update the README.md and LICENSE
-1. Update the translation strings inside `default.pot` file with a multilingual sofware like POEdit, if you intend to make your plugin multilingual.
+There is also a feature to opt-in to sending anonymized data to a global reporting system for comparing D.T usage across different sites and searching for trends that could be useful for the whole D.T community. 
