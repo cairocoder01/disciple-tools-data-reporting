@@ -157,18 +157,17 @@ class DT_Export_Data_Tools
             'name' => $field['name'],
             'type' => $field['type'],
           );
-          switch ($type) {
+          switch ($field['type']) {
             case 'array':
-            case 'key_select':
             case 'location':
             case 'multi_select':
               $column['bq_type'] = 'STRING';
-              $column['bq_mode'] = 'REPEATABLE';
+              $column['bq_mode'] = 'REPEATED';
               break;
             case 'connection':
             case 'user_select':
               $column['bq_type'] = 'INTEGER';
-              $column['bq_mode'] = 'REPEATABLE';
+              $column['bq_mode'] = 'REPEATED';
               break;
             case 'date':
               $column['bq_type'] = 'TIMESTAMP';
@@ -182,10 +181,18 @@ class DT_Export_Data_Tools
               $column['bq_type'] = 'BOOLEAN';
               $column['bq_mode'] = 'NULLABLE';
               break;
+            case 'key_select':
+            case 'text':
             default:
               $column['bq_type'] = 'STRING';
               $column['bq_mode'] = 'NULLABLE';
               break;
+          }
+          if ( $field_key == 'last_modified' ) {
+            $column['type'] = 'date';
+            $column['bq_type'] = 'TIMESTAMP';
+            $column['bq_mode'] = 'NULLABLE';
+
           }
           array_push($columns, $column);
         }

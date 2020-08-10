@@ -117,7 +117,7 @@ class DT_Export_Plugin_Menu {
                     <a href="<?php echo esc_attr( $link ) . 'preview' ?>" class="nav-tab <?php ( $tab == 'preview' ) ? esc_attr_e( 'nav-tab-active', 'dt_export_plugin' ) : print ''; ?>"><?php esc_attr_e( 'Preview', 'dt_export_plugin' ) ?></a>
                 <?php endif; ?>
                 <?php if ($tab === 'api-send' ): ?>
-                  <a href="<?php echo esc_attr( $link ) . 'api-send' ?>" class="nav-tab <?php ( $tab == 'preview' ) ? esc_attr_e( 'nav-tab-active', 'dt_export_plugin' ) : print ''; ?>"><?php esc_attr_e( 'API Send', 'dt_export_plugin' ) ?></a>
+                  <a href="<?php echo esc_attr( $link ) . 'api-send' ?>" class="nav-tab <?php ( $tab == 'api-send' ) ? esc_attr_e( 'nav-tab-active', 'dt_export_plugin' ) : print ''; ?>"><?php esc_attr_e( 'API Send', 'dt_export_plugin' ) ?></a>
                 <?php endif; ?>
             </h2>
 
