@@ -7,8 +7,9 @@ class DT_Data_Reporting_Tab_API
 {
     public $type = 'contacts';
 
-    public function __construct( $type )
+    public function __construct( $token, $type )
     {
+        $this->token = $token;
         $this->type = $type;
         require_once( plugin_dir_path( __FILE__ ) . '../data-tools.php' );
     }
@@ -32,26 +33,30 @@ class DT_Data_Reporting_Tab_API
     }
 
     public function main_column() {
+        $endpoint_url = get_option( "dt_data_reporting_endpoint_url" );
+        $settings_link = 'admin.php?page='.$this->token.'&tab=settings';
+        $endpoint_error = "<p>Endpoint URL not configured. Please update in <a href='$settings_link'>Settings</a></p>";
         switch ($this->type) {
-            /*case 'contact_activity':
-                [$columns, $rows] = DT_Data_Reporting_Tools::get_contact_activity(false);
-                $this->export_data($columns, $rows);
-                break;*/
-            case 'contacts':
-            default:
-                // This is just a preview, so get the first 25 contacts only
-                [$columns, $rows] = DT_Data_Reporting_Tools::get_contacts(false, 10);
-                // [$columns, $rows] = DT_Data_Reporting_Tools::get_contacts(false, 1000);
-                $this->export_data($columns, $rows, $this->type);
-                break;
+          /*case 'contact_activity':
+              [$columns, $rows] = DT_Data_Reporting_Tools::get_contact_activity(false);
+              $this->export_data($columns, $rows);
+              break;*/
+          case 'contacts':
+          default:
+            [$columns, $rows] = DT_Data_Reporting_Tools::get_contacts(false);
+            // todo: handle exports to other URLs for global and maarifa (if enabled)
+            if ( empty( $endpoint_url ) ) {
+              echo $endpoint_error;
+            } else {
+              $this->export_data($endpoint_url, $columns, $rows, $this->type);
+            }
+            break;
         }
     }
-    public function export_data($columns, $rows, $type ) {
+    public function export_data($url, $columns, $rows, $type ) {
 
       echo '<ul>';
       echo '<li>Starting export...';
-      // todo: load this from a plugin setting
-      $url = 'https://us-central1-maarifa-logging.cloudfunctions.net/dtDataLoad';
       $args = [
         'method' => 'POST',
         'headers' => array(

@@ -55,6 +55,7 @@ class DT_Data_Reporting_Menu {
         require_once( plugin_dir_path( __FILE__ ) . './admin-tab-bigquery.php' );
         require_once( plugin_dir_path( __FILE__ ) . './admin-tab-preview.php' );
         require_once( plugin_dir_path( __FILE__ ) . './admin-tab-api.php' );
+        require_once( plugin_dir_path( __FILE__ ) . './admin-tab-settings.php' );
     } // End __construct()
 
 
@@ -118,6 +119,7 @@ class DT_Data_Reporting_Menu {
                 <a href="<?php echo esc_attr( $link ) . 'getting-started' ?>" class="nav-tab <?php ( $tab == 'getting-started' || ! isset( $tab ) ) ? esc_attr_e( 'nav-tab-active', 'DT_Data_Reporting') : print ''; ?>"><?php esc_attr_e( 'Getting Started', 'DT_Data_Reporting') ?></a>
                 <a href="<?php echo esc_attr( $link ) . 'export' ?>" class="nav-tab <?php ( $tab == 'export' ) ? esc_attr_e( 'nav-tab-active', 'DT_Data_Reporting') : print ''; ?>"><?php esc_attr_e( 'Manual Export', 'DT_Data_Reporting') ?></a>
                 <a href="<?php echo esc_attr( $link ) . 'bigquery' ?>" class="nav-tab <?php ( $tab == 'bigquery' ) ? esc_attr_e( 'nav-tab-active', 'DT_Data_Reporting') : print ''; ?>"><?php esc_attr_e( 'BigQuery Schema', 'DT_Data_Reporting') ?></a>
+                <a href="<?php echo esc_attr( $link ) . 'settings' ?>" class="nav-tab <?php ( $tab == 'settings' ) ? esc_attr_e( 'nav-tab-active', 'DT_Data_Reporting') : print ''; ?>"><?php esc_attr_e( 'Settings', 'DT_Data_Reporting') ?></a>
                 <?php if ($tab === 'preview' ): ?>
                     <a href="<?php echo esc_attr( $link ) . 'preview' ?>" class="nav-tab <?php ( $tab == 'preview' ) ? esc_attr_e( 'nav-tab-active', 'DT_Data_Reporting') : print ''; ?>"><?php esc_attr_e( 'Preview', 'DT_Data_Reporting') ?></a>
                 <?php endif; ?>
@@ -145,7 +147,11 @@ class DT_Data_Reporting_Menu {
                     $object->content();
                     break;
                 case "api-send":
-                    $object = new DT_Data_Reporting_Tab_API( $type );
+                    $object = new DT_Data_Reporting_Tab_API( $this->token, $type );
+                    $object->content();
+                    break;
+                case "settings":
+                    $object = new DT_Data_Reporting_Tab_Settings( );
                     $object->content();
                     break;
                 default:
