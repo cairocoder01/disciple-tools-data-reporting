@@ -34,10 +34,129 @@ class DT_Data_Reporting_Tab_BigQuery
     }
 
     public function main_column() {
-        ?>
-      <p>If you are using BigQuery as your database storage, you can paste the below as the schema when creating the database tables.</p>
-      <h2>Contacts</h2>
-      <?php $this->print_schema('contacts') ?>
+      ?>
+      <table class="widefat">
+      <thead>
+        <tr><th>Overview</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>
+            <p>This plugin was built with the intention of using BigQuery as its external data store from which to do all reporting and analysis. As such, you can find below some info and examples of how you can duplicate that setup.</p>
+            <p>Using Google Cloud Platform, these resources should stay within the free usage limits, depending on your usage. You will need to add your credit card to your account, but as long as your usage isn&#39;t overly much, you shouldn&#39;t be billed for anything.</p>
+
+          </td>
+        </tr>
+      </tbody>
+      </table>
+      <br>
+
+      <table class="widefat" id="schemas-bq">
+        <thead>
+        <tr><th>Overview of Process</th></tr>
+        </thead>
+        <tbody>
+        <tr>
+          <td>
+            <p>To stay within free usage, we are going to save data to Cloud Storage and load those files into BigQuery instead of streaming data directly into BigQuery. Because of this, there are 2 different Cloud Functions that will be utilized.</p>
+            <p>As an overview, these are the steps that will be taken:</p>
+            <ol>
+              <li><strong>Cloud Function (HTTP)</strong>: Receive JSON data from plugin. Save as JSON line-delimited file in Cloud Storage.</li>
+              <li><strong>Cloud Storage</strong>: Bucket will temporarily hold generated data file.</li>
+              <li><strong>Cloud Function (Storage trigger)</strong>: Function is triggered when a new file is uploaded to storage bucket. Meta data will be read to know what table to load the data into, and the file will be loaded into BigQuery.</li>
+              <li><strong>BigQuery</strong>: Holds data ready for reporting. Easy to connect to various visualization tools.</li>
+            </ol>
+
+          </td>
+        </tr>
+        </tbody>
+      </table>
+      <br>
+
+      <table class="widefat" id="schemas-bq">
+        <thead>
+        <tr><th>Account Setup</th></tr>
+        </thead>
+        <tbody>
+        <tr>
+          <td>
+            <p><em>Full details to come</em></p>
+
+          </td>
+        </tr>
+        </tbody>
+      </table>
+      <br>
+
+      <table class="widefat" id="schemas-bq">
+        <thead>
+        <tr><th>BigQuery Setup</th></tr>
+        </thead>
+        <tbody>
+        <tr>
+          <td>
+            <p><em>Full details to come</em></p>
+          </td>
+        </tr>
+        </tbody>
+      </table>
+      <br>
+
+      <table class="widefat" id="schemas-bq">
+        <thead>
+        <tr><th>Cloud Storage Setup</th></tr>
+        </thead>
+        <tbody>
+        <tr>
+          <td>
+            <p><em>Full details to come</em></p>
+          </td>
+        </tr>
+        </tbody>
+      </table>
+      <br>
+
+      <table class="widefat" id="schemas-bq">
+        <thead>
+        <tr><th>Cloud Function Setup - HTTP Endpoint</th></tr>
+        </thead>
+        <tbody>
+        <tr>
+          <td>
+            <p><em>Full details to come</em></p>
+          </td>
+        </tr>
+        </tbody>
+      </table>
+      <br>
+
+      <table class="widefat" id="schemas-bq">
+        <thead>
+        <tr><th>Cloud Function Setup - Storage Trigger</th></tr>
+        </thead>
+        <tbody>
+        <tr>
+          <td>
+            <p><em>Full details to come</em></p>
+          </td>
+        </tr>
+      </tbody>
+      </table>
+      <br>
+
+      <table class="widefat" id="schemas-bq">
+      <thead>
+        <tr><th>BigQuery Schemas</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>
+            <h2>Contacts</h2>
+            <?php $this->print_schema('contacts') ?>
+          </td>
+        </tr>
+      </tbody>
+      </table>
         <?php
     }
 

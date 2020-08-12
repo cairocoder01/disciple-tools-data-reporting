@@ -66,6 +66,6 @@ As an overview, these are the steps that will be taken:
 ## Cloud Function Setup - HTTP Endpoint
 *Full details to come*
 
-## Cloud Storage Setup - Storage Trigger
+## Cloud Function Setup - Storage Trigger
 *Full details to come*
 
