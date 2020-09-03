@@ -53,7 +53,7 @@ class DT_Data_Reporting_Tab_API
                 echo '<li>Configuration is missing endpoint URL</li>';
                 continue;
               }
-              echo '<li>Exporting to ' . $config['url'] . '</li>';
+              echo '<li>Exporting to ' . $config['name'] . ' (' . $config['url'] . ')</li>';
 
               switch ($this->type) {
                 /*case 'contact_activity':
@@ -105,7 +105,7 @@ class DT_Data_Reporting_Tab_API
           // Success
           $status_code = wp_remote_retrieve_response_code( $result );
           if ( $status_code !== 200 ) {
-            echo '<li>Status: ' . $status_code . '</li>';
+            echo '<li>Error: Status Code ' . $status_code . '</li>';
           }
 //            $result_body = json_decode($result['body']);
           echo "<li><pre><code>" . $result['body'] . "</code></pre>";

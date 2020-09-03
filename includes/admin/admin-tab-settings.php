@@ -40,10 +40,12 @@ class DT_Data_Reporting_Tab_Settings
             'url' => $endpoint_url,
         ]];
       }
+
+      $configurations_ext = apply_filters('dt_data_reporting_configurations', array());
       ?>
       <form method="POST" action="">
         <?php wp_nonce_field( 'security_headers', 'security_headers_nonce' ); ?>
-        <table class="widefat striped">
+        <!--<table class="widefat striped">
           <thead>
           <th>External Sharing</th>
           </thead>
@@ -56,7 +58,7 @@ class DT_Data_Reporting_Tab_Settings
                     <label for="share_global">Share to Global Database</label>
                   </th>
                   <td>
-                    <input type="checkbox" name="share_global" id="share_global" value="1" <?php echo $share_global ? 'checked' : '' ?> />
+                    <input type="checkbox" name="share_global" id="share_global" value="1" <?php /*echo $share_global ? 'checked' : '' */?> />
                     <span class="muted">Share anonymized data to global reporting database.</span>
                   </td>
                 </tr>
@@ -65,7 +67,7 @@ class DT_Data_Reporting_Tab_Settings
           </tr>
           </tbody>
         </table>
-        <br>
+        <br>-->
 
         <table class="widefat striped">
           <thead>
@@ -75,7 +77,20 @@ class DT_Data_Reporting_Tab_Settings
           <tr>
             <td>
             <?php foreach( $configurations as $idx => $config ): ?>
-              <table class="form-table">
+              <table class="form-table table-config">
+                <tr>
+                  <th>
+                    <label for="name_<?php echo $idx ?>">Name</label>
+                  </th>
+                  <td>
+                    <input type="text"
+                           name="configurations[<?php echo $idx ?>][name]"
+                           id="name_<?php echo $idx ?>"
+                           value="<?php echo isset($config['name']) ? $config['name'] : "" ?>"
+                           style="width: 100%;" />
+                    <div class="muted">Label to identify this configuration. This can be anything that helps you understand or remember this configuration.</div>
+                  </td>
+                </tr>
                 <tr>
                   <th>
                     <label for="endpoint_url_<?php echo $idx ?>">Endpoint URL</label>
@@ -91,12 +106,12 @@ class DT_Data_Reporting_Tab_Settings
                 </tr>
                 <tr>
                   <th>
-                    <label for="endpoint_token_<?php echo $idx ?>">Token</label>
+                    <label for="token_<?php echo $idx ?>">Token</label>
                   </th>
                   <td>
                     <input type="text"
                            name="configurations[<?php echo $idx ?>][token]"
-                           id="endpoint_token_<?php echo $idx ?>"
+                           id="token_<?php echo $idx ?>"
                            value="<?php echo isset($config['token']) ? $config['token'] : "" ?>"
                            style="width: 100%;" />
                     <div class="muted">Optional, depending on required authentication for your endpoint. Token will be sent as an Authorization header to prevent public/anonymous access.</div>
@@ -119,6 +134,57 @@ class DT_Data_Reporting_Tab_Settings
 
               </table>
             <?php endforeach; ?>
+            </td>
+          </tr>
+          </tbody>
+        </table>
+        <br>
+        <table class="widefat striped">
+          <thead>
+          <th>External Configurations</th>
+          </thead>
+          <tbody>
+          <tr>
+            <td>
+              <?php foreach( $configurations_ext as $idx => $config ): ?>
+                <table class="form-table table-config">
+                  <tr>
+                    <th>
+                      <label>Name</label>
+                    </th>
+                    <td>
+                      <?php echo isset($config['name']) ? $config['name'] : "" ?>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th>
+                      <label>Endpoint URL</label>
+                    </th>
+                    <td>
+                      <?php echo isset($config['url']) ? $config['url'] : "" ?>
+                    </td>
+                  </tr>
+                  <?php if ( isset($config['token']) ): ?>
+                  <tr>
+                    <th>
+                      <label>Token</label>
+                    </th>
+                    <td>
+                      <?php echo isset($config['token']) ? $config['token'] : "" ?>
+                    </td>
+                  </tr>
+                  <?php endif; ?>
+                  <tr>
+                    <th>
+                      <label>Is Active</label>
+                    </th>
+                    <td>
+                      <?php echo isset($config['active']) && $config['active'] == 1 ? 'Yes' : 'No' ?>
+                    </td>
+                  </tr>
+
+                </table>
+              <?php endforeach; ?>
             </td>
           </tr>
           </tbody>

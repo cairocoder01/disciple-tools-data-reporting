@@ -42,6 +42,7 @@ Example:
 add_filter( 'dt_data_reporting_configurations', 'data_reporting_configurations' ), 10, 1 );
 function data_reporting_configurations( $configurations ) {
   $configurations[] = [
+    'name' => 'My Reporting Data Source',
     'url' => 'http://www.mysite.com/api',
     'active' => 1,
     'contacts_filter' => [
@@ -54,6 +55,7 @@ function data_reporting_configurations( $configurations ) {
 ```
 
 **Configuration Options:**
+* `name`: Name to identify this configuration so users know why it is there
 * `url` (required): Endpoint URL to send data
 * `active` (required): Set a value of 1 for the configuration to be active and enabled
 * `token`: If your API requires an authentication token to be passed in the `Authorization` HTTP header, set this to that required token.

@@ -76,6 +76,18 @@ class DT_Data_Reporting_Menu {
             code {
               display: block;
             }
+            
+            .table-config {
+              border-left: solid 1px #a9a9a9;
+              padding-left: 15px;
+              background-color: #e0e0e0;
+            }
+            .form-table.table-config th {
+              padding-left: 1rem;
+            }
+            .table-config tr:nth-child(even) {
+              background-color: #eee
+            }
           </style>';
     }
 
