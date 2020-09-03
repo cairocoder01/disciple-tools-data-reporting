@@ -3,12 +3,10 @@
 
 class DT_Data_Reporting_Tools
 {
-    public static function get_contacts( $flatten = false, $limit = null ) {
-        $filter = array();
-        if ( !empty( $limit) ) {
-            $filter['limit'] = $limit;
-        }
+    public static function get_contacts( $flatten = false, $filter = null ) {
+        $filter = $filter ?? array();
 
+        // Build contact generations
         // taken from [dt-theme]/dt-metrics/counters/counter-baptism.php::save_all_contact_generations
         $raw_baptism_generation_list = Disciple_Tools_Counter_Baptism::query_get_all_baptism_connections();
         $all_baptisms = Disciple_Tools_Counter_Baptism::build_baptism_generation_counts( $raw_baptism_generation_list );
@@ -24,7 +22,7 @@ class DT_Data_Reporting_Tools
         $contacts = DT_Posts::list_posts('contacts', $filter);
         dt_write_log(sizeof($contacts['posts']) . ' of ' . $contacts['total']);
 //        dt_write_log(json_encode($contacts['posts'][0]));
-        if ($limit == null) {
+        if ( !isset($filter['limit']) ) {
             // if total is greater than length, recursively get more
             while (sizeof($contacts['posts']) < $contacts['total']) {
                 $filter['offset'] = sizeof($contacts['posts']);
@@ -120,7 +118,7 @@ class DT_Data_Reporting_Tools
                     $fieldValue = $contact_generations[$result['ID']];
                 }
 
-                $fieldValue = apply_filters('dt_data_data_reporting_field_output', $fieldValue, $type, $field_key, $flatten);
+                $fieldValue = apply_filters('dt_data_reporting_field_output', $fieldValue, $type, $field_key, $flatten);
                 $contact[$field_key] = $fieldValue;
             }
             $contact['site'] = $base_url;

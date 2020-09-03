@@ -32,18 +32,18 @@ class DT_Data_Reporting_Tab_Preview
     }
 
     public function main_column() {
-        echo "<em>Showing only the top 100 records as a preview. When exporting, all records will be included.</em>";
+        $limit = 100;
+        echo "<em>Showing only the top $limit records as a preview. When exporting, all records will be included.</em>";
 
         switch ($this->type) {
             case 'contact_activity':
-                [$columns, $rows] = DT_Data_Reporting_Tools::get_contact_activity(false, 100);
+                [$columns, $rows] = DT_Data_Reporting_Tools::get_contact_activity(false, $limit);
                 $this->main_column_table($columns, $rows);
                 break;
             case 'contacts':
             default:
-                // This is just a preview, so get the first 25 contacts only
-                [$columns, $rows] = DT_Data_Reporting_Tools::get_contacts(false, 25);
-                // [$columns, $rows] = DT_Data_Reporting_Tools::get_contacts(false, 1000);
+                // This is just a preview, so get the first $limit contacts only
+                [$columns, $rows] = DT_Data_Reporting_Tools::get_contacts(false, ['limit' => $limit]);
                 $this->main_column_table($columns, $rows);
                 break;
         }

@@ -168,9 +168,8 @@ class DT_Data_Reporting_Tab_BigQuery
           break;*/
       case 'contacts':
       default:
-        // This is just a preview, so get the first 25 contacts only
-        [$columns, $rows] = DT_Data_Reporting_Tools::get_contacts(false, 1);
-        // [$columns, $rows] = DT_Data_Reporting_Tools::get_contacts(false, 1000);
+        // We're not using the actual data, so only get 1 record
+        [$columns, $rows] = DT_Data_Reporting_Tools::get_contacts(false, ['limit' => 1]);
         echo "<pre><code style='display:block;'>";
         $bqColumns = array_map(function ($col) {
           return [

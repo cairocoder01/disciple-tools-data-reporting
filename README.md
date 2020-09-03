@@ -5,3 +5,56 @@ The plugin allows you to manually export your data in CSV and JSON (newline deli
 The plugin has been setup for usage with Google Cloud Platform infrastructure (Cloud Functions, Cloud Storage, and BigQuery), but should theoretically be able to be used with anything as the single point of communication is a webhook URL that you could configure to communicate with any system.
 
 There is also a feature to opt-in to sending anonymized data to a global reporting system for comparing D.T usage across different sites and searching for trends that could be useful for the whole D.T community. 
+
+## Customization / Developer Notes
+
+### Hooks (actions & filters)
+
+#### Filter: `dt_data_reporting_field_output`
+Customize the output of any fields. Especially useful if you have added custom fields that may contain JSON data, or if you want to change how a certain type is exported.
+
+Example:
+```
+add_filter( "dt_data_reporting_field_output", "data_reporting_field_output" ), 10, 4 );
+function data_reporting_field_output($field_value, $type, $field_key, $flatten ) {
+    if ($field_key == 'my_custom_field' ) {
+        // catch a custom field and return the desired output
+        // example: field is a JSON object with property "id" 
+        //     that should be returned instead of the whole object
+        $data = $field_value;
+        if ( is_string( $field_value ) ) { // encoded JSON
+            $data = json_decode( $field_value, true );
+        }
+        if ( is_array( $data ) && isset( $data['id'] ) ) {
+            return $data['id'];
+        }
+        return "";
+    }
+    return $field_value; // always return the original value or you will overwrite all other fields
+}
+```
+
+#### Filter: `dt_data_reporting_configurations`
+Customize the list of configurations for export. This allows adding a configuration from a separate plugin.
+
+Example:
+```
+add_filter( 'dt_data_reporting_configurations', 'data_reporting_configurations' ), 10, 1 );
+function data_reporting_configurations( $configurations ) {
+  $configurations[] = [
+    'url' => 'http://www.mysite.com/api',
+    'active' => 1,
+    'contacts_filter' => [
+      'sources' => ['web']
+    ]
+  ];
+  return $configurations;
+}
+
+```
+
+**Configuration Options:**
+* `url` (required): Endpoint URL to send data
+* `active` (required): Set a value of 1 for the configuration to be active and enabled
+* `token`: If your API requires an authentication token to be passed in the `Authorization` HTTP header, set this to that required token.
+* `contacts_filter`: Filter the query of contacts to be exported. This is passed directly to `DT_Posts::list_posts(...)`, so it uses the format defined at https://github.com/DiscipleTools/disciple-tools-theme/wiki/Filter-and-Search-Lists

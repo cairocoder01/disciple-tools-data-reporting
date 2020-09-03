@@ -240,7 +240,7 @@ class DT_Data_Reporting_Tab_Getting_Started
           <td>
             <p>To get started, go to the Settings tab and enter an Endpoint URL to receive that reporting data sent from this plugin. You can build you own endpoint, or you can look at the BigQuery tab to get sample code for setting up a process on Google Cloud Platform that should stay within their free usage using Cloud Functions, Cloud Storage, and BigQuery.</p>
             <h3 id="api-documentation">API Documentation</h3>
-            <p>The data from this plugin will be sent to the Endpoint URL you configure using an HTTP POST request. The body (sent with content-type of application/json; charset=utf-8) of the request will have the format:</p>
+            <p>The data from this plugin will be sent to the Endpoint URL (configured in Settings tab) using an HTTP POST request. The body (sent with content-type of application/json; charset=utf-8) of the request will have the format:</p>
             <pre><code>{
   column<span class="hljs-variable">s:</span> [{         // Array of <span class="hljs-keyword">all</span> fields that have been exported
     key: <span class="hljs-built_in">string</span>,      // field key <span class="hljs-keyword">as</span> defined by D.T theme/plugin

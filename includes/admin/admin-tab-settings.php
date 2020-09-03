@@ -102,6 +102,21 @@ class DT_Data_Reporting_Tab_Settings
                     <div class="muted">Optional, depending on required authentication for your endpoint. Token will be sent as an Authorization header to prevent public/anonymous access.</div>
                   </td>
                 </tr>
+                <tr>
+                  <th>
+                    <label for="active_<?php echo $idx ?>">Is Active</label>
+                  </th>
+                  <td>
+                    <input type="checkbox"
+                           name="configurations[<?php echo $idx ?>][active]"
+                           id="endpoint_active_<?php echo $idx ?>"
+                           value="1"
+                           <?php echo isset($config['active']) && $config['active'] == 1 ? 'checked' : "" ?>
+                            />
+                    <span class="muted">When checked, this configuration is active and will be exported.</span>
+                  </td>
+                </tr>
+
               </table>
             <?php endforeach; ?>
             </td>
