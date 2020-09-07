@@ -119,6 +119,7 @@ class DT_Data_Reporting {
      */
     private function includes() {
         require_once( 'includes/admin/admin-menu-and-tabs.php' );
+        require_once plugin_dir_path( __FILE__ ) . '/vendor/autoload.php';
     }
 
     /**

@@ -31,6 +31,7 @@ class DT_Data_Reporting_Tab_Manual_Export
     public function main_column() {
         $preview_link = 'admin.php?page='.$this->token.'&tab=preview&type=';
         $api_action_link = 'admin.php?page='.$this->token.'&tab=api-send&type=';
+        $azure_action_link = 'admin.php?page='.$this->token.'&tab=azure-send&type=';
         ?>
         <!-- Box -->
         <table class="widefat striped">
@@ -41,12 +42,12 @@ class DT_Data_Reporting_Tab_Manual_Export
             <tr>
                 <td>
                     Export Contacts
-
                     <div class="alignright">
                         <a href="<?php echo esc_attr( $preview_link ) . 'contacts' ?>">Preview <span class="dashicons dashicons-admin-site-alt3"></span></a> |
                         <a href="<?php echo plugins_url('../../exports/csv.php?type=contacts', __FILE__ ) ?>">CSV <span class="dashicons dashicons-download"></span></a> |
                         <a href="<?php echo plugins_url('../../exports/json.php?type=contacts', __FILE__ ) ?>">JSON <span class="dashicons dashicons-download"></span></a> |
-                        <a href="<?php echo esc_attr( $api_action_link ) . 'contacts' ?>">Send to API <span class="dashicons dashicons-migrate"></span></a>
+                        <a href="<?php echo esc_attr( $api_action_link ) . 'contacts' ?>">Send to API <span class="dashicons dashicons-migrate"></span></a> |
+                        <a href="<?php echo esc_attr( $azure_action_link ) . 'contacts' ?>">Send to Azure <span class="dashicons dashicons-migrate"></span></a>
                     </div>
                 </td>
             </tr>

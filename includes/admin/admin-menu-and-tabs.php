@@ -52,6 +52,8 @@ class DT_Data_Reporting_Menu {
         add_action( "admin_head", array( $this, "add_styles" ) );
 
         require_once( plugin_dir_path( __FILE__ ) . './admin-tab-manual-export.php' );
+        require_once( plugin_dir_path( __FILE__ ) . './admin-tab-azure-setup.php' );
+        require_once( plugin_dir_path( __FILE__ ) . './admin-tab-azure.php' );
         require_once( plugin_dir_path( __FILE__ ) . './admin-tab-bigquery.php' );
         require_once( plugin_dir_path( __FILE__ ) . './admin-tab-preview.php' );
         require_once( plugin_dir_path( __FILE__ ) . './admin-tab-api.php' );
@@ -122,6 +124,8 @@ class DT_Data_Reporting_Menu {
             <h2 class="nav-tab-wrapper">
                 <a href="<?php echo esc_attr( $link ) . 'getting-started' ?>" class="nav-tab <?php ( $tab == 'getting-started' || ! isset( $tab ) ) ? esc_attr_e( 'nav-tab-active', 'DT_Data_Reporting') : print ''; ?>"><?php esc_attr_e( 'Getting Started', 'DT_Data_Reporting') ?></a>
                 <a href="<?php echo esc_attr( $link ) . 'export' ?>" class="nav-tab <?php ( $tab == 'export' ) ? esc_attr_e( 'nav-tab-active', 'DT_Data_Reporting') : print ''; ?>"><?php esc_attr_e( 'Manual Export', 'DT_Data_Reporting') ?></a>
+                <a href="<?php echo esc_attr( $link ) . 'azure-setup' ?>" class="nav-tab <?php ( $tab == 'azure-setup' ) ? esc_attr_e( 'nav-tab-active', 'DT_Data_Reporting') : print ''; ?>"><?php esc_attr_e( 'Azure Setup', 'DT_Data_Reporting') ?></a>
+                <a href="<?php echo esc_attr( $link ) . 'azure-send' ?>" class="nav-tab <?php ( $tab == 'azure-send' ) ? esc_attr_e( 'nav-tab-active', 'DT_Data_Reporting') : print ''; ?>"><?php esc_attr_e( 'Azure Send', 'DT_Data_Reporting') ?></a>
                 <a href="<?php echo esc_attr( $link ) . 'bigquery' ?>" class="nav-tab <?php ( $tab == 'bigquery' ) ? esc_attr_e( 'nav-tab-active', 'DT_Data_Reporting') : print ''; ?>"><?php esc_attr_e( 'BigQuery Setup', 'DT_Data_Reporting') ?></a>
                 <a href="<?php echo esc_attr( $link ) . 'settings' ?>" class="nav-tab <?php ( $tab == 'settings' ) ? esc_attr_e( 'nav-tab-active', 'DT_Data_Reporting') : print ''; ?>"><?php esc_attr_e( 'Settings', 'DT_Data_Reporting') ?></a>
                 <?php if ($tab === 'preview' ): ?>
@@ -140,6 +144,14 @@ class DT_Data_Reporting_Menu {
                     break;
                 case "export":
                     $object = new DT_Data_Reporting_Tab_Manual_Export( $this->token );
+                    $object->content();
+                    break;
+                case "azure-setup":
+                    $object = new DT_Data_Reporting_Tab_Azure_Setup( $this->token );
+                    $object->content();
+                    break;
+                case "azure-send":
+                    $object = new DT_Data_Reporting_Tab_Azure( $this->token, $type );
                     $object->content();
                     break;
                 case "bigquery":
