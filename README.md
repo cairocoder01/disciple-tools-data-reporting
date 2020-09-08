@@ -9,7 +9,11 @@ There is also a feature to opt-in to sending anonymized data to a global reporti
 ## Customization / Developer Notes
 
 ### Custom Providers
-Custom data providers can be created to send the data to any data source that is need via a separate plugin. The plugin just need a couple hooks in order to connect:
+Custom data providers can be created to send the data to any data source that is need via a separate plugin.
+
+Get started with a [sample provider plugin](https://github.com/cairocoder01/disciple-tools-data-reporting-provider-sample). 
+
+The plugin just needs a couple hooks in order to connect:
 
 #### Filter `dt_data_reporting_providers`
 Add your provider to the list of providers available on the settings screen.
