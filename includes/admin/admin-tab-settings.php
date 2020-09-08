@@ -40,14 +40,23 @@ class DT_Data_Reporting_Tab_Settings
     }
 
     public function main_column() {
-      $share_global = get_option( "dt_data_reporting_share_global", "0" ) === "1";
+//      $share_global = get_option( "dt_data_reporting_share_global", "0" ) === "1";
       $endpoint_url = get_option( "dt_data_reporting_endpoint_url" );
       $configurations_str = get_option( "dt_data_reporting_configurations");
       $configurations = json_decode( $configurations_str, true );
       if ( empty( $configurations_str ) ) {
-        $configurations = [[
-            'url' => $endpoint_url,
-        ]];
+        $configurations = [
+            'default' => [
+                'url' => $endpoint_url,
+            ]
+        ];
+      } else if (array_keys($configurations) === range(0, count($configurations) - 1)) {
+        // If not an associative array, convert it
+        $configurations = array_reduce( $configurations, function ( $result, $config ) {
+          $key = uniqid();
+          $result[$key] = $config;
+          return $result;
+        });
       }
 
       $configurations_ext = apply_filters('dt_data_reporting_configurations', array());
@@ -87,17 +96,17 @@ class DT_Data_Reporting_Tab_Settings
           <tbody>
           <tr>
             <td>
-            <?php foreach( $configurations as $idx => $config ): ?>
+            <?php foreach( $configurations as $key => $config ): ?>
               <?php $config_provider = isset( $config['provider'] ) ? $config['provider'] : 'api'; ?>
-              <table class="form-table table-config" id="config_<?php echo $idx ?>">
+              <table class="form-table table-config" id="config_<?php echo $key ?>">
                 <tr>
                   <th>
-                    <label for="name_<?php echo $idx ?>">Name</label>
+                    <label for="name_<?php echo $key ?>">Name</label>
                   </th>
                   <td>
                     <input type="text"
-                           name="configurations[<?php echo $idx ?>][name]"
-                           id="name_<?php echo $idx ?>"
+                           name="configurations[<?php echo $key ?>][name]"
+                           id="name_<?php echo $key ?>"
                            value="<?php echo isset($config['name']) ? $config['name'] : "" ?>"
                            style="width: 100%;" />
                     <div class="muted">Label to identify this configuration. This can be anything that helps you understand or remember this configuration.</div>
@@ -105,11 +114,11 @@ class DT_Data_Reporting_Tab_Settings
                 </tr>
                 <tr>
                   <th>
-                    <label for="provider_<?php echo $idx ?>">Provider</label>
+                    <label for="provider_<?php echo $key ?>">Provider</label>
                   </th>
                   <td>
-                    <select name="configurations[<?php echo $idx ?>][provider]"
-                            id="provider_<?php echo $idx ?>"
+                    <select name="configurations[<?php echo $key ?>][provider]"
+                            id="provider_<?php echo $key ?>"
                             class="provider">
                       <option value="api" <?php echo $config_provider == 'api' ? 'selected' : '' ?>>API</option>
 
@@ -128,12 +137,12 @@ class DT_Data_Reporting_Tab_Settings
                 </tr>
                 <tr class="provider-api <?php echo $config_provider == 'api' ? '' : 'hide' ?>">
                   <th>
-                    <label for="endpoint_url_<?php echo $idx ?>">Endpoint URL</label>
+                    <label for="endpoint_url_<?php echo $key ?>">Endpoint URL</label>
                   </th>
                   <td>
                     <input type="text"
-                           name="configurations[<?php echo $idx ?>][url]"
-                           id="endpoint_url_<?php echo $idx ?>"
+                           name="configurations[<?php echo $key ?>][url]"
+                           id="endpoint_url_<?php echo $key ?>"
                            value="<?php echo isset($config['url']) ? $config['url'] : "" ?>"
                            style="width: 100%;" />
                     <div class="muted">API endpoint that should receive your data in JSON format. With a Google Cloud setup, this would be the URL for an HTTP Cloud Function.</div>
@@ -141,12 +150,12 @@ class DT_Data_Reporting_Tab_Settings
                 </tr>
                 <tr class="provider-api <?php echo $config_provider == 'api' ? '' : 'hide' ?>">
                   <th>
-                    <label for="token_<?php echo $idx ?>">Token</label>
+                    <label for="token_<?php echo $key ?>">Token</label>
                   </th>
                   <td>
                     <input type="text"
-                           name="configurations[<?php echo $idx ?>][token]"
-                           id="token_<?php echo $idx ?>"
+                           name="configurations[<?php echo $key ?>][token]"
+                           id="token_<?php echo $key ?>"
                            value="<?php echo isset($config['token']) ? $config['token'] : "" ?>"
                            style="width: 100%;" />
                     <div class="muted">Optional, depending on required authentication for your endpoint. Token will be sent as an Authorization header to prevent public/anonymous access.</div>
@@ -162,13 +171,13 @@ class DT_Data_Reporting_Tab_Settings
                           ?>
                           <tr class="provider-<?php echo $provider_key ?>  <?php echo $provider_key == $config_provider ? '' : 'hide' ?>">
                             <th>
-                              <label for="<?php echo $field_key ?>_<?php echo $idx ?>"><?php echo $field['label'] ?></label>
+                              <label for="<?php echo $field_key ?>_<?php echo $key ?>"><?php echo $field['label'] ?></label>
                             </th>
                             <td>
                               <?php if( $field['type'] == 'text' ): ?>
                               <input type="text"
-                                     name="configurations[<?php echo $idx ?>][<?php echo $field_key ?>]"
-                                     id="<?php echo $field_key ?>_<?php echo $idx ?>"
+                                     name="configurations[<?php echo $key ?>][<?php echo $field_key ?>]"
+                                     id="<?php echo $field_key ?>_<?php echo $key ?>"
                                      value="<?php echo isset($config[$field_key]) ? $config[$field_key] : "" ?>"
                               <?php endif; ?>
 
@@ -186,12 +195,12 @@ class DT_Data_Reporting_Tab_Settings
 
                 <tr>
                   <th>
-                    <label for="active_<?php echo $idx ?>">Is Active</label>
+                    <label for="active_<?php echo $key ?>">Is Active</label>
                   </th>
                   <td>
                     <input type="checkbox"
-                           name="configurations[<?php echo $idx ?>][active]"
-                           id="endpoint_active_<?php echo $idx ?>"
+                           name="configurations[<?php echo $key ?>][active]"
+                           id="endpoint_active_<?php echo $key ?>"
                            value="1"
                            <?php echo isset($config['active']) && $config['active'] == 1 ? 'checked' : "" ?>
                             />
@@ -213,7 +222,7 @@ class DT_Data_Reporting_Tab_Settings
           <tbody>
           <tr>
             <td>
-              <?php foreach( $configurations_ext as $idx => $config ): ?>
+              <?php foreach( $configurations_ext as $key => $config ): ?>
                 <table class="form-table table-config">
                   <tr>
                     <th>

@@ -74,7 +74,7 @@ Example:
 ```
 add_filter( 'dt_data_reporting_configurations', 'data_reporting_configurations' ), 10, 1 );
 function data_reporting_configurations( $configurations ) {
-  $configurations[] = [
+  $configurations['my-data-source'] = [
     'name' => 'My Reporting Data Source',
     'url' => 'http://www.mysite.com/api',
     'active' => 1,
@@ -88,6 +88,7 @@ function data_reporting_configurations( $configurations ) {
 ```
 
 **Configuration Options:**
+* `key`: Configurations are stored as an associative array, meaning you need to provide a key that identifies your configuration (e.g. `custom-config`). This is used in the backend for identifying data specific to this config.
 * `name`: Name to identify this configuration so users know why it is there
 * `url` (required): Endpoint URL to send data
 * `active` (required): Set a value of 1 for the configuration to be active and enabled
