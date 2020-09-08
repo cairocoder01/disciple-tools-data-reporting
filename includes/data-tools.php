@@ -201,7 +201,7 @@ class DT_Data_Reporting_Tools
             'bq_type' => 'STRING',
             'bq_mode' => 'NULLABLE',
         ));
-        return array( $columns, $items );
+        return array( $columns, $items, $contacts['total'] );
     }
 
     public static function get_contact_activity( $flatten = false, $limit = null ) {
@@ -398,5 +398,29 @@ class DT_Data_Reporting_Tools
         $url = str_replace( 'https://', '', $url );
 
         return trim( $url );
+    }
+
+    public static function get_configs() {
+      $configurations_str = get_option( "dt_data_reporting_configurations");
+      $configurations_int = json_decode( $configurations_str, true );
+      $configurations_ext = apply_filters('dt_data_reporting_configurations', array());
+
+      // Merge locally-created and external configurations
+      $configurations = array_merge($configurations_int, $configurations_ext);
+
+      // Filter out disabled configurations
+      $configurations = array_filter($configurations, function ($config) {
+        return isset($config['active']) && $config['active'] == 1;
+      });
+      return $configurations;
+    }
+    public static function get_config_by_key( $config_key ) {
+      $configurations = self::get_configs();
+
+      if ( isset( $configurations[$config_key] ) ) {
+        return $configurations[$config_key];
+      }
+
+      return null;
     }
 }

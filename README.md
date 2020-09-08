@@ -40,6 +40,27 @@ function data_reporting_providers($providers) {
 * `fields[].type`: Type of field. Currently supports: `text`
 * `fields[].helpText`: (optional) Displayed as further explanation of a field underneath the field on the settings screen.
 
+#### Action: `dt_data_reporting_export_provider_{PROVIDER_KEY}`
+The key used in the `dt_data_reporting_providers` filter above is used to create the name of this action. So if you created a provider with a key of `custom-provider`, this action would be `dt_data_reporting_export_provider_custom-provider`.
+
+The function is executed in the context of a `<ul>`, so log messaging can be `echo`'ed with a `<li>` tag wrapping it.
+
+Example:
+```
+add_action( "dt_data_reporting_export_provider_custom-provider", "data_reporting_export" ), 10, 4 );
+public function data_reporting_export( $columns, $rows, $type, $config ) {
+  echo '<li>Sending to provider from hook</li>';
+  echo '<li>Items: ' . count($rows) . '</li>';
+  echo '<li>Config: ' . print_r($config, true) . '</li>';
+}
+```
+
+**Function Parameters:**
+* `columns`: List and configuration of all columns. Includes data types for each
+* `rows`: Array of data
+* `type`: Type of data being exported (e.g. contacts, contact_activity, etc.)
+* `config`: The saved configuration included values for all custom fields added by the provider
+
 
 ### Hooks (actions & filters)
 

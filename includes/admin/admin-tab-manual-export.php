@@ -3,6 +3,7 @@ class DT_Data_Reporting_Tab_Manual_Export
 {
     public $token;
     public function __construct( $token ) {
+        require_once( plugin_dir_path( __FILE__ ) . '../data-tools.php' );
         $this->token = $token;
     }
 
@@ -30,12 +31,13 @@ class DT_Data_Reporting_Tab_Manual_Export
 
     public function main_column() {
         $preview_link = 'admin.php?page='.$this->token.'&tab=preview&type=';
-        $api_action_link = 'admin.php?page='.$this->token.'&tab=api-send&type=';
+
+        $configurations = DT_Data_Reporting_Tools::get_configs();
         ?>
         <!-- Box -->
-        <table class="widefat striped">
+        <table class="widefat striped table-export">
             <thead>
-            <th>Data Export</th>
+            <th>Default Data Export</th>
             </thead>
             <tbody>
             <tr>
@@ -45,8 +47,7 @@ class DT_Data_Reporting_Tab_Manual_Export
                     <div class="alignright">
                         <a href="<?php echo esc_attr( $preview_link ) . 'contacts' ?>">Preview <span class="dashicons dashicons-admin-site-alt3"></span></a> |
                         <a href="<?php echo plugins_url('../../exports/csv.php?type=contacts', __FILE__ ) ?>">CSV <span class="dashicons dashicons-download"></span></a> |
-                        <a href="<?php echo plugins_url('../../exports/json.php?type=contacts', __FILE__ ) ?>">JSON <span class="dashicons dashicons-download"></span></a> |
-                        <a href="<?php echo esc_attr( $api_action_link ) . 'contacts' ?>">Send to API <span class="dashicons dashicons-migrate"></span></a>
+                        <a href="<?php echo plugins_url('../../exports/json.php?type=contacts', __FILE__ ) ?>">JSON <span class="dashicons dashicons-download"></span></a>
                     </div>
                 </td>
             </tr>
@@ -64,6 +65,44 @@ class DT_Data_Reporting_Tab_Manual_Export
         </table>
         <br>
         <!-- End Box -->
+
+      <?php
+      if ( !empty($configurations) ) {
+        echo '<h2>Export Configurations</h2>';
+        foreach ( $configurations as $key => $config ) {
+          $preview_link_config = 'admin.php?page='.$this->token.'&tab=preview&config='.$key.'&type=';
+          $api_action_link_config = 'admin.php?page='.$this->token.'&tab=api-send&config='.$key.'&type=';
+          ?>
+          <table class="widefat striped table-export-config">
+            <thead>
+            <th>Configuration: <span class="config-name"><?php echo $config['name'] ?></span></th>
+            </thead>
+            <tbody>
+            <tr>
+              <td>
+                Export Contacts
+
+                <div class="alignright">
+                  <a href="<?php echo esc_attr( $preview_link_config ) . 'contacts' ?>">Preview <span class="dashicons dashicons-admin-site-alt3"></span></a> |
+                  <a href="<?php echo esc_attr( $api_action_link_config ) . 'contacts' ?>">Send Data <span class="dashicons dashicons-migrate"></span></a>
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                Export Contact Activity
+                <div class="alignright">
+                  <a href="<?php echo esc_attr( $preview_link_config ) . 'contact_activity' ?>">Preview</a> |
+                </div>
+              </td>
+            </tr>
+            </tbody>
+          </table>
+          <br>
+          <?php
+        }
+      }
+      ?>
         <?php
     }
 

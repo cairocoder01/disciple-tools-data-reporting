@@ -6,12 +6,14 @@ if ( ! defined( 'ABSPATH' ) ) { exit; // Exit if accessed directly
 class DT_Data_Reporting_Tab_API
 {
     public $type = 'contacts';
+    public $config;
 
-    public function __construct( $token, $type )
+    public function __construct( $token, $type, $config )
     {
+        require_once( plugin_dir_path( __FILE__ ) . '../data-tools.php' );
         $this->token = $token;
         $this->type = $type;
-        require_once( plugin_dir_path( __FILE__ ) . '../data-tools.php' );
+        $this->config = DT_Data_Reporting_Tools::get_config_by_key($config);
     }
 
     public function content() {
@@ -33,42 +35,35 @@ class DT_Data_Reporting_Tab_API
     }
 
     public function main_column() {
-        $configurations = json_decode( get_option( "dt_data_reporting_configurations", "[]" ), true );
-
-        $configurations = apply_filters('dt_data_reporting_configurations', $configurations);
-
-        // Filter out disabled configurations
-        $configurations = array_filter($configurations, function ($config) {
-          return isset($config['active']) && $config['active'] == 1;
-        });
-
         $settings_link = 'admin.php?page='.$this->token.'&tab=settings';
-        if ( empty( $configurations ) ) {
-            echo "<p>No endpoints configured. Please update in <a href='$settings_link'>Settings</a></p>";
+        if ( empty( $this->config ) ) {
+            echo "<p>Configuration could not be found. Please update in <a href='$settings_link'>Settings</a></p>";
         } else {
-
+            $provider = $this->config['provider'];
             echo '<ul>';
-            foreach( $configurations as $config ) {
-              if ( empty( $config['url'] ) ) {
-                echo '<li>Configuration is missing endpoint URL</li>';
-                continue;
-              }
-              echo '<li>Exporting to ' . $config['name'] . ' (' . $config['url'] . ')</li>';
+            if ( $provider == 'api' && empty( $this->config['url'] ) ) {
+              echo '<li>Configuration is missing endpoint URL</li>';
+            }
+            echo '<li>Exporting to ' . $this->config['name'] . '</li>';
 
-              switch ($this->type) {
-                /*case 'contact_activity':
-                    [$columns, $rows] = DT_Data_Reporting_Tools::get_contact_activity(false);
-                    $this->export_data($columns, $rows);
-                    break;*/
-                case 'contacts':
-                default:
-                  echo '<li>Fetching data...</li>';
-                  $filter = isset( $config['contacts_filter'] ) ? $config['contacts_filter'] : null;
-                  [$columns, $rows] = DT_Data_Reporting_Tools::get_contacts(false, $filter);
-                  echo '<li>Found ' . sizeof($rows) . ' contacts.</li>';
-                  $this->export_data($columns, $rows, $this->type, $config);
-                  break;
-              }
+            switch ($this->type) {
+              /*case 'contact_activity':
+                  [$columns, $rows] = DT_Data_Reporting_Tools::get_contact_activity(false);
+                  $this->export_data($columns, $rows);
+                  break;*/
+              case 'contacts':
+              default:
+                echo '<li>Fetching data...</li>';
+                $filter = isset( $this->config['contacts_filter'] ) ? $this->config['contacts_filter'] : null;
+                [$columns, $rows, $total] = DT_Data_Reporting_Tools::get_contacts(false, $filter);
+                echo '<li>Found ' . $total . ' contacts.</li>';
+                if ( $provider == 'api' ) {
+                  $this->export_data($columns, $rows, $this->type, $this->config);
+                } else {
+                  do_action("dt_data_reporting_export_provider_$provider", $columns, $rows, $this->type, $this->config);
+                }
+                echo '<li>Done exporting.</li>';
+                break;
             }
             echo '</ul>';
         }
@@ -110,6 +105,5 @@ class DT_Data_Reporting_Tab_API
 //            $result_body = json_decode($result['body']);
           echo "<li><pre><code>" . $result['body'] . "</code></pre>";
         }
-        echo '<li>Done exporting.</li>';
     }
 }

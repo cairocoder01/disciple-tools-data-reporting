@@ -77,6 +77,14 @@ class DT_Data_Reporting_Menu {
               display: block;
             }
             
+            #poststuff h2 {
+              padding-left: 0;
+              font-size: 1.2rem;
+            }
+            .table-export th, .table-export-config .config-name {
+              font-weight: bold;
+            }
+
             .table-config {
               border-left: solid 1px #a9a9a9;
               padding-left: 15px;
@@ -125,6 +133,11 @@ class DT_Data_Reporting_Menu {
         } else {
             $type = null;
         }
+        if ( isset( $_GET["config"] ) ) {
+            $config = sanitize_key( wp_unslash( $_GET["config"] ) );
+        } else {
+            $config = null;
+        }
 
         $link = 'admin.php?page='.$this->token.'&tab=';
 
@@ -159,11 +172,11 @@ class DT_Data_Reporting_Menu {
                     $object->content();
                     break;
                 case "preview":
-                    $object = new DT_Data_Reporting_Tab_Preview( $type );
+                    $object = new DT_Data_Reporting_Tab_Preview( $type, $config );
                     $object->content();
                     break;
                 case "api-send":
-                    $object = new DT_Data_Reporting_Tab_API( $this->token, $type );
+                    $object = new DT_Data_Reporting_Tab_API( $this->token, $type, $config );
                     $object->content();
                     break;
                 case "settings":
