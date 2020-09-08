@@ -16,7 +16,7 @@ Add your provider to the list of providers available on the settings screen.
 
 Example:
 ```
-add_filter( "dt_data_reporting_providers", "data_reporting_providers" ), 10, 4 );
+add_filter( "dt_data_reporting_providers", "data_reporting_providers", 10, 4 );
 function data_reporting_providers($providers) {
     $providers ['custom-provider'] = [
       'name' => 'My Custom Provider',
@@ -47,8 +47,8 @@ The function is executed in the context of a `<ul>`, so log messaging can be `ec
 
 Example:
 ```
-add_action( "dt_data_reporting_export_provider_custom-provider", "data_reporting_export" ), 10, 4 );
-public function data_reporting_export( $columns, $rows, $type, $config ) {
+add_action( "dt_data_reporting_export_provider_custom-provider", "data_reporting_export", 10, 4 );
+function data_reporting_export( $columns, $rows, $type, $config ) {
   echo '<li>Sending to provider from hook</li>';
   echo '<li>Items: ' . count($rows) . '</li>';
   echo '<li>Config: ' . print_r($config, true) . '</li>';

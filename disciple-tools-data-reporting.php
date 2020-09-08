@@ -177,6 +177,34 @@ class DT_Data_Reporting {
 
         // Internationalize the text strings used.
         add_action( 'plugins_loaded', array( $this, 'i18n' ), 2 );
+
+        if ( is_admin() ) {
+            // adds links to the plugin description area in the plugin admin list.
+            add_filter( 'plugin_row_meta', [ $this, 'plugin_description_links' ], 10, 4 );
+        }
+    }
+
+    /**
+     * Filters the array of row meta for each/specific plugin in the Plugins list table.
+     * Appends additional links below each/specific plugin on the plugins page.
+     *
+     * @access  public
+     * @param   array       $links_array            An array of the plugin's metadata
+     * @param   string      $plugin_file_name       Path to the plugin file
+     * @param   array       $plugin_data            An array of plugin data
+     * @param   string      $status                 Status of the plugin
+     * @return  array       $links_array
+     */
+    public function plugin_description_links( $links_array, $plugin_file_name, $plugin_data, $status ) {
+        if ( strpos( $plugin_file_name, basename( __FILE__ ) ) ) {
+            // You can still use `array_unshift()` to add links at the beginning.
+
+            $links_array[] = '<a href="https://disciple.tools">Disciple.Tools Community</a>'; // @todo replace with your links.
+
+            // add other links here
+        }
+
+        return $links_array;
     }
 
     /**
