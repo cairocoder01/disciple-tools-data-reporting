@@ -97,9 +97,6 @@ class DT_Data_Reporting_Menu {
             .form-table.table-config th {
               padding-left: 1rem;
             }
-            .table-config tr:nth-child(even) {
-              background-color: #eee
-            }
           </style>';
     }
 
