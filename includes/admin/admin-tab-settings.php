@@ -27,6 +27,15 @@ class DT_Data_Reporting_Tab_Settings
                 </div><!-- post-body meta box container -->
             </div><!--poststuff end -->
         </div><!-- wrap end -->
+      <script>
+        jQuery(function($) {
+          $('.table-config').on('change', '.provider', function (evt) {
+            console.log($(this).val());
+            $('tr[class^=provider-]').hide();
+            $('tr.provider-' + $(this).val()).show();
+          });
+        });
+      </script>
         <?php
     }
 
@@ -42,6 +51,8 @@ class DT_Data_Reporting_Tab_Settings
       }
 
       $configurations_ext = apply_filters('dt_data_reporting_configurations', array());
+      $providers = apply_filters('dt_data_reporting_providers', array());
+
       ?>
       <form method="POST" action="">
         <?php wp_nonce_field( 'security_headers', 'security_headers_nonce' ); ?>
@@ -77,7 +88,8 @@ class DT_Data_Reporting_Tab_Settings
           <tr>
             <td>
             <?php foreach( $configurations as $idx => $config ): ?>
-              <table class="form-table table-config">
+              <?php $config_provider = isset( $config['provider'] ) ? $config['provider'] : 'api'; ?>
+              <table class="form-table table-config" id="config_<?php echo $idx ?>">
                 <tr>
                   <th>
                     <label for="name_<?php echo $idx ?>">Name</label>
@@ -93,6 +105,29 @@ class DT_Data_Reporting_Tab_Settings
                 </tr>
                 <tr>
                   <th>
+                    <label for="provider_<?php echo $idx ?>">Provider</label>
+                  </th>
+                  <td>
+                    <select name="configurations[<?php echo $idx ?>][provider]"
+                            id="provider_<?php echo $idx ?>"
+                            class="provider">
+                      <option value="api" <?php echo $config_provider == 'api' ? 'selected' : '' ?>>API</option>
+
+                      <?php if( !empty($providers) ): ?>
+                      <?php foreach( $providers as $provider_key => $provider ): ?>
+                        <option
+                            value="<?php echo $provider_key ?>"
+                            <?php echo $config_provider == $provider_key ? 'selected' : '' ?>
+                        >
+                          <?php echo $provider['name'] ?>
+                        </option>
+                      <?php endforeach; ?>
+                      <?php endif; ?>
+                    </select>
+                  </td>
+                </tr>
+                <tr class="provider-api <?php echo $config_provider == 'api' ? '' : 'hide' ?>">
+                  <th>
                     <label for="endpoint_url_<?php echo $idx ?>">Endpoint URL</label>
                   </th>
                   <td>
@@ -104,7 +139,7 @@ class DT_Data_Reporting_Tab_Settings
                     <div class="muted">API endpoint that should receive your data in JSON format. With a Google Cloud setup, this would be the URL for an HTTP Cloud Function.</div>
                   </td>
                 </tr>
-                <tr>
+                <tr class="provider-api <?php echo $config_provider == 'api' ? '' : 'hide' ?>">
                   <th>
                     <label for="token_<?php echo $idx ?>">Token</label>
                   </th>
@@ -117,6 +152,38 @@ class DT_Data_Reporting_Tab_Settings
                     <div class="muted">Optional, depending on required authentication for your endpoint. Token will be sent as an Authorization header to prevent public/anonymous access.</div>
                   </td>
                 </tr>
+
+                <!-- Provider Fields -->
+                <?php
+                  if( !empty($providers) ) {
+                    foreach( $providers as $provider_key => $provider ) {
+                      if ( isset( $provider['fields'] ) && !empty( $provider['fields'] ) ) {
+                        foreach ( $provider['fields'] as $field_key => $field ) {
+                          ?>
+                          <tr class="provider-<?php echo $provider_key ?>  <?php echo $provider_key == $config_provider ? '' : 'hide' ?>">
+                            <th>
+                              <label for="<?php echo $field_key ?>_<?php echo $idx ?>"><?php echo $field['label'] ?></label>
+                            </th>
+                            <td>
+                              <?php if( $field['type'] == 'text' ): ?>
+                              <input type="text"
+                                     name="configurations[<?php echo $idx ?>][<?php echo $field_key ?>]"
+                                     id="<?php echo $field_key ?>_<?php echo $idx ?>"
+                                     value="<?php echo isset($config[$field_key]) ? $config[$field_key] : "" ?>"
+                              <?php endif; ?>
+
+                              <?php if( isset( $field['helpText'] ) ): ?>
+                                <div class="muted"><?php echo $field['helpText'] ?></div>
+                              <?php endif; ?>
+                            </td>
+                          </tr>
+                          <?php
+                        }
+                      }
+                    }
+                  }
+                ?>
+
                 <tr>
                   <th>
                     <label for="active_<?php echo $idx ?>">Is Active</label>

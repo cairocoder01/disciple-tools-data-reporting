@@ -8,6 +8,39 @@ There is also a feature to opt-in to sending anonymized data to a global reporti
 
 ## Customization / Developer Notes
 
+### Custom Providers
+Custom data providers can be created to send the data to any data source that is need via a separate plugin. The plugin just need a couple hooks in order to connect:
+
+#### Filter `dt_data_reporting_providers`
+Add your provider to the list of providers available on the settings screen.
+
+Example:
+```
+add_filter( "dt_data_reporting_providers", "data_reporting_providers" ), 10, 4 );
+function data_reporting_providers($providers) {
+    $providers ['custom-provider'] = [
+      'name' => 'My Custom Provider',
+      'fields' => [
+        'custom_key' => [
+          'label' => 'My Custom Key',
+          'type' => 'text',
+          'helpText' => 'This is the custom key you need to authenticate with this provider'
+        ]
+      ]
+    ];
+    return $providers;
+}
+```
+
+**Configuration Options:**
+* `key`: Providers are stored as an associative array, meaning you need to provide a key that identifies your provider (e.g. `custom-provider`). This is used in the backend for identifying data specific to this provider
+* `name`: Name of this provider that is visible in the UI
+* `fields[]`: Associative array of any custom fields that are needed as part of the configuration. Each must have a unique key that is different from any other providers. Because of this, it will be best to prefix your keys with something specific to your provider (e.g. `azure_`, `gcp_`, `aws_`). This key is used any time you need to retrieve data from the saved configuration (e.g. `$config['custom_key']`).
+* `fields[].label`: Name of field displayed in UI
+* `fields[].type`: Type of field. Currently supports: `text`
+* `fields[].helpText`: (optional) Displayed as further explanation of a field underneath the field on the settings screen.
+
+
 ### Hooks (actions & filters)
 
 #### Filter: `dt_data_reporting_field_output`
