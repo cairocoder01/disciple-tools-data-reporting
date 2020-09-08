@@ -25,13 +25,13 @@ require( $_SERVER[ 'DOCUMENT_ROOT' ] . '/wp-load.php' ); // loads the wp framewo
 require_once( plugin_dir_path( __FILE__ ) . '../includes/data-tools.php' );
 
 $type = $_GET['type'];
-switch( $type ) {
+switch ( $type ) {
     case 'contact_activity':
-        [$columns, $items] = DT_Data_Reporting_Tools::get_contact_activity();
+        [ $columns, $items ] = DT_Data_Reporting_Tools::get_contact_activity();
         break;
     case 'contacts':
     default:
-        [$columns, $items] = DT_Data_Reporting_Tools::get_contacts();
+        [ $columns, $items ] = DT_Data_Reporting_Tools::get_contacts();
         break;
 }
 
@@ -45,6 +45,6 @@ $output = fopen( 'php://output', 'w' );
 
 // loop over the rows, outputting them
 foreach ($items as $row ) {
-    fwrite( $output, json_encode($row).PHP_EOL);
+    fwrite( $output, json_encode( $row ).PHP_EOL );
 }
-fclose($output);
+fclose( $output );

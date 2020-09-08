@@ -1,4 +1,12 @@
 {
+    "scripts": {
+        "lint": [
+            "sh includes/admin/test/test_phpcs.sh"
+        ],
+        "lint-fix": [
+            "sh includes/admin/test/test_phpcbf.sh"
+        ]
+    },
     "require-dev": {
         "dealerdirect/phpcodesniffer-composer-installer": "*",
         "wp-coding-standards/wpcs": "*"

@@ -218,6 +218,9 @@
   <!-- <rule ref="PSR2.Files.ClosingTag"/> -->
   <!-- <rule ref="Squiz.PHP.ForbiddenFunctions"/> -->
   <!-- <rule ref="Generic.Arrays.DisallowLongArraySyntax"/> -->
+  <rule ref="Generic.Arrays.DisallowShortArraySyntax">
+    <exclude name="Generic.Arrays.DisallowShortArraySyntax.Found" />
+  </rule>
 
 </ruleset>
 

@@ -45,8 +45,8 @@ class DT_Data_Reporting_Tab_Manual_Export
 
                     <div class="alignright">
                         <a href="<?php echo esc_attr( $preview_link ) . 'contacts' ?>">Preview <span class="dashicons dashicons-admin-site-alt3"></span></a> |
-                        <a href="<?php echo plugins_url('../../exports/csv.php?type=contacts', __FILE__ ) ?>">CSV <span class="dashicons dashicons-download"></span></a> |
-                        <a href="<?php echo plugins_url('../../exports/json.php?type=contacts', __FILE__ ) ?>">JSON <span class="dashicons dashicons-download"></span></a>
+                        <a href="<?php echo plugins_url( '../../exports/csv.php?type=contacts', __FILE__ ) ?>">CSV <span class="dashicons dashicons-download"></span></a> |
+                        <a href="<?php echo plugins_url( '../../exports/json.php?type=contacts', __FILE__ ) ?>">JSON <span class="dashicons dashicons-download"></span></a>
                     </div>
                 </td>
             </tr>
@@ -55,8 +55,8 @@ class DT_Data_Reporting_Tab_Manual_Export
                     Export Contact Activity
                     <div class="alignright">
                         <a href="<?php echo esc_attr( $preview_link ) . 'contact_activity' ?>">Preview <span class="dashicons dashicons-admin-site-alt3"></span></a> |
-                        <a href="<?php echo plugins_url('../../exports/csv.php?type=contact_activity', __FILE__ ) ?>">CSV <span class="dashicons dashicons-download"></a> |
-                        <a href="<?php echo plugins_url('../../exports/json.php?type=contact_activity', __FILE__ ) ?>">JSON <span class="dashicons dashicons-download"></a>
+                        <a href="<?php echo plugins_url( '../../exports/csv.php?type=contact_activity', __FILE__ ) ?>">CSV <span class="dashicons dashicons-download"></a> |
+                        <a href="<?php echo plugins_url( '../../exports/json.php?type=contact_activity', __FILE__ ) ?>">JSON <span class="dashicons dashicons-download"></a>
                     </div>
                 </td>
             </tr>
@@ -65,13 +65,13 @@ class DT_Data_Reporting_Tab_Manual_Export
         <br>
         <!-- End Box -->
 
-      <?php
-      if ( !empty($configurations) ) {
-        echo '<h2>Export Configurations</h2>';
-        foreach ( $configurations as $key => $config ) {
-          $preview_link_config = 'admin.php?page='.$this->token.'&tab=preview&config='.$key.'&type=';
-          $api_action_link_config = 'admin.php?page='.$this->token.'&tab=api-send&config='.$key.'&type=';
-          ?>
+        <?php
+        if ( !empty( $configurations ) ) {
+            echo '<h2>Export Configurations</h2>';
+            foreach ( $configurations as $key => $config ) {
+                $preview_link_config = 'admin.php?page='.$this->token.'&tab=preview&config='.$key.'&type=';
+                $api_action_link_config = 'admin.php?page='.$this->token.'&tab=api-send&config='.$key.'&type=';
+                ?>
           <table class="widefat striped table-export-config">
             <thead>
             <th>Configuration: <span class="config-name"><?php echo $config['name'] ?></span></th>
@@ -99,10 +99,10 @@ class DT_Data_Reporting_Tab_Manual_Export
             </tbody>
           </table>
           <br>
-          <?php
+                <?php
+            }
         }
-      }
-      ?>
+        ?>
         <?php
     }
 

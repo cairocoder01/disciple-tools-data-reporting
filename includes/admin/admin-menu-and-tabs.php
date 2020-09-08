@@ -61,8 +61,7 @@ class DT_Data_Reporting_Menu {
 
 
     function add_styles() {
-        echo
-        '<style>
+        echo '<style>
             body.wp-admin.extensions-dt_page_DT_Data_Reporting
             #post-body-content {
               overflow-y: auto;
@@ -105,8 +104,8 @@ class DT_Data_Reporting_Menu {
      * @since 0.1
      */
     public function register_menu() {
-        add_menu_page( __( 'Extensions (DT)', 'disciple_tools' ), __( 'Extensions (DT)', 'disciple_tools' ), 'manage_dt', 'dt_extensions', [ $this, 'extensions_menu' ], 'dashicons-admin-generic', 59 );
-        add_submenu_page( 'dt_extensions', __( 'Data Reporting', 'DT_Data_Reporting'), __( 'Data Reporting', 'DT_Data_Reporting'), 'manage_dt', $this->token, [ $this, 'content' ] );
+        add_menu_page( __( 'Extensions (DT)', 'disciple_tools' ), __( 'Extensions (DT)', 'disciple_tools' ), 'manage_dt', 'dt_extensions', array( $this, 'extensions_menu' ), 'dashicons-admin-generic', 59 );
+        add_submenu_page( 'dt_extensions', __( 'Data Reporting', 'DT_Data_Reporting' ), __( 'Data Reporting', 'DT_Data_Reporting' ), 'manage_dt', $this->token, array( $this, 'content' ) );
     }
 
     /**
@@ -142,25 +141,25 @@ class DT_Data_Reporting_Menu {
 
         $link = 'admin.php?page='.$this->token.'&tab=';
 
-        $providers = apply_filters('dt_data_reporting_providers', array());
+        $providers = apply_filters( 'dt_data_reporting_providers', array() );
         ?>
         <div class="wrap">
-            <h2><?php esc_attr_e( 'Data Reporting', 'DT_Data_Reporting') ?></h2>
+            <h2><?php esc_attr_e( 'Data Reporting', 'DT_Data_Reporting' ) ?></h2>
             <h2 class="nav-tab-wrapper">
-                <a href="<?php echo esc_attr( $link ) . 'getting-started' ?>" class="nav-tab <?php ( $tab == 'getting-started' || ! isset( $tab ) ) ? esc_attr_e( 'nav-tab-active', 'DT_Data_Reporting') : print ''; ?>"><?php esc_attr_e( 'Getting Started', 'DT_Data_Reporting') ?></a>
-                <a href="<?php echo esc_attr( $link ) . 'export' ?>" class="nav-tab <?php ( $tab == 'export' ) ? esc_attr_e( 'nav-tab-active', 'DT_Data_Reporting') : print ''; ?>"><?php esc_attr_e( 'Manual Export', 'DT_Data_Reporting') ?></a>
-                <a href="<?php echo esc_attr( $link ) . 'bigquery' ?>" class="nav-tab <?php ( $tab == 'bigquery' ) ? esc_attr_e( 'nav-tab-active', 'DT_Data_Reporting') : print ''; ?>"><?php esc_attr_e( 'BigQuery Setup', 'DT_Data_Reporting') ?></a>
-                <a href="<?php echo esc_attr( $link ) . 'settings' ?>" class="nav-tab <?php ( $tab == 'settings' ) ? esc_attr_e( 'nav-tab-active', 'DT_Data_Reporting') : print ''; ?>"><?php esc_attr_e( 'Settings', 'DT_Data_Reporting') ?></a>
+                <a href="<?php echo esc_attr( $link ) . 'getting-started' ?>" class="nav-tab <?php ( $tab == 'getting-started' || ! isset( $tab ) ) ? esc_attr_e( 'nav-tab-active', 'DT_Data_Reporting' ) : print ''; ?>"><?php esc_attr_e( 'Getting Started', 'DT_Data_Reporting' ) ?></a>
+                <a href="<?php echo esc_attr( $link ) . 'export' ?>" class="nav-tab <?php ( $tab == 'export' ) ? esc_attr_e( 'nav-tab-active', 'DT_Data_Reporting' ) : print ''; ?>"><?php esc_attr_e( 'Manual Export', 'DT_Data_Reporting' ) ?></a>
+                <a href="<?php echo esc_attr( $link ) . 'bigquery' ?>" class="nav-tab <?php ( $tab == 'bigquery' ) ? esc_attr_e( 'nav-tab-active', 'DT_Data_Reporting' ) : print ''; ?>"><?php esc_attr_e( 'BigQuery Setup', 'DT_Data_Reporting' ) ?></a>
+                <a href="<?php echo esc_attr( $link ) . 'settings' ?>" class="nav-tab <?php ( $tab == 'settings' ) ? esc_attr_e( 'nav-tab-active', 'DT_Data_Reporting' ) : print ''; ?>"><?php esc_attr_e( 'Settings', 'DT_Data_Reporting' ) ?></a>
                 <?php if ($tab === 'preview' ): ?>
-                    <a href="<?php echo esc_attr( $link ) . 'preview' ?>" class="nav-tab <?php ( $tab == 'preview' ) ? esc_attr_e( 'nav-tab-active', 'DT_Data_Reporting') : print ''; ?>"><?php esc_attr_e( 'Preview', 'DT_Data_Reporting') ?></a>
+                    <a href="<?php echo esc_attr( $link ) . 'preview' ?>" class="nav-tab <?php ( $tab == 'preview' ) ? esc_attr_e( 'nav-tab-active', 'DT_Data_Reporting' ) : print ''; ?>"><?php esc_attr_e( 'Preview', 'DT_Data_Reporting' ) ?></a>
                 <?php endif; ?>
                 <?php if ($tab === 'api-send' ): ?>
-                  <a href="<?php echo esc_attr( $link ) . 'api-send' ?>" class="nav-tab <?php ( $tab == 'api-send' ) ? esc_attr_e( 'nav-tab-active', 'DT_Data_Reporting') : print ''; ?>"><?php esc_attr_e( 'API Send', 'DT_Data_Reporting') ?></a>
+                  <a href="<?php echo esc_attr( $link ) . 'api-send' ?>" class="nav-tab <?php ( $tab == 'api-send' ) ? esc_attr_e( 'nav-tab-active', 'DT_Data_Reporting' ) : print ''; ?>"><?php esc_attr_e( 'API Send', 'DT_Data_Reporting' ) ?></a>
                 <?php endif; ?>
 
-                <?php foreach( $providers as $prov_key => $provider ): ?>
-                <?php if( has_action( 'dt_data_reporting_tab_provider_' . $prov_key ) ): ?>
-                  <a href="<?php echo esc_attr( $link ) . 'prov-' . $prov_key ?>" class="nav-tab <?php ( $tab == 'prov-' . $prov_key ) ? esc_attr_e( 'nav-tab-active', 'DT_Data_Reporting') : print ''; ?>\"><?php esc_attr_e( $provider['name'], 'DT_Data_Reporting') ?></a>
+                <?php foreach ( $providers as $prov_key => $provider ): ?>
+                    <?php if ( has_action( 'dt_data_reporting_tab_provider_' . $prov_key ) ): ?>
+                  <a href="<?php echo esc_attr( $link ) . 'prov-' . $prov_key ?>" class="nav-tab <?php ( $tab == 'prov-' . $prov_key ) ? esc_attr_e( 'nav-tab-active', 'DT_Data_Reporting' ) : print ''; ?>\"><?php esc_attr_e( $provider['name'], 'DT_Data_Reporting' ) ?></a>
                 <?php endif; ?>
                 <?php endforeach; ?>
             </h2>
@@ -188,14 +187,14 @@ class DT_Data_Reporting_Menu {
                     $object->content();
                     break;
                 case "settings":
-                    $object = new DT_Data_Reporting_Tab_Settings( );
+                    $object = new DT_Data_Reporting_Tab_Settings();
                     $object->content();
                     break;
                 default:
-                  if ( substr( $tab, 0, 5 ) == 'prov-' ) {
-                    $key = substr( $tab, 5);
-                    do_action( 'dt_data_reporting_tab_provider_' . $key );
-                  }
+                    if ( substr( $tab, 0, 5 ) == 'prov-' ) {
+                        $key = substr( $tab, 5 );
+                        do_action( 'dt_data_reporting_tab_provider_' . $key );
+                    }
                     break;
             }
             ?>
@@ -236,7 +235,7 @@ class DT_Data_Reporting_Tab_Getting_Started
     }
 
     public function main_column() {
-      ?>
+        ?>
       <table class="widefat">
         <thead>
           <tr><th>Plugin Overview</th></tr>
@@ -312,7 +311,7 @@ class DT_Data_Reporting_Tab_Getting_Started
         </tbody>
       </table>
 
-      <?php
+        <?php
     }
 
 }

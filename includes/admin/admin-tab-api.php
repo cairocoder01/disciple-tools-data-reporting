@@ -8,11 +8,10 @@ class DT_Data_Reporting_Tab_API
     public $type = 'contacts';
     public $config;
 
-    public function __construct( $token, $type, $config )
-    {
+    public function __construct( $token, $type, $config ) {
         $this->token = $token;
         $this->type = $type;
-        $this->config = DT_Data_Reporting_Tools::get_config_by_key($config);
+        $this->config = DT_Data_Reporting_Tools::get_config_by_key( $config );
     }
 
     public function content() {
@@ -41,74 +40,73 @@ class DT_Data_Reporting_Tab_API
             $provider = isset( $this->config['provider'] ) ? $this->config['provider'] : 'api';
             echo '<ul>';
             if ( $provider == 'api' && empty( $this->config['url'] ) ) {
-              echo '<li>Configuration is missing endpoint URL</li>';
+                echo '<li>Configuration is missing endpoint URL</li>';
             }
             echo '<li>Exporting to ' . $this->config['name'] . '</li>';
 
             switch ($this->type) {
-              case 'contact_activity':
-                echo '<li>Fetching data...</li>';
-                $filter = isset( $this->config['contacts_filter'] ) ? $this->config['contacts_filter'] : null;
-                [$columns, $rows, $total] = DT_Data_Reporting_Tools::get_contact_activity(false, $filter);
+                case 'contact_activity':
+                    echo '<li>Fetching data...</li>';
+                    $filter = isset( $this->config['contacts_filter'] ) ? $this->config['contacts_filter'] : null;
+                    [ $columns, $rows, $total ] = DT_Data_Reporting_Tools::get_contact_activity( false, $filter );
                 break;
-              case 'contacts':
-              default:
-                echo '<li>Fetching data...</li>';
-                $filter = isset( $this->config['contacts_filter'] ) ? $this->config['contacts_filter'] : null;
-                [$columns, $rows, $total] = DT_Data_Reporting_Tools::get_contacts(false, $filter);
+                case 'contacts':
+                default:
+                    echo '<li>Fetching data...</li>';
+                    $filter = isset( $this->config['contacts_filter'] ) ? $this->config['contacts_filter'] : null;
+                    [ $columns, $rows, $total ] = DT_Data_Reporting_Tools::get_contacts( false, $filter );
                 break;
             }
 
             echo '<li>Found ' . $total . ' items.</li>';
 
             echo '<li>Sending data to provider...</li>';
-            $this->export_data($columns, $rows, $this->type, $this->config);
+            $this->export_data( $columns, $rows, $this->type, $this->config );
             echo '<li>Done exporting.</li>';
 
             echo '</ul>';
         }
     }
-    public function export_data($columns, $rows, $type, $config ) {
-      $provider = isset( $config['provider'] ) ? $config['provider'] : 'api';
+    public function export_data( $columns, $rows, $type, $config ) {
+        $provider = isset( $config['provider'] ) ? $config['provider'] : 'api';
 
-      if ( $provider == 'api' ) {
-        $args = [
-          'method' => 'POST',
-          'headers' => array(
+        if ( $provider == 'api' ) {
+            $args = array(
+            'method' => 'POST',
+            'headers' => array(
             'Content-Type' => 'application/json; charset=utf-8'
-          ),
-          'body' => json_encode([
-            'columns' => $columns,
-            'items' => $rows,
-            'type' => $type,
-          ]),
-        ];
+            ),
+            'body' => json_encode(array(
+                'columns' => $columns,
+                'items' => $rows,
+                'type' => $type,
+            )),
+            );
 
-        // Add auth token if it is part of the config
-        if (isset($config['token'])) {
-          $args['headers']['Authorization'] = 'Bearer ' . $config['token'];
-        }
+            // Add auth token if it is part of the config
+            if (isset( $config['token'] )) {
+                $args['headers']['Authorization'] = 'Bearer ' . $config['token'];
+            }
 
-        // POST the data to the endpoint
-        $result = wp_remote_post($config['url'], $args);
+            // POST the data to the endpoint
+            $result = wp_remote_post( $config['url'], $args );
 
-        if (is_wp_error($result)) {
-          // Handle endpoint error
-          $error_message = $result->get_error_message() ?? '';
-          dt_write_log($error_message);
-          echo "<li>Error: $error_message</li>";
+            if (is_wp_error( $result )) {
+                // Handle endpoint error
+                $error_message = $result->get_error_message() ?? '';
+                dt_write_log( $error_message );
+                echo "<li>Error: $error_message</li>";
+            } else {
+                // Success
+                $status_code = wp_remote_retrieve_response_code( $result );
+                if ($status_code !== 200) {
+                    echo '<li>Error: Status Code ' . $status_code . '</li>';
+                }
+                // $result_body = json_decode($result['body']);
+                echo "<li><pre><code>" . $result['body'] . "</code></pre>";
+            }
         } else {
-          // Success
-          $status_code = wp_remote_retrieve_response_code($result);
-          if ($status_code !== 200) {
-            echo '<li>Error: Status Code ' . $status_code . '</li>';
-          }
-//            $result_body = json_decode($result['body']);
-          echo "<li><pre><code>" . $result['body'] . "</code></pre>";
+            do_action( "dt_data_reporting_export_provider_$provider", $columns, $rows, $type, $config );
         }
-
-      } else {
-        do_action("dt_data_reporting_export_provider_$provider", $columns, $rows, $type, $config);
-      }
     }
 }

@@ -35,7 +35,7 @@ jobs:
     # Below borrowed from https://github.com/actions/upload-release-asset
     - name: Build project
       run: |
-        zip -r disciple-tools-data-reporting disciple-tools-data-reporting.php LICENSE includes languages vendor
+        zip -r disciple-tools-data-reporting disciple-tools-data-reporting.php LICENSE exports includes languages vendor
     - name: Create Release
       id: create_release
       uses: actions/create-release@v1

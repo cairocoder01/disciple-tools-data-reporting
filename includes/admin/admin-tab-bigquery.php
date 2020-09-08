@@ -8,7 +8,7 @@ class DT_Data_Reporting_Tab_BigQuery
     public $token;
     public function __construct( $token ) {
         $this->token = $token;
-      require_once( plugin_dir_path( __FILE__ ) . '../data-tools.php' );
+        require_once( plugin_dir_path( __FILE__ ) . '../data-tools.php' );
     }
 
     public function content() {
@@ -34,7 +34,7 @@ class DT_Data_Reporting_Tab_BigQuery
     }
 
     public function main_column() {
-      ?>
+        ?>
       <table class="widefat">
       <thead>
         <tr><th>Overview</th></tr>
@@ -152,7 +152,7 @@ class DT_Data_Reporting_Tab_BigQuery
         <tr>
           <td>
             <h2>Contacts</h2>
-            <?php $this->print_schema('contacts') ?>
+            <?php $this->print_schema( 'contacts' ) ?>
           </td>
         </tr>
       </tbody>
@@ -160,27 +160,27 @@ class DT_Data_Reporting_Tab_BigQuery
         <?php
     }
 
-  public function print_schema( $type ) {
-    switch ($type) {
-      /*case 'contact_activity':
-          [$columns, $rows] = DT_Data_Reporting_Tools::get_contact_activity(false);
-          $this->export_data($columns, $rows);
-          break;*/
-      case 'contacts':
-      default:
-        // We're not using the actual data, so only get 1 record
-        [$columns, $rows] = DT_Data_Reporting_Tools::get_contacts(false, ['limit' => 1]);
-        echo "<pre><code style='display:block;'>";
-        $bqColumns = array_map(function ($col) {
-          return [
-              'name' => $col['key'],
-              'type' => $col['bq_type'],
-              'mode' => $col['bq_mode'],
-          ];
-        }, $columns);
-        echo json_encode($bqColumns, JSON_PRETTY_PRINT);
-        echo '</code></pre>';
-        break;
+    public function print_schema( $type ) {
+        switch ($type) {
+          /*case 'contact_activity':
+            [$columns, $rows] = DT_Data_Reporting_Tools::get_contact_activity(false);
+            $this->export_data($columns, $rows);
+            break;*/
+            case 'contacts':
+            default:
+                // We're not using the actual data, so only get 1 record
+                [ $columns, $rows ] = DT_Data_Reporting_Tools::get_contacts( false, array( 'limit' => 1 ) );
+                echo "<pre><code style='display:block;'>";
+                $bq_columns = array_map(function ( $col) {
+                    return array(
+                    'name' => $col['key'],
+                    'type' => $col['bq_type'],
+                    'mode' => $col['bq_mode'],
+                    );
+                }, $columns);
+                echo json_encode( $bq_columns, JSON_PRETTY_PRINT );
+                echo '</code></pre>';
+            break;
+        }
     }
-  }
 }

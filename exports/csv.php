@@ -26,9 +26,9 @@ require_once( plugin_dir_path( __FILE__ ) . '../includes/data-tools.php' );
 
 function get_post_activity( $post_type ) {
     global $wpdb;
-    $post_settings = apply_filters( "dt_get_post_type_settings", [], $post_type );
+    $post_settings = apply_filters( "dt_get_post_type_settings", array(), $post_type );
     $fields = $post_settings["fields"];
-    $hidden_fields = [];
+    $hidden_fields = array();
     foreach ( $fields as $field_key => $field ){
         if ( isset( $field["hidden"] ) && $field["hidden"] === true ){
             $hidden_fields[] = $field_key;
@@ -49,11 +49,11 @@ function get_post_activity( $post_type ) {
         $post_type
     ) );
     //@phpcs:enable
-    $activity_simple = [];
+    $activity_simple = array();
     foreach ( $activity as $a ) {
         $a->object_note = DT_Posts::format_activity_message( $a, $post_settings );
         if ( !empty( $a->object_note ) ){
-            $activity_simple[] = [
+            $activity_simple[] = array(
                 "meta_key" => $a->meta_key,
                 "object_id" => $a->object_id,
                 "user_id" => $a->user_id,
@@ -62,29 +62,31 @@ function get_post_activity( $post_type ) {
                 "meta_id" => $a->meta_id,
                 "histid" => $a->histid,
                 "action" => $a->action,
-            ];
+            );
         }
     }
 
 //    $paged = array_slice( $activity_simple, $args["offset"] ?? 0, $args["number"] ?? 1000 );
-    return [
+    return array(
         "activity" => $activity_simple,
         "total" => sizeof( $activity_simple )
-    ];
+    );
 }
 $type = $_GET['type'];
-switch( $type ) {
+switch ( $type ) {
     case 'contacts':
     default:
-        [$columns, $items] = DT_Data_Reporting_Tools::get_contacts(true);
-        $columns = array_map(function ( $column ) { return $column['name']; }, $columns);
+        [ $columns, $items ] = DT_Data_Reporting_Tools::get_contacts( true );
+        $columns = array_map( function ( $column ) { return $column['name'];
+        }, $columns );
         break;
     case 'contactactivity':
-        [$columns, $items] = DT_Data_Reporting_Tools::get_contact_activity(true);
-        $columns = array_map(function ( $column ) { return $column['name']; }, $columns);
+        [ $columns, $items ] = DT_Data_Reporting_Tools::get_contact_activity( true );
+        $columns = array_map( function ( $column ) { return $column['name'];
+        }, $columns );
         break;
     case 'cities':
-        $places = [];
+        $places = array();
         /*$results = $wpdb->get_results("
             SELECT * FROM dt_geonames WHERE feature_code LIKE 'PP%' AND feature_class = 'P' AND population > 100000",
             ARRAY_A);
@@ -102,7 +104,7 @@ switch( $type ) {
         break;
 
     case 'list':
-        $places = [];
+        $places = array();
         /*$results = $wpdb->get_results("
             SELECT meta_value
             FROM $wpdb->postmeta
@@ -134,7 +136,7 @@ header( 'Content-Disposition: attachment; filename=data.csv' );
 $output = fopen( 'php://output', 'w' );
 
 // output the column headings
-fputcsv( $output, $columns);
+fputcsv( $output, $columns );
 
 // fetch the data
 

@@ -56,7 +56,7 @@ function dt_data_reporting_plugin() {
         return DT_Data_Reporting::get_instance();
     }
 }
-add_action( 'after_setup_theme', 'dt_data_reporting_plugin');
+add_action( 'after_setup_theme', 'dt_data_reporting_plugin' );
 
 /**
  * Singleton class for setting up the plugin.
@@ -180,7 +180,7 @@ class DT_Data_Reporting {
 
         if ( is_admin() ) {
             // adds links to the plugin description area in the plugin admin list.
-            add_filter( 'plugin_row_meta', [ $this, 'plugin_description_links' ], 10, 4 );
+            add_filter( 'plugin_row_meta', array( $this, 'plugin_description_links' ), 10, 4 );
         }
     }
 
@@ -266,7 +266,7 @@ class DT_Data_Reporting {
      * @return void
      */
     public function __clone() {
-        _doing_it_wrong( __FUNCTION__, esc_html__( 'Whoah, partner!', 'DT_Data_Reporting'), '0.1' );
+        _doing_it_wrong( __FUNCTION__, esc_html__( 'Whoah, partner!', 'DT_Data_Reporting' ), '0.1' );
     }
 
     /**
@@ -277,7 +277,7 @@ class DT_Data_Reporting {
      * @return void
      */
     public function __wakeup() {
-        _doing_it_wrong( __FUNCTION__, esc_html__( 'Whoah, partner!', 'DT_Data_Reporting'), '0.1' );
+        _doing_it_wrong( __FUNCTION__, esc_html__( 'Whoah, partner!', 'DT_Data_Reporting' ), '0.1' );
     }
 
     /**
@@ -297,8 +297,8 @@ class DT_Data_Reporting {
 // end main plugin class
 
 // Register activation hook.
-register_activation_hook( __FILE__, ['DT_Data_Reporting', 'activation' ] );
-register_deactivation_hook( __FILE__, ['DT_Data_Reporting', 'deactivation' ] );
+register_activation_hook( __FILE__, array( 'DT_Data_Reporting', 'activation' ) );
+register_deactivation_hook( __FILE__, array( 'DT_Data_Reporting', 'deactivation' ) );
 
 function dt_data_reporting_hook_admin_notice() {
     global $dt_data_reporting_required_dt_theme_version;
@@ -306,7 +306,7 @@ function dt_data_reporting_hook_admin_notice() {
     $current_version = $wp_theme->version;
     $message = __( "'Disciple Tools - Data Reporting Plugin' plugin requires 'Disciple Tools' theme to work. Please activate 'Disciple Tools' theme or make sure it is latest version.", "dt_data_reporting" );
     if ( $wp_theme->get_template() === "disciple-tools-theme" ){
-        $message .= sprintf( esc_html__( 'Current Disciple Tools version: %1$s, required version: %2$s', 'DT_Data_Reporting'), esc_html( $current_version ), esc_html( $dt_data_reporting_required_dt_theme_version ) );
+        $message .= sprintf( esc_html__( 'Current Disciple Tools version: %1$s, required version: %2$s', 'DT_Data_Reporting' ), esc_html( $current_version ), esc_html( $dt_data_reporting_required_dt_theme_version ) );
     }
     // Check if it's been dismissed...
     if ( ! get_option( 'dismissed-dt-data-reporting', false ) ) { ?>

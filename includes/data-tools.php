@@ -19,31 +19,31 @@ class DT_Data_Reporting_Tools
             }
         }
 
-        $contacts = DT_Posts::list_posts('contacts', $filter);
-        dt_write_log(sizeof($contacts['posts']) . ' of ' . $contacts['total']);
+        $contacts = DT_Posts::list_posts( 'contacts', $filter );
+        dt_write_log( sizeof( $contacts['posts'] ) . ' of ' . $contacts['total'] );
 //        dt_write_log(json_encode($contacts['posts'][0]));
-        if ( !isset($filter['limit']) ) {
+        if ( !isset( $filter['limit'] ) ) {
             // if total is greater than length, recursively get more
-            while (sizeof($contacts['posts']) < $contacts['total']) {
-                $filter['offset'] = sizeof($contacts['posts']);
-                $next_contacts = DT_Posts::list_posts('contacts', $filter);
-                $contacts['posts'] = array_merge($contacts['posts'], $next_contacts['posts']);
-                dt_write_log('adding ' . sizeof($next_contacts['posts']));
-                dt_write_log(sizeof($contacts['posts']) . ' of ' . $contacts['total']);
+            while (sizeof( $contacts['posts'] ) < $contacts['total']) {
+                $filter['offset'] = sizeof( $contacts['posts'] );
+                $next_contacts = DT_Posts::list_posts( 'contacts', $filter );
+                $contacts['posts'] = array_merge( $contacts['posts'], $next_contacts['posts'] );
+                dt_write_log( 'adding ' . sizeof( $next_contacts['posts'] ) );
+                dt_write_log( sizeof( $contacts['posts'] ) . ' of ' . $contacts['total'] );
             }
         }
-        $items = [];
+        $items = array();
 
-        $post_settings = apply_filters( "dt_get_post_type_settings", [], 'contacts' );
+        $post_settings = apply_filters( "dt_get_post_type_settings", array(), 'contacts' );
         $fields = $post_settings["fields"];
-        $excluded_fields = ['tasks', 'facebook_data'];
+        $excluded_fields = array( 'tasks', 'facebook_data' );
         $base_url = self::get_current_site_base_url();
 
         foreach ($contacts['posts'] as $index => $result) {
-            $contact = [
+            $contact = array(
                 'ID' => $result['ID'],
                 'Created' => $result['post_date'],
-            ];
+            );
             foreach ( $fields as $field_key => $field ){
                 // skip if field is hidden
                 if ( isset( $field['hidden'] ) && $field['hidden'] == true ) {
@@ -55,52 +55,54 @@ class DT_Data_Reporting_Tools
                 }
 
                 $type = $field['type'];
-                $fieldValue = null;
-                if (key_exists($field_key, $result)) {
+                $field_value = null;
+                if (key_exists( $field_key, $result )) {
                     switch ($type) {
                         case 'key_select':
-                            $fieldValue = self::getLabel($result, $field_key);
+                            $field_value = self::get_label( $result, $field_key );
                             break;
                         case 'multi_select':
-                            $fieldValue = $flatten ? implode(",", $result[$field_key]) : $result[$field_key];
+                            $field_value = $flatten ? implode( ",", $result[$field_key] ) : $result[$field_key];
                             break;
                         case 'user_select':
-                            $fieldValue = $result[$field_key]['id'];
+                            $field_value = $result[$field_key]['id'];
                             break;
                         case 'date':
-                            $fieldValue = date("Y-m-d H:i:s", $result[$field_key]['timestamp']);
+                            $field_value = date( "Y-m-d H:i:s", $result[$field_key]['timestamp'] );
                             break;
                         case 'location':
-                            $location_ids = array_map(function ( $location ) { return $location['label']; }, $result[$field_key]);
-                            $fieldValue = $flatten ? implode(",", $location_ids) : $location_ids;
+                            $location_ids = array_map( function ( $location ) { return $location['label'];
+                            }, $result[$field_key] );
+                            $field_value = $flatten ? implode( ",", $location_ids ) : $location_ids;
                             break;
                         case 'connection':
-                            $connection_ids = array_map(function ( $connection ) { return $connection['ID']; }, $result[$field_key]);
-                            $fieldValue = $flatten ? implode(",", $connection_ids) : $connection_ids;
+                            $connection_ids = array_map( function ( $connection ) { return $connection['ID'];
+                            }, $result[$field_key] );
+                            $field_value = $flatten ? implode( ",", $connection_ids ) : $connection_ids;
                             break;
                         default:
-                            $fieldValue = $result[$field_key];
-                            if ( is_array($fieldValue) ) {
-                                $fieldValue = json_encode($fieldValue);
+                            $field_value = $result[$field_key];
+                            if ( is_array( $field_value ) ) {
+                                $field_value = json_encode( $field_value );
                             }
                             break;
                     }
                     // special cases...
                     // last_modified is marked as a number field
                     if ( $field_key == 'last_modified' ) {
-                        $fieldValue = date("Y-m-d H:i:s", $result[$field_key]);
+                        $field_value = date( "Y-m-d H:i:s", $result[$field_key] );
                     }
                 } else {
                     // Set default/blank value
                     switch ($type) {
                         case 'number':
-                            $fieldValue = $field['default'] ?? 0;
+                            $field_value = $field['default'] ?? 0;
                             break;
                         case 'key_select':
-                            $fieldValue = null;
+                            $field_value = null;
                             break;
                         case 'multi_select':
-                            $fieldValue = $flatten ? null : array();
+                            $field_value = $flatten ? null : array();
                             break;
                         case 'array':
                         case 'boolean':
@@ -108,18 +110,18 @@ class DT_Data_Reporting_Tools
                         case 'text':
                         case 'location':
                         default:
-                            $fieldValue = $field['default'] ?? null;
+                            $field_value = $field['default'] ?? null;
                             break;
                     }
                 }
 
                 // if we calculated the baptism generation, set it here
-                if ( $field_key == 'baptism_generation' && isset($contact_generations[$result['ID']]) ) {
-                    $fieldValue = $contact_generations[$result['ID']];
+                if ( $field_key == 'baptism_generation' && isset( $contact_generations[$result['ID']] ) ) {
+                    $field_value = $contact_generations[$result['ID']];
                 }
 
-                $fieldValue = apply_filters('dt_data_reporting_field_output', $fieldValue, $type, $field_key, $flatten);
-                $contact[$field_key] = $fieldValue;
+                $field_value = apply_filters( 'dt_data_reporting_field_output', $field_value, $type, $field_key, $flatten );
+                $contact[$field_key] = $field_value;
             }
             $contact['site'] = $base_url;
 
@@ -132,7 +134,7 @@ class DT_Data_Reporting_Tools
             'type' => 'number',
             'bq_type' => 'INTEGER',
             'bq_mode' => 'NULLABLE',
-        ), array(
+            ), array(
             'key' => "created",
             'name' => "Created",
             'type' => 'date',
@@ -150,49 +152,49 @@ class DT_Data_Reporting_Tools
                 continue;
             }
 
-          $column = array(
+            $column = array(
             'key' => $field_key,
             'name' => $field['name'],
             'type' => $field['type'],
-          );
-          switch ($field['type']) {
-            case 'array':
-            case 'location':
-            case 'multi_select':
-              $column['bq_type'] = 'STRING';
-              $column['bq_mode'] = 'REPEATED';
-              break;
-            case 'connection':
-            case 'user_select':
-              $column['bq_type'] = 'INTEGER';
-              $column['bq_mode'] = 'REPEATED';
-              break;
-            case 'date':
-              $column['bq_type'] = 'TIMESTAMP';
-              $column['bq_mode'] = 'NULLABLE';
-              break;
-            case 'number':
-              $column['bq_type'] = 'INTEGER';
-              $column['bq_mode'] = 'NULLABLE';
-              break;
-            case 'boolean':
-              $column['bq_type'] = 'BOOLEAN';
-              $column['bq_mode'] = 'NULLABLE';
-              break;
-            case 'key_select':
-            case 'text':
-            default:
-              $column['bq_type'] = 'STRING';
-              $column['bq_mode'] = 'NULLABLE';
-              break;
-          }
-          if ( $field_key == 'last_modified' ) {
-            $column['type'] = 'date';
-            $column['bq_type'] = 'TIMESTAMP';
-            $column['bq_mode'] = 'NULLABLE';
+            );
+            switch ($field['type']) {
+                case 'array':
+                case 'location':
+                case 'multi_select':
+                    $column['bq_type'] = 'STRING';
+                    $column['bq_mode'] = 'REPEATED';
+                break;
+                case 'connection':
+                case 'user_select':
+                    $column['bq_type'] = 'INTEGER';
+                    $column['bq_mode'] = 'REPEATED';
+                break;
+                case 'date':
+                    $column['bq_type'] = 'TIMESTAMP';
+                    $column['bq_mode'] = 'NULLABLE';
+                break;
+                case 'number':
+                    $column['bq_type'] = 'INTEGER';
+                    $column['bq_mode'] = 'NULLABLE';
+                break;
+                case 'boolean':
+                    $column['bq_type'] = 'BOOLEAN';
+                    $column['bq_mode'] = 'NULLABLE';
+                break;
+                case 'key_select':
+                case 'text':
+                default:
+                    $column['bq_type'] = 'STRING';
+                    $column['bq_mode'] = 'NULLABLE';
+                break;
+            }
+            if ( $field_key == 'last_modified' ) {
+                $column['type'] = 'date';
+                $column['bq_type'] = 'TIMESTAMP';
+                $column['bq_mode'] = 'NULLABLE';
 
-          }
-          array_push($columns, $column);
+            }
+            array_push( $columns, $column );
         }
         array_push( $columns, array(
             'key' => 'site',
@@ -207,11 +209,11 @@ class DT_Data_Reporting_Tools
     public static function get_contact_activity( $flatten = false, $filter = null ) {
         $filter = $filter ?? array();
 
-        $activities = self::get_post_activity('contacts', $filter);
+        $activities = self::get_post_activity( 'contacts', $filter );
 //        $contacts = DT_Posts::list_posts('contacts', $filter);
         // todo: if total is greater than length, recursively get more
-        dt_write_log(sizeof($activities['activity']) . ' of ' . $activities['total']);
-        $items = [];
+        dt_write_log( sizeof( $activities['activity'] ) . ' of ' . $activities['total'] );
+        $items = array();
 
         $base_url = self::get_current_site_base_url();
 
@@ -287,11 +289,12 @@ class DT_Data_Reporting_Tools
         $post_filter['limit'] = 1000; //todo: this is liable to break. We need a way of getting all contact IDs
         $data = DT_Posts::search_viewable_post( $post_type, $post_filter );
 //        dt_write_log( json_encode( $data ) ); // FOR DEBUGGING
-        $post_ids = dt_array_to_sql( array_map(function ($post) { return $post->ID; }, $data['posts']) );
+        $post_ids = dt_array_to_sql( array_map( function ( $post) { return $post->ID;
+        }, $data['posts'] ) );
 
-        $post_settings = apply_filters( "dt_get_post_type_settings", [], $post_type );
+        $post_settings = apply_filters( "dt_get_post_type_settings", array(), $post_type );
         $fields = $post_settings["fields"];
-        $hidden_fields = ['duplicate_of'];
+        $hidden_fields = array( 'duplicate_of' );
         foreach ( $fields as $field_key => $field ){
             if ( isset( $field["hidden"] ) && $field["hidden"] === true ){
                 $hidden_fields[] = $field_key;
@@ -362,25 +365,25 @@ class DT_Data_Reporting_Tools
         ) );
 
         //@phpcs:enable
-        $activity_simple = [];
+        $activity_simple = array();
         foreach ( $activity as $a ) {
             $a->object_note = DT_Posts::format_activity_message( $a, $post_settings );
 
             $value_friendly = $a->meta_value;
             $value_order = 0;
-            if (isset($fields[$a->meta_key])) {
+            if (isset( $fields[$a->meta_key] )) {
                 switch ($fields[$a->meta_key]["type"]) {
                     case 'key_select':
                     case 'multi_select':
-                        $keys = array_keys($fields[$a->meta_key]["default"]);
+                        $keys = array_keys( $fields[$a->meta_key]["default"] );
                         $value_friendly = $fields[$a->meta_key]["default"][$a->meta_value]["label"] ?? $a->meta_value;
-                        $value_order = array_search($a->meta_value, $keys) + 1;
+                        $value_order = array_search( $a->meta_value, $keys ) + 1;
                         break;
-                    default;
+                    default:
                         break;
                 }
             }
-            $activity_simple[] = [
+            $activity_simple[] = array(
                 "id" => $a->meta_id,
                 "post_id" => $a->object_id,
                 "user_id" => $a->user_id,
@@ -393,19 +396,19 @@ class DT_Data_Reporting_Tools
                 "action_old_value" => $a->old_value,
                 "note" => $a->object_note,
                 "date" => $a->date,
-            ];
+            );
         }
 
 //    $paged = array_slice( $activity_simple, $args["offset"] ?? 0, $args["number"] ?? 1000 );
         //todo: get the real total apart from limit
-        return [
+        return array(
             "activity" => $activity_simple,
             "total" => $total_activities
-        ];
+        );
     }
 
-    private static function getLabel($result, $key) {
-        return array_key_exists($key, $result) && array_key_exists('label', $result[$key]) ? $result[$key]['label'] : '';
+    private static function get_label( $result, $key ) {
+        return array_key_exists( $key, $result ) && array_key_exists( 'label', $result[$key] ) ? $result[$key]['label'] : '';
     }
 
     protected static function get_current_site_base_url() {
@@ -416,26 +419,26 @@ class DT_Data_Reporting_Tools
     }
 
     public static function get_configs() {
-      $configurations_str = get_option( "dt_data_reporting_configurations");
-      $configurations_int = json_decode( $configurations_str, true );
-      $configurations_ext = apply_filters('dt_data_reporting_configurations', array());
+        $configurations_str = get_option( "dt_data_reporting_configurations" );
+        $configurations_int = json_decode( $configurations_str, true );
+        $configurations_ext = apply_filters( 'dt_data_reporting_configurations', array() );
 
       // Merge locally-created and external configurations
-      $configurations = array_merge($configurations_int, $configurations_ext);
+        $configurations = array_merge( $configurations_int, $configurations_ext );
 
       // Filter out disabled configurations
-      $configurations = array_filter($configurations, function ($config) {
-        return isset($config['active']) && $config['active'] == 1;
-      });
-      return $configurations;
+        $configurations = array_filter($configurations, function ( $config) {
+            return isset( $config['active'] ) && $config['active'] == 1;
+        });
+        return $configurations;
     }
     public static function get_config_by_key( $config_key ) {
-      $configurations = self::get_configs();
+        $configurations = self::get_configs();
 
-      if ( isset( $configurations[$config_key] ) ) {
-        return $configurations[$config_key];
-      }
+        if ( isset( $configurations[$config_key] ) ) {
+            return $configurations[$config_key];
+        }
 
-      return null;
+        return null;
     }
 }
