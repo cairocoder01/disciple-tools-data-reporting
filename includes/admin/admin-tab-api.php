@@ -46,30 +46,32 @@ class DT_Data_Reporting_Tab_API
             echo '<li>Exporting to ' . $this->config['name'] . '</li>';
 
             switch ($this->type) {
-              /*case 'contact_activity':
-                  [$columns, $rows] = DT_Data_Reporting_Tools::get_contact_activity(false);
-                  $this->export_data($columns, $rows);
-                  break;*/
+              case 'contact_activity':
+                echo '<li>Fetching data...</li>';
+                $filter = isset( $this->config['contacts_filter'] ) ? $this->config['contacts_filter'] : null;
+                [$columns, $rows, $total] = DT_Data_Reporting_Tools::get_contact_activity(false, $filter);
+                break;
               case 'contacts':
               default:
                 echo '<li>Fetching data...</li>';
                 $filter = isset( $this->config['contacts_filter'] ) ? $this->config['contacts_filter'] : null;
                 [$columns, $rows, $total] = DT_Data_Reporting_Tools::get_contacts(false, $filter);
-                echo '<li>Found ' . $total . ' contacts.</li>';
-                if ( $provider == 'api' ) {
-                  $this->export_data($columns, $rows, $this->type, $this->config);
-                } else {
-                  do_action("dt_data_reporting_export_provider_$provider", $columns, $rows, $this->type, $this->config);
-                }
-                echo '<li>Done exporting.</li>';
                 break;
             }
+
+            echo '<li>Found ' . $total . ' items.</li>';
+
+            echo '<li>Sending data to provider...</li>';
+            $this->export_data($columns, $rows, $this->type, $this->config);
+            echo '<li>Done exporting.</li>';
+
             echo '</ul>';
         }
     }
     public function export_data($columns, $rows, $type, $config ) {
+      $provider = isset( $config['provider'] ) ? $config['provider'] : 'api';
 
-        echo '<li>Sending data to endpoint...</li>';
+      if ( $provider == 'api' ) {
         $args = [
           'method' => 'POST',
           'headers' => array(
@@ -83,7 +85,7 @@ class DT_Data_Reporting_Tab_API
         ];
 
         // Add auth token if it is part of the config
-        if ( isset( $config['token'] ) ) {
+        if (isset($config['token'])) {
           $args['headers']['Authorization'] = 'Bearer ' . $config['token'];
         }
 
@@ -97,12 +99,16 @@ class DT_Data_Reporting_Tab_API
           echo "<li>Error: $error_message</li>";
         } else {
           // Success
-          $status_code = wp_remote_retrieve_response_code( $result );
-          if ( $status_code !== 200 ) {
+          $status_code = wp_remote_retrieve_response_code($result);
+          if ($status_code !== 200) {
             echo '<li>Error: Status Code ' . $status_code . '</li>';
           }
 //            $result_body = json_decode($result['body']);
           echo "<li><pre><code>" . $result['body'] . "</code></pre>";
         }
+
+      } else {
+        do_action("dt_data_reporting_export_provider_$provider", $columns, $rows, $type, $config);
+      }
     }
 }

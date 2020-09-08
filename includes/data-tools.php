@@ -204,11 +204,8 @@ class DT_Data_Reporting_Tools
         return array( $columns, $items, $contacts['total'] );
     }
 
-    public static function get_contact_activity( $flatten = false, $limit = null ) {
-        $filter = array();
-        if ( !empty( $limit) ) {
-            $filter['limit'] = $limit;
-        }
+    public static function get_contact_activity( $flatten = false, $filter = null ) {
+        $filter = $filter ?? array();
 
         $activities = self::get_post_activity('contacts', $filter);
 //        $contacts = DT_Posts::list_posts('contacts', $filter);
@@ -280,11 +277,18 @@ class DT_Data_Reporting_Tools
             ),
         );
 
-        return array( $columns, $items );
+        return array( $columns, $items, $activities['total'] );
     }
 
     private static function get_post_activity( $post_type, $filter ) {
         global $wpdb;
+
+        $post_filter = $filter;
+        $post_filter['limit'] = 1000; //todo: this is liable to break. We need a way of getting all contact IDs
+        $data = DT_Posts::search_viewable_post( $post_type, $post_filter );
+//        dt_write_log( json_encode( $data ) ); // FOR DEBUGGING
+        $post_ids = dt_array_to_sql( array_map(function ($post) { return $post->ID; }, $data['posts']) );
+
         $post_settings = apply_filters( "dt_get_post_type_settings", [], $post_type );
         $fields = $post_settings["fields"];
         $hidden_fields = ['duplicate_of'];
@@ -296,7 +300,7 @@ class DT_Data_Reporting_Tools
         $hidden_keys = dt_array_to_sql( $hidden_fields );
         // phpcs:disable
         // WordPress.WP.PreparedSQL.NotPrepared
-        $query_activity = "SELECT
+        $query_activity_select = "SELECT
                 meta_id,
                 object_id,
                 user_id,
@@ -308,12 +312,14 @@ class DT_Data_Reporting_Tools
                 object_subtype,
                 field_type,
                 object_note,
-                FROM_UNIXTIME(hist_time) AS date
-            FROM `$wpdb->dt_activity_log`
+                FROM_UNIXTIME(hist_time) AS date ";
+        $query_activity_from = "FROM `$wpdb->dt_activity_log` ";
+        $query_activity_where = "
             WHERE `object_type` = %s
-                 AND meta_key NOT IN ( $hidden_keys ) ";
+                 AND meta_key NOT IN ( $hidden_keys ) 
+                 AND object_id IN ( $post_ids ) ";
 
-        $query_comments = "SELECT comment_ID as meta_id,
+        $query_comments_select = "SELECT comment_ID as meta_id,
                 comment_post_ID as object_id,
                 user_id,
                 comment_author as user_caps,
@@ -324,18 +330,28 @@ class DT_Data_Reporting_Tools
                 NULL as object_subtype,
                 NULL as field_type,
                 comment_content as object_note,
-                comment_date_gmt as date
-            FROM wp_comments c
-            LEFT JOIN wp_posts p on c.comment_post_ID=p.ID
+                comment_date_gmt as date ";
+        $query_comments_from = "FROM wp_comments c
+            LEFT JOIN wp_posts p on c.comment_post_ID=p.ID ";
+        $query_comments_where = "
             WHERE comment_type not in ('comment', 'duplicate')
-                AND p.post_type=%s ";
+                AND p.post_type=%s 
+                AND comment_post_ID IN ( $post_ids ) ";
 
-        $query = "$query_activity
+        $query = "$query_activity_select
+            $query_activity_from
+            $query_activity_where
             UNION
-            $query_comments
-            ORDER BY date DESC ";
+            $query_comments_select
+            $query_comments_from
+            $query_comments_where
+            ORDER BY date ASC ";
         $params = array($post_type, $post_type);
 
+        $total_activities = $wpdb->get_var($wpdb->prepare(
+          "SELECT count(*) from ($query) as temp",
+          $params
+        ));
         if (isset($filter['limit'])) {
             $query .= "LIMIT %d ";
             $params[] = $filter['limit'];
@@ -344,48 +360,47 @@ class DT_Data_Reporting_Tools
             $query,
             $params
         ) );
+
         //@phpcs:enable
         $activity_simple = [];
         foreach ( $activity as $a ) {
             $a->object_note = DT_Posts::format_activity_message( $a, $post_settings );
-            if ( !empty( $a->object_note ) ){
 
-                $value_friendly = $a->meta_value;
-                $value_order = 0;
-                if (isset($fields[$a->meta_key])) {
-                    switch ($fields[$a->meta_key]["type"]) {
-                        case 'key_select':
-                        case 'multi_select':
-                            $keys = array_keys($fields[$a->meta_key]["default"]);
-                            $value_friendly = $fields[$a->meta_key]["default"][$a->meta_value]["label"] ?? $a->meta_value;
-                            $value_order = array_search($a->meta_value, $keys) + 1;
-                            break;
-                        default;
-                            break;
-                    }
+            $value_friendly = $a->meta_value;
+            $value_order = 0;
+            if (isset($fields[$a->meta_key])) {
+                switch ($fields[$a->meta_key]["type"]) {
+                    case 'key_select':
+                    case 'multi_select':
+                        $keys = array_keys($fields[$a->meta_key]["default"]);
+                        $value_friendly = $fields[$a->meta_key]["default"][$a->meta_value]["label"] ?? $a->meta_value;
+                        $value_order = array_search($a->meta_value, $keys) + 1;
+                        break;
+                    default;
+                        break;
                 }
-                $activity_simple[] = [
-                    "id" => $a->meta_id,
-                    "post_id" => $a->object_id,
-                    "user_id" => $a->user_id,
-                    "user_name" => $a->user_caps,
-                    "action_type" => $a->action,
-                    "action_field" => $a->meta_key,
-                    "action_value" => $a->meta_value,
-                    "action_value_friendly" => $value_friendly,
-                    "action_value_order" => $value_order,
-                    "action_old_value" => $a->old_value,
-                    "note" => $a->object_note,
-                    "date" => $a->date,
-                ];
             }
+            $activity_simple[] = [
+                "id" => $a->meta_id,
+                "post_id" => $a->object_id,
+                "user_id" => $a->user_id,
+                "user_name" => $a->user_caps,
+                "action_type" => $a->action,
+                "action_field" => $a->meta_key,
+                "action_value" => $a->meta_value,
+                "action_value_friendly" => $value_friendly,
+                "action_value_order" => $value_order,
+                "action_old_value" => $a->old_value,
+                "note" => $a->object_note,
+                "date" => $a->date,
+            ];
         }
 
 //    $paged = array_slice( $activity_simple, $args["offset"] ?? 0, $args["number"] ?? 1000 );
         //todo: get the real total apart from limit
         return [
             "activity" => $activity_simple,
-            "total" => sizeof( $activity_simple )
+            "total" => $total_activities
         ];
     }
 

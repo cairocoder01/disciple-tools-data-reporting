@@ -54,9 +54,9 @@ class DT_Data_Reporting_Tab_Manual_Export
                 <td>
                     Export Contact Activity
                     <div class="alignright">
-                        <a href="<?php echo esc_attr( $preview_link ) . 'contact_activity' ?>">Preview</a> |
-                        <a href="<?php echo plugins_url('../../exports/csv.php?type=contact_activity', __FILE__ ) ?>">CSV</a> |
-                        <a href="<?php echo plugins_url('../../exports/json.php?type=contact_activity', __FILE__ ) ?>">JSON</a>
+                        <a href="<?php echo esc_attr( $preview_link ) . 'contact_activity' ?>">Preview <span class="dashicons dashicons-admin-site-alt3"></span></a> |
+                        <a href="<?php echo plugins_url('../../exports/csv.php?type=contact_activity', __FILE__ ) ?>">CSV <span class="dashicons dashicons-download"></a> |
+                        <a href="<?php echo plugins_url('../../exports/json.php?type=contact_activity', __FILE__ ) ?>">JSON <span class="dashicons dashicons-download"></a>
                     </div>
                 </td>
             </tr>
@@ -91,7 +91,8 @@ class DT_Data_Reporting_Tab_Manual_Export
               <td>
                 Export Contact Activity
                 <div class="alignright">
-                  <a href="<?php echo esc_attr( $preview_link_config ) . 'contact_activity' ?>">Preview</a> |
+                  <a href="<?php echo esc_attr( $preview_link_config ) . 'contact_activity' ?>">Preview <span class="dashicons dashicons-admin-site-alt3"></span></a> |
+                  <a href="<?php echo esc_attr( $api_action_link_config ) . 'contact_activity' ?>">Send Data <span class="dashicons dashicons-migrate"></span></a>
                 </div>
               </td>
             </tr>

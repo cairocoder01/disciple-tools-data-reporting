@@ -39,8 +39,10 @@ class DT_Data_Reporting_Tab_Preview
 
         switch ($this->type) {
             case 'contact_activity':
-                [$columns, $rows] = DT_Data_Reporting_Tools::get_contact_activity(false, $limit);
-                $this->main_column_table($columns, $rows);
+                $filter = $this->config && isset( $this->config['contacts_filter'] ) ? $this->config['contacts_filter'] : [];
+                $filter['limit'] = $limit;
+                [$columns, $rows, $total] = DT_Data_Reporting_Tools::get_contact_activity(false, $filter);
+                $this->main_column_table($columns, $rows, $total);
                 break;
             case 'contacts':
             default:
