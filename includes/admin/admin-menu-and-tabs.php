@@ -51,6 +51,7 @@ class DT_Data_Reporting_Menu {
         add_action( "admin_menu", array( $this, "register_menu" ) );
         add_action( "admin_head", array( $this, "add_styles" ) );
 
+        require_once( plugin_dir_path( __FILE__ ) . '../data-tools.php' );
         require_once( plugin_dir_path( __FILE__ ) . './admin-tab-manual-export.php' );
         require_once( plugin_dir_path( __FILE__ ) . './admin-tab-bigquery.php' );
         require_once( plugin_dir_path( __FILE__ ) . './admin-tab-preview.php' );
@@ -144,6 +145,7 @@ class DT_Data_Reporting_Menu {
 
         $link = 'admin.php?page='.$this->token.'&tab=';
 
+        $providers = apply_filters('dt_data_reporting_providers', array());
         ?>
         <div class="wrap">
             <h2><?php esc_attr_e( 'Data Reporting', 'DT_Data_Reporting') ?></h2>
@@ -158,6 +160,12 @@ class DT_Data_Reporting_Menu {
                 <?php if ($tab === 'api-send' ): ?>
                   <a href="<?php echo esc_attr( $link ) . 'api-send' ?>" class="nav-tab <?php ( $tab == 'api-send' ) ? esc_attr_e( 'nav-tab-active', 'DT_Data_Reporting') : print ''; ?>"><?php esc_attr_e( 'API Send', 'DT_Data_Reporting') ?></a>
                 <?php endif; ?>
+
+                <?php foreach( $providers as $prov_key => $provider ): ?>
+                <?php if( has_action( 'dt_data_reporting_tab_provider_' . $prov_key ) ): ?>
+                  <a href="<?php echo esc_attr( $link ) . 'prov-' . $prov_key ?>" class="nav-tab <?php ( $tab == 'prov-' . $prov_key ) ? esc_attr_e( 'nav-tab-active', 'DT_Data_Reporting') : print ''; ?>\"><?php esc_attr_e( $provider['name'], 'DT_Data_Reporting') ?></a>
+                <?php endif; ?>
+                <?php endforeach; ?>
             </h2>
 
             <?php
@@ -187,6 +195,10 @@ class DT_Data_Reporting_Menu {
                     $object->content();
                     break;
                 default:
+                  if ( substr( $tab, 0, 5 ) == 'prov-' ) {
+                    $key = substr( $tab, 5);
+                    do_action( 'dt_data_reporting_tab_provider_' . $key );
+                  }
                     break;
             }
             ?>

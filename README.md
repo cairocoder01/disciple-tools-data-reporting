@@ -61,6 +61,21 @@ function data_reporting_export( $columns, $rows, $type, $config ) {
 * `type`: Type of data being exported (e.g. contacts, contact_activity, etc.)
 * `config`: The saved configuration included values for all custom fields added by the provider
 
+#### Action: `dt_data_reporting_tab_provider_{PROVIDER_KEY}`
+The key used in the `dt_data_reporting_providers` filter above is used to create the name of this action. So if you created a provider with a key of `custom-provider`, this action would be `dt_data_reporting_tab_provider_custom-provider`.
+
+The function should echo or print any HTML content that you want to be displayed on a tab within the Data Reporting Plugin admin. The tab will use the name of the provider as configured above.
+
+Example:
+```
+add_action( "dt_data_reporting_tab_provider_custom-provider", "data_reporting_tab", 10, 1 );
+function data_reporting_tab( ) {
+  ?>
+  <h2>My Custom Provider</h2>
+  <p>Add here any getting started or how-to information that is needed for your provider</p>
+  <?php
+}
+```
 
 ### Hooks (actions & filters)
 
@@ -97,6 +112,7 @@ add_filter( 'dt_data_reporting_configurations', 'data_reporting_configurations' 
 function data_reporting_configurations( $configurations ) {
   $configurations['my-data-source'] = [
     'name' => 'My Reporting Data Source',
+    'provider' => 'api',
     'url' => 'http://www.mysite.com/api',
     'active' => 1,
     'contacts_filter' => [
@@ -111,7 +127,9 @@ function data_reporting_configurations( $configurations ) {
 **Configuration Options:**
 * `key`: Configurations are stored as an associative array, meaning you need to provide a key that identifies your configuration (e.g. `custom-config`). This is used in the backend for identifying data specific to this config.
 * `name`: Name to identify this configuration so users know why it is there
-* `url` (required): Endpoint URL to send data
+* `provider` (required): Type of provider to use. If no additional providers are installed, this should be `api`
+* `url`: If using the default `api` provider, this is the endpoint URL to send data
 * `active` (required): Set a value of 1 for the configuration to be active and enabled
 * `token`: If your API requires an authentication token to be passed in the `Authorization` HTTP header, set this to that required token.
 * `contacts_filter`: Filter the query of contacts to be exported. This is passed directly to `DT_Posts::list_posts(...)`, so it uses the format defined at https://github.com/DiscipleTools/disciple-tools-theme/wiki/Filter-and-Search-Lists
+* Any other custom fields defined by custom providers should be added as defined in their documentation.

@@ -3,7 +3,6 @@ class DT_Data_Reporting_Tab_Manual_Export
 {
     public $token;
     public function __construct( $token ) {
-        require_once( plugin_dir_path( __FILE__ ) . '../data-tools.php' );
         $this->token = $token;
     }
 

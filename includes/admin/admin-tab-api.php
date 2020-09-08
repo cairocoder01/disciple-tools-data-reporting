@@ -10,7 +10,6 @@ class DT_Data_Reporting_Tab_API
 
     public function __construct( $token, $type, $config )
     {
-        require_once( plugin_dir_path( __FILE__ ) . '../data-tools.php' );
         $this->token = $token;
         $this->type = $type;
         $this->config = DT_Data_Reporting_Tools::get_config_by_key($config);
