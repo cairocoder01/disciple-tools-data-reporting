@@ -38,7 +38,7 @@ class DT_Data_Reporting_Tab_API
         if ( empty( $this->config ) ) {
             echo "<p>Configuration could not be found. Please update in <a href='$settings_link'>Settings</a></p>";
         } else {
-            $provider = $this->config['provider'];
+            $provider = isset( $this->config['provider'] ) ? $this->config['provider'] : 'api';
             echo '<ul>';
             if ( $provider == 'api' && empty( $this->config['url'] ) ) {
               echo '<li>Configuration is missing endpoint URL</li>';
