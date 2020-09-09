@@ -96,6 +96,24 @@ class DT_Data_Reporting_Menu {
             .form-table.table-config th {
               padding-left: 1rem;
             }
+            
+            ul.api-log {
+              background-color: lightgray;
+              font-family: monospace;
+              padding: 1rem;
+            }            
+            ul.api-log li {
+              list-style-type: \'>\';
+              padding-left: 0.5rem;
+              margin-left: 0px;
+            }
+            ul.api-log li.error {
+              color: #dc3545;
+            }
+            ul.api-log li.success {
+              color: #28a745;
+              font-weight: bold;
+            }
           </style>';
     }
 
@@ -150,18 +168,19 @@ class DT_Data_Reporting_Menu {
                 <a href="<?php echo esc_attr( $link ) . 'export' ?>" class="nav-tab <?php ( $tab == 'export' ) ? esc_attr_e( 'nav-tab-active', 'DT_Data_Reporting' ) : print ''; ?>"><?php esc_attr_e( 'Manual Export', 'DT_Data_Reporting' ) ?></a>
                 <a href="<?php echo esc_attr( $link ) . 'bigquery' ?>" class="nav-tab <?php ( $tab == 'bigquery' ) ? esc_attr_e( 'nav-tab-active', 'DT_Data_Reporting' ) : print ''; ?>"><?php esc_attr_e( 'BigQuery Setup', 'DT_Data_Reporting' ) ?></a>
                 <a href="<?php echo esc_attr( $link ) . 'settings' ?>" class="nav-tab <?php ( $tab == 'settings' ) ? esc_attr_e( 'nav-tab-active', 'DT_Data_Reporting' ) : print ''; ?>"><?php esc_attr_e( 'Settings', 'DT_Data_Reporting' ) ?></a>
-                <?php if ($tab === 'preview' ): ?>
-                    <a href="<?php echo esc_attr( $link ) . 'preview' ?>" class="nav-tab <?php ( $tab == 'preview' ) ? esc_attr_e( 'nav-tab-active', 'DT_Data_Reporting' ) : print ''; ?>"><?php esc_attr_e( 'Preview', 'DT_Data_Reporting' ) ?></a>
-                <?php endif; ?>
-                <?php if ($tab === 'api-send' ): ?>
-                  <a href="<?php echo esc_attr( $link ) . 'api-send' ?>" class="nav-tab <?php ( $tab == 'api-send' ) ? esc_attr_e( 'nav-tab-active', 'DT_Data_Reporting' ) : print ''; ?>"><?php esc_attr_e( 'API Send', 'DT_Data_Reporting' ) ?></a>
-                <?php endif; ?>
 
                 <?php foreach ( $providers as $prov_key => $provider ): ?>
                     <?php if ( has_action( 'dt_data_reporting_tab_provider_' . $prov_key ) ): ?>
                   <a href="<?php echo esc_attr( $link ) . 'prov-' . $prov_key ?>" class="nav-tab <?php ( $tab == 'prov-' . $prov_key ) ? esc_attr_e( 'nav-tab-active', 'DT_Data_Reporting' ) : print ''; ?>\"><?php esc_attr_e( $provider['name'], 'DT_Data_Reporting' ) ?></a>
                 <?php endif; ?>
                 <?php endforeach; ?>
+
+                <?php if ($tab === 'preview' ): ?>
+                    <a href="<?php echo esc_attr( $link ) . 'preview' ?>" class="nav-tab <?php ( $tab == 'preview' ) ? esc_attr_e( 'nav-tab-active', 'DT_Data_Reporting' ) : print ''; ?>"><?php esc_attr_e( 'Preview', 'DT_Data_Reporting' ) ?></a>
+                <?php endif; ?>
+                <?php if ($tab === 'api-send' ): ?>
+                    <a href="<?php echo esc_attr( $link ) . 'api-send' ?>" class="nav-tab <?php ( $tab == 'api-send' ) ? esc_attr_e( 'nav-tab-active', 'DT_Data_Reporting' ) : print ''; ?>"><?php esc_attr_e( 'Export Log', 'DT_Data_Reporting' ) ?></a>
+                <?php endif; ?>
             </h2>
 
             <?php

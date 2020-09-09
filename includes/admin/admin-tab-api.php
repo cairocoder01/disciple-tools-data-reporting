@@ -37,10 +37,18 @@ class DT_Data_Reporting_Tab_API
         if ( empty( $this->config ) ) {
             echo "<p>Configuration could not be found. Please update in <a href='$settings_link'>Settings</a></p>";
         } else {
+            $providers = apply_filters( 'dt_data_reporting_providers', array() );
             $provider = isset( $this->config['provider'] ) ? $this->config['provider'] : 'api';
-            echo '<ul>';
+            $flatten = false;
+            echo '<ul class="api-log">';
             if ( $provider == 'api' && empty( $this->config['url'] ) ) {
                 echo '<li>Configuration is missing endpoint URL</li>';
+            }
+            if ( $provider != 'api' ) {
+                $provider_details = $providers[$provider];
+                if ( !empty($provider_details) && isset($provider_details['flatten']) ) {
+                    $flatten = boolval($provider_details['flatten']);
+                }
             }
             echo '<li>Exporting to ' . $this->config['name'] . '</li>';
 
@@ -48,13 +56,13 @@ class DT_Data_Reporting_Tab_API
                 case 'contact_activity':
                     echo '<li>Fetching data...</li>';
                     $filter = isset( $this->config['contacts_filter'] ) ? $this->config['contacts_filter'] : null;
-                    [ $columns, $rows, $total ] = DT_Data_Reporting_Tools::get_contact_activity( false, $filter );
+                    [ $columns, $rows, $total ] = DT_Data_Reporting_Tools::get_contact_activity( $flatten, $filter );
                 break;
                 case 'contacts':
                 default:
                     echo '<li>Fetching data...</li>';
                     $filter = isset( $this->config['contacts_filter'] ) ? $this->config['contacts_filter'] : null;
-                    [ $columns, $rows, $total ] = DT_Data_Reporting_Tools::get_contacts( false, $filter );
+                    [ $columns, $rows, $total ] = DT_Data_Reporting_Tools::get_contacts( $flatten, $filter );
                 break;
             }
 
@@ -95,12 +103,14 @@ class DT_Data_Reporting_Tab_API
                 // Handle endpoint error
                 $error_message = $result->get_error_message() ?? '';
                 dt_write_log( $error_message );
-                echo "<li>Error: $error_message</li>";
+                echo "<li class='error'>Error: $error_message</li>";
             } else {
                 // Success
                 $status_code = wp_remote_retrieve_response_code( $result );
                 if ($status_code !== 200) {
-                    echo '<li>Error: Status Code ' . $status_code . '</li>';
+                    echo "<li class='error'>Error: Status Code $status_code</li>";
+                } else {
+                    echo "<li class='success'>Success</li>";
                 }
                 // $result_body = json_decode($result['body']);
                 echo "<li><pre><code>" . $result['body'] . "</code></pre>";

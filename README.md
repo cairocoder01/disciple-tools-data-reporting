@@ -6,16 +6,14 @@ The plugin has been setup for usage with Google Cloud Platform infrastructure (C
 
 There is also a feature to opt-in to sending anonymized data to a global reporting system for comparing D.T usage across different sites and searching for trends that could be useful for the whole D.T community. 
 
-## Customization / Developer Notes
-
-### Custom Providers
+## Custom Providers
 Custom data providers can be created to send the data to any data source that is need via a separate plugin.
 
 Get started with a [sample provider plugin](https://github.com/cairocoder01/disciple-tools-data-reporting-provider-sample). 
 
 The plugin just needs a couple hooks in order to connect:
 
-#### Filter `dt_data_reporting_providers`
+### Filter `dt_data_reporting_providers`
 Add your provider to the list of providers available on the settings screen.
 
 Example:
@@ -24,6 +22,7 @@ add_filter( "dt_data_reporting_providers", "data_reporting_providers", 10, 4 );
 function data_reporting_providers($providers) {
     $providers ['custom-provider'] = [
       'name' => 'My Custom Provider',
+      'flatten' => true,
       'fields' => [
         'custom_key' => [
           'label' => 'My Custom Key',
@@ -39,12 +38,13 @@ function data_reporting_providers($providers) {
 **Configuration Options:**
 * `key`: Providers are stored as an associative array, meaning you need to provide a key that identifies your provider (e.g. `custom-provider`). This is used in the backend for identifying data specific to this provider
 * `name`: Name of this provider that is visible in the UI
+* `flatten`: Boolean value to indicate whether to flatten data in each field. If true, array type data will be joined into comma-separated strings.
 * `fields[]`: Associative array of any custom fields that are needed as part of the configuration. Each must have a unique key that is different from any other providers. Because of this, it will be best to prefix your keys with something specific to your provider (e.g. `azure_`, `gcp_`, `aws_`). This key is used any time you need to retrieve data from the saved configuration (e.g. `$config['custom_key']`).
 * `fields[].label`: Name of field displayed in UI
 * `fields[].type`: Type of field. Currently supports: `text`
 * `fields[].helpText`: (optional) Displayed as further explanation of a field underneath the field on the settings screen.
 
-#### Action: `dt_data_reporting_export_provider_{PROVIDER_KEY}`
+### Action: `dt_data_reporting_export_provider_{PROVIDER_KEY}`
 The key used in the `dt_data_reporting_providers` filter above is used to create the name of this action. So if you created a provider with a key of `custom-provider`, this action would be `dt_data_reporting_export_provider_custom-provider`.
 
 The function is executed in the context of a `<ul>`, so log messaging can be `echo`'ed with a `<li>` tag wrapping it.
@@ -65,7 +65,7 @@ function data_reporting_export( $columns, $rows, $type, $config ) {
 * `type`: Type of data being exported (e.g. contacts, contact_activity, etc.)
 * `config`: The saved configuration included values for all custom fields added by the provider
 
-#### Action: `dt_data_reporting_tab_provider_{PROVIDER_KEY}`
+### Action: `dt_data_reporting_tab_provider_{PROVIDER_KEY}`
 The key used in the `dt_data_reporting_providers` filter above is used to create the name of this action. So if you created a provider with a key of `custom-provider`, this action would be `dt_data_reporting_tab_provider_custom-provider`.
 
 The function should echo or print any HTML content that you want to be displayed on a tab within the Data Reporting Plugin admin. The tab will use the name of the provider as configured above.
@@ -81,9 +81,9 @@ function data_reporting_tab( ) {
 }
 ```
 
-### Hooks (actions & filters)
+## Hooks (actions & filters)
 
-#### Filter: `dt_data_reporting_field_output`
+### Filter: `dt_data_reporting_field_output`
 Customize the output of any fields. Especially useful if you have added custom fields that may contain JSON data, or if you want to change how a certain type is exported.
 
 Example:
@@ -107,7 +107,7 @@ function data_reporting_field_output($field_value, $type, $field_key, $flatten )
 }
 ```
 
-#### Filter: `dt_data_reporting_configurations`
+### Filter: `dt_data_reporting_configurations`
 Customize the list of configurations for export. This allows adding a configuration from a separate plugin.
 
 Example:
