@@ -1,14 +1,14 @@
 {
   "name": "Disciple Tools - Data Reporting",
-  "version": "1.0.0",
-  "download_url": "https://github.com/cairocoder01/disciple-tools-data-reporting/releases/download/v1.0.0/disciple-tools-data-reporting.zip",
+  "version": "1.0.1",
+  "download_url": "https://github.com/cairocoder01/disciple-tools-data-reporting/releases/download/v1.0.1/disciple-tools-data-reporting.zip",
   "sections": {
     "description": "Disciple Tools - Data Reporting.",
     "installation": "(Required) You must have Disciple.Tools Theme installed before using this plugin. Once Disciple.Tools is installed, you can use the normal Plugin system to install the plugin.",
     "changelog": ""
   },
-  "last_updated": "2020-09-08",
-  "upgrade_notice": "Initial release",
+  "last_updated": "2020-09-09",
+  "upgrade_notice": "Add data flattening option for providers",
   "requires": "4.7",
   "tested": "5.5.1",
   "banners": {
