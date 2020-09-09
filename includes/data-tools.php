@@ -68,7 +68,7 @@ class DT_Data_Reporting_Tools
                             $field_value = $result[$field_key]['id'];
                             break;
                         case 'date':
-                            $field_value = date( "Y-m-d H:i:s", $result[$field_key]['timestamp'] );
+                            $field_value = !empty( $result[$field_key]["timestamp"] ) ? gmdate( "Y-m-d H:i:s", $result[$field_key]['timestamp'] ) : "";
                             break;
                         case 'location':
                             $location_ids = array_map( function ( $location ) { return $location['label'];
@@ -319,7 +319,7 @@ class DT_Data_Reporting_Tools
         $query_activity_from = "FROM `$wpdb->dt_activity_log` ";
         $query_activity_where = "
             WHERE `object_type` = %s
-                 AND meta_key NOT IN ( $hidden_keys ) 
+                 AND meta_key NOT IN ( $hidden_keys )
                  AND object_id IN ( $post_ids ) ";
 
         $query_comments_select = "SELECT comment_ID as meta_id,
@@ -338,7 +338,7 @@ class DT_Data_Reporting_Tools
             LEFT JOIN wp_posts p on c.comment_post_ID=p.ID ";
         $query_comments_where = "
             WHERE comment_type not in ('comment', 'duplicate')
-                AND p.post_type=%s 
+                AND p.post_type=%s
                 AND comment_post_ID IN ( $post_ids ) ";
 
         $query = "$query_activity_select
@@ -408,7 +408,7 @@ class DT_Data_Reporting_Tools
     }
 
     private static function get_label( $result, $key ) {
-        return array_key_exists( $key, $result ) && array_key_exists( 'label', $result[$key] ) ? $result[$key]['label'] : '';
+        return ( array_key_exists( $key, $result ) && is_array( $result[$key] ) && array_key_exists( 'label', $result[$key] ) ) ? $result[$key]['label'] : '';
     }
 
     protected static function get_current_site_base_url() {
@@ -424,7 +424,7 @@ class DT_Data_Reporting_Tools
         $configurations_ext = apply_filters( 'dt_data_reporting_configurations', array() );
 
       // Merge locally-created and external configurations
-        $configurations = array_merge( $configurations_int, $configurations_ext );
+        $configurations = array_merge( $configurations_int ?? [], $configurations_ext );
 
       // Filter out disabled configurations
         $configurations = array_filter($configurations, function ( $config) {
