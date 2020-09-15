@@ -96,6 +96,12 @@ class DT_Data_Reporting_Menu {
             .form-table.table-config th {
               padding-left: 1rem;
             }
+            .table-config .last-exported-value {
+              font-style: italic;
+              color: #999;
+              font-size: 0.8rem;
+              line-height: 2rem;
+            }
             
             ul.api-log {
               background-color: lightgray;
