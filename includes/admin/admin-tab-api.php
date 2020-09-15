@@ -11,7 +11,9 @@ class DT_Data_Reporting_Tab_API
     public function __construct( $token, $type, $config ) {
         $this->token = $token;
         $this->type = $type;
+        $this->config_key = $config;
         $this->config = DT_Data_Reporting_Tools::get_config_by_key( $config );
+        $this->config_progress = DT_Data_Reporting_Tools::get_config_progress_by_key( $config );
     }
 
     public function content() {
@@ -37,10 +39,20 @@ class DT_Data_Reporting_Tab_API
         if ( empty( $this->config ) ) {
             echo "<p>Configuration could not be found. Please update in <a href='$settings_link'>Settings</a></p>";
         } else {
+            // Fetch details for this provider
             $providers = apply_filters( 'dt_data_reporting_providers', array() );
             $provider = isset( $this->config['provider'] ) ? $this->config['provider'] : 'api';
+
+            // Get the settings for this data type from the config
+            $type_configs = isset( $this->config['data_types'] ) ? $this->config['data_types'] : [];
+            $type_config = isset($type_configs[$this->type]) ? $type_configs[$this->type] : [];
+            $last_exported_value = isset($this->config_progress[$this->type]) ? $this->config_progress[$this->type] : null;
+            $all_data = !isset($type_config['all_data']) || boolval($type_config['all_data']);
+            $limit = isset($type_config['limit']) ? intval($type_config['limit']) : 100;
+
             $flatten = false;
             echo '<ul class="api-log">';
+
             if ( $provider == 'api' && empty( $this->config['url'] ) ) {
                 echo '<li>Configuration is missing endpoint URL</li>';
             }
@@ -52,6 +64,7 @@ class DT_Data_Reporting_Tab_API
             }
             echo '<li>Exporting to ' . $this->config['name'] . '</li>';
 
+            // Run export based on the type of data requested
             switch ($this->type) {
                 case 'contact_activity':
                     echo '<li>Fetching data...</li>';
@@ -62,16 +75,41 @@ class DT_Data_Reporting_Tab_API
                 default:
                     echo '<li>Fetching data...</li>';
                     $filter = isset( $this->config['contacts_filter'] ) ? $this->config['contacts_filter'] : null;
+
+                    // If not exporting everything, add limit and filter for last value
+                    if (!$all_data) {
+                      $filter['limit'] = $limit;
+
+                      if ( !empty($last_exported_value) ) {
+                        echo '<li>Starting with contacts modified after ' . $last_exported_value . '</li>';
+                        $filter['last_modified'] = [
+                          'start' => '2018-07-02',
+                        ];
+                      }
+                    }
+
+                    // Fetch the data
                     [ $columns, $rows, $total ] = DT_Data_Reporting_Tools::get_contacts( $flatten, $filter );
+
+                    // Get last record and store last date
+                    if ( !empty($rows) ) {
+                      $last_item = array_slice($rows, -1)[0];
+                      $this->config_progress[$this->type] = $last_item['last_modified'];
+                    }
                 break;
             }
 
-            echo '<li>Found ' . $total . ' items.</li>';
-
+            echo '<li>Exporting ' . count($rows) . ' items from a total of ' . $total . '.</li>';
             echo '<li>Sending data to provider...</li>';
-            $this->export_data( $columns, $rows, $this->type, $this->config );
-            echo '<li>Done exporting.</li>';
 
+            // Send data to provider
+            $success = $this->export_data( $columns, $rows, $this->type, $this->config );
+
+            // If provider was successful, store the last value exported
+            if ( $success && isset($this->config_progress[$this->type]) && !empty($this->config_progress[$this->type]) ) {
+              DT_Data_Reporting_Tools::set_config_progress_by_key($this->config_key, $this->config_progress);
+            }
+            echo '<li>Done exporting.</li>';
             echo '</ul>';
         }
     }
@@ -104,6 +142,7 @@ class DT_Data_Reporting_Tab_API
                 $error_message = $result->get_error_message() ?? '';
                 dt_write_log( $error_message );
                 echo "<li class='error'>Error: $error_message</li>";
+                return false;
             } else {
                 // Success
                 $status_code = wp_remote_retrieve_response_code( $result );
@@ -114,9 +153,10 @@ class DT_Data_Reporting_Tab_API
                 }
                 // $result_body = json_decode($result['body']);
                 echo "<li><pre><code>" . $result['body'] . "</code></pre>";
+                return true;
             }
         } else {
-            do_action( "dt_data_reporting_export_provider_$provider", $columns, $rows, $type, $config );
+            return do_action( "dt_data_reporting_export_provider_$provider", $columns, $rows, $type, $config );
         }
     }
 }

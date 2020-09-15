@@ -60,7 +60,7 @@ class DT_Data_Reporting_Tab_Preview
         ?>
         <div class="total-results">Showing <?php echo count( $rows ) ?> of <?php echo $total ?></div>
         <?php if ( count( $rows ) != $total ): ?>
-          <em>Showing only the top <?php echo count( $rows ) ?> records as a preview. When exporting, all records will be included.</em>";
+          <em>Showing only the first <?php echo count( $rows ) ?> records as a preview. When exporting, all records will be included.</em>";
         <?php endif; ?>
 
         <!-- Box -->

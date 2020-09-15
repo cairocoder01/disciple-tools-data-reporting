@@ -6,6 +6,11 @@ class DT_Data_Reporting_Tools
     public static function get_contacts( $flatten = false, $filter = null ) {
         $filter = $filter ?? array();
 
+        // By default, sort by last updated date
+        if ( !isset($filter['sort'] ) ) {
+          $filter['sort'] = 'last_modified';
+        }
+
         // Build contact generations
         // taken from [dt-theme]/dt-metrics/counters/counter-baptism.php::save_all_contact_generations
         $raw_baptism_generation_list = Disciple_Tools_Counter_Baptism::query_get_all_baptism_connections();
@@ -285,6 +290,11 @@ class DT_Data_Reporting_Tools
     private static function get_post_activity( $post_type, $filter ) {
         global $wpdb;
 
+        // By default, sort by last updated date
+        if ( !isset($filter['sort'] ) ) {
+          $filter['sort'] = 'last_modified';
+        }
+
         $post_filter = $filter;
         $post_filter['limit'] = 1000; //todo: this is liable to break. We need a way of getting all contact IDs
         $data = DT_Posts::search_viewable_post( $post_type, $post_filter );
@@ -440,5 +450,35 @@ class DT_Data_Reporting_Tools
         }
 
         return null;
+    }
+
+  /**
+   * Get the last exported values for the given config.
+   * [
+   *   'config-key-1' => [
+   *     'contacts' => 'last-value-exported',
+   *     'contact_activity' => 'last-value-exported',
+   *   ]
+   * ]
+   * @param $config_key
+   * @return |null
+   */
+    public static function get_config_progress_by_key( $config_key ) {
+      $configurations_str = get_option( "dt_data_reporting_configurations_progress" );
+      $configurations = json_decode( $configurations_str, true );
+
+      if ( isset( $configurations[$config_key] ) ) {
+        return $configurations[$config_key];
+      }
+
+      return [];
+    }
+    public static function set_config_progress_by_key( $config_key, $config_progress ) {
+      $configurations_str = get_option( "dt_data_reporting_configurations_progress" );
+      $configurations = json_decode( $configurations_str, true );
+
+      $configurations[$config_key] = $config_progress;
+
+      update_option( "dt_data_reporting_configurations_progress", json_encode($configurations) );
     }
 }
