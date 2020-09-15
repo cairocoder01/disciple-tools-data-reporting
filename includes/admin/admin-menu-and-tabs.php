@@ -90,7 +90,7 @@ class DT_Data_Reporting_Menu {
               padding-left: 15px;
               background-color: #e0e0e0;
             }
-            .table-config input[type=text] {
+            .table-config input[type=text]:not(.data-type-limit) {
               width: 100%;
             }
             .form-table.table-config th {

@@ -29,9 +29,17 @@ class DT_Data_Reporting_Tab_Settings
       <script>
         jQuery(function($) {
           $('.table-config').on('change', '.provider', function (evt) {
-            console.log($(this).val());
             $('tr[class^=provider-]').hide();
             $('tr.provider-' + $(this).val()).show();
+          });
+          $('.table-config').on('change', '.data-type-all-data', function (evt) {
+            var val = $(this).val();
+            var textInput = $(this).closest('td').find('.data-type-limit');
+            if (val == 1) {
+              textInput.hide();
+            } else {
+              textInput.show();
+            }
           });
         });
       </script>
@@ -194,6 +202,57 @@ class DT_Data_Reporting_Tab_Settings
 
                 <tr>
                   <th>
+                    <label for="data_types_<?php echo $key ?>">Data Types</label>
+                  </th>
+                  <td>
+                    <?php
+                    $data_types = [
+                      'contacts' => 'Contacts',
+                      'contact_activity' => 'Contact Activity',
+                    ];
+                    $type_configs = isset($config['data_types']) ? $config['data_types'] : [];
+                    $default_type_config = ['all_data' => 0, 'limit' => 500];
+                    ?>
+                    <table class="form-table">
+                    <?php foreach ( $data_types as $data_type => $type_name ) {
+                      $type_config =isset($type_configs[$data_type]) ? $type_configs[$data_type] : $default_type_config;
+                      ?>
+                      <tr>
+                        <th><?php echo $type_name ?></th>
+                        <td>
+                          <label>
+                            <input type="radio"
+                                   name="configurations[<?php echo $key ?>][data_types][<?php echo $data_type ?>][all_data]"
+                                   value="1"
+                                   class="data-type-all-data"
+                                   <?php echo $type_config['all_data'] == 1 ? 'checked' : '' ?>
+                                   />
+                            All Data
+                          </label>
+                          <label>
+                            <input type="radio"
+                                   name="configurations[<?php echo $key ?>][data_types][<?php echo $data_type ?>][all_data]"
+                                   value="0"
+                                   class="data-type-all-data"
+                                   <?php echo $type_config['all_data'] == 0 ? 'checked' : '' ?>
+                                   />
+                            Last Updated
+                          </label>
+
+                          <input type="text"
+                                 placeholder="Max records"
+                                 name="configurations[<?php echo $key ?>][data_types][<?php echo $data_type ?>][limit]"
+                                 class="data-type-limit <?php echo $type_config['all_data'] == 1 ? 'hide' : '' ?>"
+                                 value="<?php echo isset($type_config['limit']) ? $type_config['limit'] : $default_type_config['limit'] ?>"
+                                 />
+                        </td>
+                      </tr>
+                    <?php } ?>
+                    </table>
+                  </td>
+                </tr>
+                <tr>
+                  <th>
                     <label for="active_<?php echo $key ?>">Is Active</label>
                   </th>
                   <td>
@@ -213,6 +272,8 @@ class DT_Data_Reporting_Tab_Settings
           </tr>
           </tbody>
         </table>
+        <br>
+        <button type="submit" class="button right">Save Settings</button>
         <br>
         <table class="widefat striped">
           <thead>
@@ -264,8 +325,6 @@ class DT_Data_Reporting_Tab_Settings
           </tr>
           </tbody>
         </table>
-        <br>
-        <button type="submit" class="button right">Save Settings</button>
       </form>
         <?php
     }
