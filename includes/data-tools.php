@@ -92,11 +92,6 @@ class DT_Data_Reporting_Tools
                             }
                             break;
                     }
-                    // special cases...
-                    // last_modified is marked as a number field
-                    if ( $field_key == 'last_modified' ) {
-                        $field_value = date( "Y-m-d H:i:s", $result[$field_key] );
-                    }
                 } else {
                     // Set default/blank value
                     switch ($type) {
