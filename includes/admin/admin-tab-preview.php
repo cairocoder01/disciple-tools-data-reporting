@@ -12,6 +12,7 @@ class DT_Data_Reporting_Tab_Preview
         require_once( plugin_dir_path( __FILE__ ) . '../data-tools.php' );
 
         $this->type = $type;
+        $this->config_key = $config;
         $this->config = DT_Data_Reporting_Tools::get_config_by_key( $config );
     }
 
@@ -35,23 +36,8 @@ class DT_Data_Reporting_Tab_Preview
 
     public function main_column() {
         $limit = 100;
-
-        switch ($this->type) {
-            case 'contact_activity':
-                $filter = $this->config && isset( $this->config['contacts_filter'] ) ? $this->config['contacts_filter'] : array();
-                $filter['limit'] = $limit;
-                [ $columns, $rows, $total ] = DT_Data_Reporting_Tools::get_contact_activity( false, $filter );
-                $this->main_column_table( $columns, $rows, $total );
-                break;
-            case 'contacts':
-            default:
-                // This is just a preview, so get the first $limit contacts only
-                $filter = $this->config && isset( $this->config['contacts_filter'] ) ? $this->config['contacts_filter'] : array();
-                $filter['limit'] = $limit;
-                [ $columns, $rows, $total ] = DT_Data_Reporting_Tools::get_contacts( false, $filter );
-                $this->main_column_table( $columns, $rows, $total );
-                break;
-        }
+        [ $columns, $rows, $total ] = DT_Data_Reporting_Tools::get_data($this->type, $this->config_key, false, $limit);
+        $this->main_column_table( $columns, $rows, $total );
     }
     public function main_column_table( $columns, $rows, $total ) {
         if ( $this->config ) {
@@ -60,7 +46,7 @@ class DT_Data_Reporting_Tab_Preview
         ?>
         <div class="total-results">Showing <?php echo count( $rows ) ?> of <?php echo $total ?></div>
         <?php if ( count( $rows ) != $total ): ?>
-          <em>Showing only the first <?php echo count( $rows ) ?> records as a preview. When exporting, all records will be included.</em>";
+          <em>Showing only the first <?php echo count( $rows ) ?> records as a preview. When exporting, all records will be included.</em>
         <?php endif; ?>
 
         <!-- Box -->
