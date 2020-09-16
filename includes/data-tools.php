@@ -4,12 +4,15 @@
 class DT_Data_Reporting_Tools
 {
     // limit filtering to only those that are manually implemented for activity
+    private static $filter_fields = ['tags', 'sources', 'type'];
     private static $supported_filters = [
         'sort' => true,
         'limit' => true,
         'tags' => true,
         'sources' => true,
         'type' => true,
+        'last_updated' => true,
+        'date' => true,
     ];
 
     /**
@@ -35,7 +38,15 @@ class DT_Data_Reporting_Tools
         switch ($data_type) {
             case 'contact_activity':
                 $filter = $config && isset( $config['contacts_filter'] ) ? $config['contacts_filter'] : array();
-                $filter['limit'] = $limit;
+                if ( $limit ) {
+                    $filter['limit'] = $limit;
+                }
+                // If not exporting everything, add limit and filter for last value
+                if ( !$all_data && !empty( $last_exported_value ) ) {
+                    $filter['date'] = [
+                        'start' => $last_exported_value,
+                    ];
+                }
                 $result = self::get_contact_activity( false, $filter );
             break;
             case 'contacts':
@@ -45,14 +56,14 @@ class DT_Data_Reporting_Tools
                 if ( $limit ) {
                     $filter['limit'] = $limit;
                 }
-              // If not exporting everything, add limit and filter for last value
+                // If not exporting everything, add limit and filter for last value
                 if ( !$all_data && !empty( $last_exported_value ) ) {
                     $filter['last_modified'] = [
                     'start' => $last_exported_value,
                     ];
                 }
 
-              // Fetch the data
+                // Fetch the data
                 $result = self::get_contacts( $flatten, $filter );
             break;
         }
@@ -280,8 +291,6 @@ class DT_Data_Reporting_Tools
         $filter = $filter ? array_intersect_key($filter, self::$supported_filters) : array();
 
         $activities = self::get_post_activity( 'contacts', $filter );
-//        $contacts = DT_Posts::list_posts('contacts', $filter);
-        // todo: if total is greater than length, recursively get more
         dt_write_log( sizeof( $activities['activity'] ) . ' of ' . $activities['total'] );
         $items = array();
 
@@ -377,7 +386,7 @@ class DT_Data_Reporting_Tools
             DISTINCT post_id
             FROM wp_postmeta
             WHERE 1=1 ";
-        foreach( array_keys(self::$supported_filters) as $filter_key ) {
+        foreach( self::$filter_fields as $filter_key ) {
             if ( in_array($filter_key, ['sort', 'limit']) ) {
                 continue;
             }
@@ -426,6 +435,16 @@ class DT_Data_Reporting_Tools
                 AND p.post_type=%s
                 AND comment_post_ID IN ( $post_filter_subquery ) ";
 
+        // If there is a last date value, find activity new than that
+        if ( isset($filter['date']) && isset($filter['date']['start']) ) {
+            $start = $filter['date']['start'];
+            $since = strtotime($start);
+
+            $query_activity_where .= "AND hist_time >= " . esc_sql( $since ) . " ";
+            $query_comments_where .= "AND comment_date_gmt >= '" . esc_sql( $start ) . "' ";
+        }
+
+        // Join 2 queries in a union
         $query = "$query_activity_select
             $query_activity_from
             $query_activity_where
@@ -448,7 +467,7 @@ class DT_Data_Reporting_Tools
             $query,
             $params
         );
-        dt_write_log($prepared_sql);
+        //dt_write_log($prepared_sql);
         $activity = $wpdb->get_results($prepared_sql);
 
         //@phpcs:enable
