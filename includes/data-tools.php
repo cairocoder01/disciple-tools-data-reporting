@@ -3,6 +3,15 @@
 
 class DT_Data_Reporting_Tools
 {
+    // limit filtering to only those that are manually implemented for activity
+    private static $supported_filters = [
+        'sort' => true,
+        'limit' => true,
+        'tags' => true,
+        'sources' => true,
+        'type' => true,
+    ];
+
     /**
      * Fetch data by type
      * @param $data_type contacts|contact_activity
@@ -58,7 +67,8 @@ class DT_Data_Reporting_Tools
      * @return array Columns, rows, and total count
      */
     public static function get_contacts( $flatten = false, $filter = null ) {
-        $filter = $filter ?? array();
+        // limit filtering to only those that are manually implemented for activity
+        $filter = $filter ? array_intersect_key($filter, self::$supported_filters) : array();
 
         // By default, sort by last updated date
         if ( !isset( $filter['sort'] ) ) {
@@ -267,7 +277,7 @@ class DT_Data_Reporting_Tools
      * @return array Columns, rows, and total count
      */
     public static function get_contact_activity( $flatten = false, $filter = null ) {
-        $filter = $filter ?? array();
+        $filter = $filter ? array_intersect_key($filter, self::$supported_filters) : array();
 
         $activities = self::get_post_activity( 'contacts', $filter );
 //        $contacts = DT_Posts::list_posts('contacts', $filter);
@@ -350,13 +360,6 @@ class DT_Data_Reporting_Tools
             $filter['sort'] = 'last_modified';
         }
 
-        $post_filter = $filter;
-        $post_filter['limit'] = 1000; //todo: this is liable to break. We need a way of getting all contact IDs
-        $data = DT_Posts::search_viewable_post( $post_type, $post_filter );
-//        dt_write_log( json_encode( $data ) ); // FOR DEBUGGING
-        $post_ids = dt_array_to_sql( array_map( function ( $post) { return $post->ID;
-        }, $data['posts'] ) );
-
         $post_settings = apply_filters( "dt_get_post_type_settings", array(), $post_type );
         $fields = $post_settings["fields"];
         $hidden_fields = array( 'duplicate_of' );
@@ -368,6 +371,22 @@ class DT_Data_Reporting_Tools
         $hidden_keys = dt_array_to_sql( $hidden_fields );
         // phpcs:disable
         // WordPress.WP.PreparedSQL.NotPrepared
+
+        // Subquery to filter by posts associated with the activity
+        $post_filter_subquery = "SELECT 
+            DISTINCT post_id
+            FROM wp_postmeta
+            WHERE 1=1 ";
+        foreach( array_keys(self::$supported_filters) as $filter_key ) {
+            if ( in_array($filter_key, ['sort', 'limit']) ) {
+                continue;
+            }
+            if (isset($filter[$filter_key])) {
+                $post_filter_subquery .= "AND (meta_key='" . esc_sql($filter_key) . "' and meta_value in (" . dt_array_to_sql($filter[$filter_key]) . ")) ";
+            }
+        }
+
+        // Query dt_activity_log table
         $query_activity_select = "SELECT
                 meta_id,
                 object_id,
@@ -385,8 +404,9 @@ class DT_Data_Reporting_Tools
         $query_activity_where = "
             WHERE `object_type` = %s
                  AND meta_key NOT IN ( $hidden_keys )
-                 AND object_id IN ( $post_ids ) ";
+                 AND object_id IN ( $post_filter_subquery ) ";
 
+        // Query wp_comments table
         $query_comments_select = "SELECT comment_ID as meta_id,
                 comment_post_ID as object_id,
                 user_id,
@@ -404,7 +424,7 @@ class DT_Data_Reporting_Tools
         $query_comments_where = "
             WHERE comment_type not in ('comment', 'duplicate')
                 AND p.post_type=%s
-                AND comment_post_ID IN ( $post_ids ) ";
+                AND comment_post_ID IN ( $post_filter_subquery ) ";
 
         $query = "$query_activity_select
             $query_activity_from
@@ -424,10 +444,12 @@ class DT_Data_Reporting_Tools
             $query .= "LIMIT %d ";
             $params[] = $filter['limit'];
         }
-        $activity = $wpdb->get_results( $wpdb->prepare(
+        $prepared_sql = $wpdb->prepare(
             $query,
             $params
-        ) );
+        );
+        dt_write_log($prepared_sql);
+        $activity = $wpdb->get_results($prepared_sql);
 
         //@phpcs:enable
         $activity_simple = array();
@@ -464,8 +486,6 @@ class DT_Data_Reporting_Tools
             );
         }
 
-//    $paged = array_slice( $activity_simple, $args["offset"] ?? 0, $args["number"] ?? 1000 );
-        //todo: get the real total apart from limit
         return array(
             "activity" => $activity_simple,
             "total" => $total_activities
