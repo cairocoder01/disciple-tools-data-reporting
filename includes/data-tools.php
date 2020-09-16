@@ -12,43 +12,43 @@ class DT_Data_Reporting_Tools
      * @return array Columns, rows, and total count
      */
     public static function get_data( $data_type, $config_key, $flatten = false, $limit = null ) {
-      $config = self::get_config_by_key( $config_key );
-      $config_progress = self::get_config_progress_by_key( $config_key );
+        $config = self::get_config_by_key( $config_key );
+        $config_progress = self::get_config_progress_by_key( $config_key );
 
       // Get the settings for this data type from the config
-      $type_configs = isset( $config['data_types'] ) ? $config['data_types'] : [];
-      $type_config = isset($type_configs[$data_type]) ? $type_configs[$data_type] : [];
-      $last_exported_value = isset($config_progress[$data_type]) ? $config_progress[$data_type] : null;
-      $all_data = !isset($type_config['all_data']) || boolval($type_config['all_data']);
-      $limit = $limit ?? (isset($type_config['limit']) ? intval($type_config['limit']) : 100);
+        $type_configs = isset( $config['data_types'] ) ? $config['data_types'] : [];
+        $type_config = isset( $type_configs[$data_type] ) ? $type_configs[$data_type] : [];
+        $last_exported_value = isset( $config_progress[$data_type] ) ? $config_progress[$data_type] : null;
+        $all_data = !isset( $type_config['all_data'] ) || boolval( $type_config['all_data'] );
+        $limit = $limit ?? ( isset( $type_config['limit'] ) ? intval( $type_config['limit'] ) : 100 );
 
-      $result = null;
-      switch ($data_type) {
-        case 'contact_activity':
-          $filter = $config && isset( $config['contacts_filter'] ) ? $config['contacts_filter'] : array();
-          $filter['limit'] = $limit;
-          $result = DT_Data_Reporting_Tools::get_contact_activity( false, $filter );
-          break;
-        case 'contacts':
-        default:
-          $filter = $config && isset( $config['contacts_filter'] ) ? $config['contacts_filter'] : null;
+        $result = null;
+        switch ($data_type) {
+            case 'contact_activity':
+                $filter = $config && isset( $config['contacts_filter'] ) ? $config['contacts_filter'] : array();
+                $filter['limit'] = $limit;
+                $result = self::get_contact_activity( false, $filter );
+            break;
+            case 'contacts':
+            default:
+                $filter = $config && isset( $config['contacts_filter'] ) ? $config['contacts_filter'] : null;
 
-          if ( $limit ) {
-            $filter['limit'] = $limit;
-          }
-          // If not exporting everything, add limit and filter for last value
-          if (!$all_data && !empty($last_exported_value) ) {
-            $filter['last_modified'] = [
-              'start' => $last_exported_value,
-            ];
-          }
+                if ( $limit ) {
+                    $filter['limit'] = $limit;
+                }
+              // If not exporting everything, add limit and filter for last value
+                if ( !$all_data && !empty( $last_exported_value ) ) {
+                    $filter['last_modified'] = [
+                    'start' => $last_exported_value,
+                    ];
+                }
 
-          // Fetch the data
-          $result = DT_Data_Reporting_Tools::get_contacts( $flatten, $filter );
-          break;
-      }
+              // Fetch the data
+                $result = self::get_contacts( $flatten, $filter );
+            break;
+        }
 
-      return $result;
+        return $result;
     }
 
     /**
@@ -61,8 +61,8 @@ class DT_Data_Reporting_Tools
         $filter = $filter ?? array();
 
         // By default, sort by last updated date
-        if ( !isset($filter['sort'] ) ) {
-          $filter['sort'] = 'last_modified';
+        if ( !isset( $filter['sort'] ) ) {
+            $filter['sort'] = 'last_modified';
         }
 
         // Build contact generations
@@ -346,8 +346,8 @@ class DT_Data_Reporting_Tools
         global $wpdb;
 
         // By default, sort by last updated date
-        if ( !isset($filter['sort'] ) ) {
-          $filter['sort'] = 'last_modified';
+        if ( !isset( $filter['sort'] ) ) {
+            $filter['sort'] = 'last_modified';
         }
 
         $post_filter = $filter;
@@ -529,14 +529,14 @@ class DT_Data_Reporting_Tools
    * @return |null
    */
     public static function get_config_progress_by_key( $config_key ) {
-      $configurations_str = get_option( "dt_data_reporting_configurations_progress" );
-      $configurations = json_decode( $configurations_str, true );
+        $configurations_str = get_option( "dt_data_reporting_configurations_progress" );
+        $configurations = json_decode( $configurations_str, true );
 
-      if ( isset( $configurations[$config_key] ) ) {
-        return $configurations[$config_key];
-      }
+        if ( isset( $configurations[$config_key] ) ) {
+            return $configurations[$config_key];
+        }
 
-      return [];
+        return [];
     }
 
   /**
@@ -545,12 +545,12 @@ class DT_Data_Reporting_Tools
    * @param $config_progress
    */
     public static function set_config_progress_by_key( $config_key, $config_progress ) {
-      $configurations_str = get_option( "dt_data_reporting_configurations_progress" );
-      $configurations = json_decode( $configurations_str, true );
+        $configurations_str = get_option( "dt_data_reporting_configurations_progress" );
+        $configurations = json_decode( $configurations_str, true );
 
-      $configurations[$config_key] = $config_progress;
+        $configurations[$config_key] = $config_progress;
 
-      update_option( "dt_data_reporting_configurations_progress", json_encode($configurations) );
+        update_option( "dt_data_reporting_configurations_progress", json_encode( $configurations ) );
     }
 
   /**
@@ -559,22 +559,22 @@ class DT_Data_Reporting_Tools
    * @param $config_key
    * @param $item
    */
-  public static function set_last_exported_value( $data_type, $config_key, $item ) {
-    $value = null;
+    public static function set_last_exported_value( $data_type, $config_key, $item ) {
+        $value = null;
 
-    // Which field do we use to determine last exported for each type
-    switch ($data_type) {
-      case 'contacts':
-      default:
-        $value = $item['last_modified'];
-        break;
-    }
+      // Which field do we use to determine last exported for each type
+        switch ($data_type) {
+            case 'contacts':
+            default:
+                $value = $item['last_modified'];
+            break;
+        }
 
-    // If value is not empty, save it
-    if ( !empty($value) ) {
-      $config_progress = self::get_config_progress_by_key( $config_key );
-      $config_progress[$data_type] = $value;
-      self::set_config_progress_by_key($config_key, $config_progress);
+      // If value is not empty, save it
+        if ( !empty( $value ) ) {
+            $config_progress = self::get_config_progress_by_key( $config_key );
+            $config_progress[$data_type] = $value;
+            self::set_config_progress_by_key( $config_key, $config_progress );
+        }
     }
-  }
 }
