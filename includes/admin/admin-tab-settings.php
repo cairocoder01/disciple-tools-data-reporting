@@ -41,6 +41,18 @@ class DT_Data_Reporting_Tab_Settings
               textInput.show();
             }
           });
+
+          $('.table-config').on('click', '.last-exported-value button', function () {
+            var btn = $(this);
+            var configKey = btn.data('configKey');
+            var dataType = btn.data('dataType');
+            $(this).parent().hide();
+            $.post(location.href, {
+              action: 'resetprogress',
+              configKey: configKey,
+              dataType: dataType,
+            })
+          });
         });
       </script>
         <?php
@@ -68,8 +80,9 @@ class DT_Data_Reporting_Tab_Settings
 
         $configurations_ext = apply_filters( 'dt_data_reporting_configurations', array() );
         $providers = apply_filters( 'dt_data_reporting_providers', array() );
+        $config_progress = json_decode( get_option( "dt_data_reporting_configurations_progress" ), true );
 
-        ?>
+      ?>
       <form method="POST" action="">
         <?php wp_nonce_field( 'security_headers', 'security_headers_nonce' ); ?>
         <!--<table class="widefat striped">
@@ -245,6 +258,15 @@ class DT_Data_Reporting_Tab_Settings
                                  class="data-type-limit <?php echo $type_config['all_data'] == 1 ? 'hide' : '' ?>"
                                  value="<?php echo isset($type_config['limit']) ? $type_config['limit'] : $default_type_config['limit'] ?>"
                                  />
+
+                          <?php if ( isset($config_progress[$key]) && isset($config_progress[$key][$data_type])): ?>
+                            <div class="last-exported-value">
+                              Exported Until: <?php echo $config_progress[$key][$data_type] ?>
+                              <button type="button"
+                                      data-config-key="<?php echo $key ?>"
+                                      data-data-type="<?php echo $data_type ?>">Reset</button>
+                            </div>
+                          <?php endif; ?>
                         </td>
                       </tr>
                     <?php } ?>
@@ -300,7 +322,7 @@ class DT_Data_Reporting_Tab_Settings
                       <?php echo isset( $config['url'] ) ? $config['url'] : "" ?>
                     </td>
                   </tr>
-                    <?php if ( isset( $config['token'] ) ): ?>
+                  <?php if ( isset( $config['token'] ) ): ?>
                   <tr>
                     <th>
                       <label>Token</label>
@@ -308,6 +330,44 @@ class DT_Data_Reporting_Tab_Settings
                     <td>
                         <?php echo isset( $config['token'] ) ? $config['token'] : "" ?>
                     </td>
+                  </tr>
+                  <?php endif; ?>
+                  <?php if ( isset( $config['data_types'] ) ): ?>
+                  <tr>
+                      <th>
+                          <label>Data Types</label>
+                      </th>
+                      <td>
+                          <?php
+                          $type_configs = isset($config['data_types']) ? $config['data_types'] : [];
+                          $default_type_config = ['all_data' => 0, 'limit' => 500];
+                          ?>
+                          <table class="form-table">
+                              <?php foreach ( $data_types as $data_type => $type_name ) {
+                                  $type_config =isset($type_configs[$data_type]) ? $type_configs[$data_type] : $default_type_config;
+                                  ?>
+                                  <tr>
+                                      <th><?php echo $type_name ?></th>
+                                      <td>
+                                          <?php if ( $type_config['all_data'] == 1 ): ?>
+                                              All Data
+                                          <?php else: ?>
+                                              Last Updated
+                                              (Max records: <?php echo isset($type_config['limit']) ? $type_config['limit'] : $default_type_config['limit'] ?>)
+                                              <?php if ( isset($config_progress[$key]) && isset($config_progress[$key][$data_type])): ?>
+                                                  <div class="last-exported-value">
+                                                      Exported Until: <?php echo $config_progress[$key][$data_type] ?>
+                                                      <button type="button"
+                                                              data-config-key="<?php echo $key ?>"
+                                                              data-data-type="<?php echo $data_type ?>">Reset</button>
+                                                  </div>
+                                              <?php endif; ?>
+                                          <?php endif; ?>
+                                      </td>
+                                  </tr>
+                              <?php } ?>
+                          </table>
+                      </td>
                   </tr>
                   <?php endif; ?>
                   <tr>
@@ -330,19 +390,30 @@ class DT_Data_Reporting_Tab_Settings
     }
 
     public function save_settings() {
-        if ( !empty( $_POST ) ){
-            if ( isset( $_POST['security_headers_nonce'] ) && wp_verify_nonce( sanitize_key( $_POST['security_headers_nonce'] ), 'security_headers' ) ) {
-              //configurations
-                if ( isset( $_POST['configurations'] ) ) {
-                    update_option( "dt_data_reporting_configurations", json_encode( $_POST['configurations'] ) );
-                }
-
-              //share_global
-                update_option( "dt_data_reporting_share_global",
-                isset( $_POST['share_global'] ) && $_POST['share_global'] === "1" ? "1" : "0" );
-
-                echo '<div class="notice notice-success notice-dt-data-reporting is-dismissible" data-notice="dt-data-reporting"><p>Settings Saved</p></div>';
+      if ( !empty( $_POST ) ){
+        $action = isset($_POST['action']) ? $_POST['action'] : null;
+        if ( $action == 'resetprogress') {
+          if ( isset($_POST['configKey']) && isset($_POST['dataType']) ) {
+            $config_progress = json_decode( get_option( "dt_data_reporting_configurations_progress" ), true );
+            $config_key = $_POST['configKey'];
+            $data_type = $_POST['dataType'];
+            if ( isset($config_progress[$config_key]) ) {
+              unset($config_progress[$config_key][$data_type]);
+              update_option( "dt_data_reporting_configurations_progress", json_encode($config_progress));
             }
+          }
+        } else if ( isset( $_POST['security_headers_nonce'] ) && wp_verify_nonce( sanitize_key( $_POST['security_headers_nonce'] ), 'security_headers' ) ) {
+          //configurations
+          if ( isset( $_POST['configurations'] ) ) {
+            update_option( "dt_data_reporting_configurations", json_encode( $_POST['configurations'] ) );
+          }
+
+          //share_global
+          update_option( "dt_data_reporting_share_global",
+          isset( $_POST['share_global'] ) && $_POST['share_global'] === "1" ? "1" : "0" );
+
+          echo '<div class="notice notice-success notice-dt-data-reporting is-dismissible" data-notice="dt-data-reporting"><p>Settings Saved</p></div>';
         }
+      }
     }
 }

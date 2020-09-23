@@ -144,7 +144,7 @@ function data_reporting_configurations( $configurations ) {
 * `url`: If using the default `api` provider, this is the endpoint URL to send data
 * `active` (required): Set a value of 1 for the configuration to be active and enabled
 * `token`: If your API requires an authentication token to be passed in the `Authorization` HTTP header, set this to that required token.
-* `contacts_filter`: Filter the query of contacts to be exported. This is passed directly to `DT_Posts::list_posts(...)`, so it uses the format defined at https://github.com/DiscipleTools/disciple-tools-theme/wiki/Filter-and-Search-Lists
+* `contacts_filter`: Filter the query of contacts to be exported. This is used in connection with `DT_Posts::list_posts(...)`, so it uses the format defined at [https://github.com/DiscipleTools/disciple-tools-theme/wiki/Filter-and-Search-Lists] but is limited to `tags`, `source`, and `type`
 * `data_types`: Configuration of each data type to set whether to export all data or only the data since the last export
   * `[type].all_data`: 1 = Export all data every time; 0 = Export only data since last export
   * `[type].limit`: Maximum number of records exported with each export. Recommended to not exceed 5000 as it can cause memory problems on sites with large amounts of data.

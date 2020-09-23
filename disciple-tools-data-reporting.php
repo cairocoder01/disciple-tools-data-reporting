@@ -9,7 +9,7 @@
  * GitHub Plugin URI: https://github.com/cairocoder01/disciple-tools-data-reporting
  * Requires at least: 4.7.0
  * (Requires 4.7+ because of the integration of the REST API at 4.7 and the security requirements of this milestone version.)
- * Tested up to: 5.5
+ * Tested up to: 5.5.1
  *
  * @package Disciple_Tools
  * @link    https://github.com/cairocoder01
@@ -20,7 +20,7 @@
 if ( ! defined( 'ABSPATH' ) ) {
     exit; // Exit if accessed directly
 }
-$dt_data_reporting_required_dt_theme_version = '0.28.0';
+$dt_data_reporting_required_dt_theme_version = '0.32.0';
 
 /**
  * Gets the instance of the `DT_Data_Reporting_Plugin` class.

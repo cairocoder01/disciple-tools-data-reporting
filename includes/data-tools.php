@@ -3,8 +3,90 @@
 
 class DT_Data_Reporting_Tools
 {
+    // limit filtering to only those that are manually implemented for activity
+    private static $filter_fields = ['tags', 'sources', 'type'];
+    private static $supported_filters = [
+        'sort' => true,
+        'limit' => true,
+        'tags' => true,
+        'sources' => true,
+        'type' => true,
+        'last_modified' => true,
+        'date' => true,
+    ];
+
+    /**
+     * Fetch data by type
+     * @param $data_type contacts|contact_activity
+     * @param $config_key
+     * @param bool $flatten
+     * @param null $limit
+     * @return array Columns, rows, and total count
+     */
+    public static function get_data( $data_type, $config_key, $flatten = false, $limit = null ) {
+        $config = self::get_config_by_key( $config_key );
+        $config_progress = self::get_config_progress_by_key( $config_key );
+
+        // Get the settings for this data type from the config
+        $type_configs = isset( $config['data_types'] ) ? $config['data_types'] : [];
+        $type_config = isset( $type_configs[$data_type] ) ? $type_configs[$data_type] : [];
+        $last_exported_value = isset( $config_progress[$data_type] ) ? $config_progress[$data_type] : null;
+        $all_data = !isset( $type_config['all_data'] ) || boolval( $type_config['all_data'] );
+        // Use limit from config only if all_data is false
+        $limit = $limit ?? ( !$all_data && isset( $type_config['limit'] ) ? intval( $type_config['limit'] ) : 100 );
+        // dt_write_log(json_encode($type_config));
+
+        $result = null;
+        switch ($data_type) {
+            case 'contact_activity':
+                $filter = $config && isset( $config['contacts_filter'] ) ? $config['contacts_filter'] : array();
+                if ( $limit ) {
+                    $filter['limit'] = $limit;
+                }
+                // If not exporting everything, add limit and filter for last value
+                if ( !$all_data && !empty( $last_exported_value ) ) {
+                    $filter['date'] = [
+                        'start' => $last_exported_value,
+                    ];
+                }
+                $result = self::get_contact_activity( false, $filter );
+            break;
+            case 'contacts':
+            default:
+                $filter = $config && isset( $config['contacts_filter'] ) ? $config['contacts_filter'] : null;
+
+                if ( $limit ) {
+                    $filter['limit'] = $limit;
+                }
+                // If not exporting everything, add limit and filter for last value
+                if ( !$all_data && !empty( $last_exported_value ) ) {
+                    $filter['last_modified'] = [
+                        'start' => $last_exported_value,
+                    ];
+                }
+
+                // Fetch the data
+                $result = self::get_contacts( $flatten, $filter );
+            break;
+        }
+
+        return $result;
+    }
+
+    /**
+     * Fetch contacts
+     * @param bool $flatten
+     * @param null $filter
+     * @return array Columns, rows, and total count
+     */
     public static function get_contacts( $flatten = false, $filter = null ) {
-        $filter = $filter ?? array();
+        // limit filtering to only those that are manually implemented for activity
+        $filter = $filter ? array_intersect_key($filter, self::$supported_filters) : array();
+
+        // By default, sort by last updated date
+        if ( !isset( $filter['sort'] ) ) {
+            $filter['sort'] = 'last_modified';
+        }
 
         // Build contact generations
         // taken from [dt-theme]/dt-metrics/counters/counter-baptism.php::save_all_contact_generations
@@ -86,11 +168,6 @@ class DT_Data_Reporting_Tools
                                 $field_value = json_encode( $field_value );
                             }
                             break;
-                    }
-                    // special cases...
-                    // last_modified is marked as a number field
-                    if ( $field_key == 'last_modified' ) {
-                        $field_value = date( "Y-m-d H:i:s", $result[$field_key] );
                     }
                 } else {
                     // Set default/blank value
@@ -206,12 +283,16 @@ class DT_Data_Reporting_Tools
         return array( $columns, $items, $contacts['total'] );
     }
 
+    /**
+     * Fetch contact activity
+     * @param bool $flatten
+     * @param null $filter
+     * @return array Columns, rows, and total count
+     */
     public static function get_contact_activity( $flatten = false, $filter = null ) {
-        $filter = $filter ?? array();
+        $filter = $filter ? array_intersect_key($filter, self::$supported_filters) : array();
 
         $activities = self::get_post_activity( 'contacts', $filter );
-//        $contacts = DT_Posts::list_posts('contacts', $filter);
-        // todo: if total is greater than length, recursively get more
         dt_write_log( sizeof( $activities['activity'] ) . ' of ' . $activities['total'] );
         $items = array();
 
@@ -227,55 +308,101 @@ class DT_Data_Reporting_Tools
         $columns = array(
             array(
                 'key' => "id",
-                'name' => 'ID',
+                'name' => "ID",
+                'type' => 'string',
+                'bq_type' => 'STRING',
+                'bq_mode' => 'NULLABLE',
+            ),
+            array(
+                'key' => "meta_id",
+                'name' => 'Meta ID',
+                'type' => 'number',
+                'bq_type' => 'INTEGER',
+                'bq_mode' => 'NULLABLE',
             ),
             array(
                 'key' => "post_id",
                 'name' => 'Contact ID',
+                'type' => 'number',
+                'bq_type' => 'INTEGER',
+                'bq_mode' => 'NULLABLE',
             ),
             array(
                 'key' => "user_id",
                 'name' => 'User ID',
+                'type' => 'number',
+                'bq_type' => 'INTEGER',
+                'bq_mode' => 'NULLABLE',
             ),
             array(
                 'key' => "user_name",
                 'name' => 'User',
+                'type' => 'string',
+                'bq_type' => 'STRING',
+                'bq_mode' => 'NULLABLE',
             ),
             array(
                 'key' => "action_type",
                 'name' => 'Action Type',
+                'type' => 'string',
+                'bq_type' => 'STRING',
+                'bq_mode' => 'NULLABLE',
             ),
             array(
                 'key' => "action_field",
                 'name' => 'Action Field',
+                'type' => 'string',
+                'bq_type' => 'STRING',
+                'bq_mode' => 'NULLABLE',
             ),
             array(
                 'key' => "action_value",
                 'name' => 'Action Value',
+                'type' => 'string',
+                'bq_type' => 'STRING',
+                'bq_mode' => 'NULLABLE',
             ),
             array(
                 'key' => "action_value_friendly",
                 'name' => 'Action Value (Friendly)',
+                'type' => 'string',
+                'bq_type' => 'STRING',
+                'bq_mode' => 'NULLABLE',
             ),
             array(
                 'key' => "action_value_order",
                 'name' => 'Action Value Order',
+                'type' => 'number',
+                'bq_type' => 'INTEGER',
+                'bq_mode' => 'NULLABLE',
             ),
             array(
                 'key' => "action_old_value",
                 'name' => 'Action Old Value',
+                'type' => 'string',
+                'bq_type' => 'STRING',
+                'bq_mode' => 'NULLABLE',
             ),
             array(
                 'key' => "note",
                 'name' => 'Note',
+                'type' => 'string',
+                'bq_type' => 'STRING',
+                'bq_mode' => 'NULLABLE',
             ),
             array(
                 'key' => "date",
-                'name' => 'Date'
+                'name' => 'Date',
+                'type' => 'date',
+                'bq_type' => 'TIMESTAMP',
+                'bq_mode' => 'NULLABLE',
             ),
             array(
                 'key' => 'site',
-                'name' => 'Site'
+                'name' => 'Site',
+                'type' => 'string',
+                'bq_type' => 'STRING',
+                'bq_mode' => 'NULLABLE',
             ),
         );
 
@@ -285,12 +412,10 @@ class DT_Data_Reporting_Tools
     private static function get_post_activity( $post_type, $filter ) {
         global $wpdb;
 
-        $post_filter = $filter;
-        $post_filter['limit'] = 1000; //todo: this is liable to break. We need a way of getting all contact IDs
-        $data = DT_Posts::search_viewable_post( $post_type, $post_filter );
-//        dt_write_log( json_encode( $data ) ); // FOR DEBUGGING
-        $post_ids = dt_array_to_sql( array_map( function ( $post) { return $post->ID;
-        }, $data['posts'] ) );
+        // By default, sort by last updated date
+        if ( !isset( $filter['sort'] ) ) {
+            $filter['sort'] = 'last_modified';
+        }
 
         $post_settings = apply_filters( "dt_get_post_type_settings", array(), $post_type );
         $fields = $post_settings["fields"];
@@ -303,7 +428,24 @@ class DT_Data_Reporting_Tools
         $hidden_keys = dt_array_to_sql( $hidden_fields );
         // phpcs:disable
         // WordPress.WP.PreparedSQL.NotPrepared
+
+        // Subquery to filter by posts associated with the activity
+        $post_filter_subquery = "SELECT 
+            DISTINCT post_id
+            FROM wp_postmeta
+            WHERE 1=1 ";
+        foreach( self::$filter_fields as $filter_key ) {
+            if ( in_array($filter_key, ['sort', 'limit']) ) {
+                continue;
+            }
+            if (isset($filter[$filter_key])) {
+                $post_filter_subquery .= "AND (meta_key='" . esc_sql($filter_key) . "' and meta_value in (" . dt_array_to_sql($filter[$filter_key]) . ")) ";
+            }
+        }
+
+        // Query dt_activity_log table
         $query_activity_select = "SELECT
+                CONCAT('A', histid) as id,
                 meta_id,
                 object_id,
                 user_id,
@@ -320,9 +462,11 @@ class DT_Data_Reporting_Tools
         $query_activity_where = "
             WHERE `object_type` = %s
                  AND meta_key NOT IN ( $hidden_keys )
-                 AND object_id IN ( $post_ids ) ";
+                 AND object_id IN ( $post_filter_subquery ) ";
 
-        $query_comments_select = "SELECT comment_ID as meta_id,
+        // Query wp_comments table
+        $query_comments_select = "SELECT CONCAT('C', comment_ID) as id,
+                comment_ID as meta_id,
                 comment_post_ID as object_id,
                 user_id,
                 comment_author as user_caps,
@@ -339,8 +483,18 @@ class DT_Data_Reporting_Tools
         $query_comments_where = "
             WHERE comment_type not in ('comment', 'duplicate')
                 AND p.post_type=%s
-                AND comment_post_ID IN ( $post_ids ) ";
+                AND comment_post_ID IN ( $post_filter_subquery ) ";
 
+        // If there is a last date value, find activity new than that
+        if ( isset($filter['date']) && isset($filter['date']['start']) ) {
+            $start = $filter['date']['start'];
+            $since = strtotime($start);
+
+            $query_activity_where .= "AND hist_time >= " . esc_sql( $since ) . " ";
+            $query_comments_where .= "AND comment_date_gmt >= '" . esc_sql( $start ) . "' ";
+        }
+
+        // Join 2 queries in a union
         $query = "$query_activity_select
             $query_activity_from
             $query_activity_where
@@ -359,10 +513,12 @@ class DT_Data_Reporting_Tools
             $query .= "LIMIT %d ";
             $params[] = $filter['limit'];
         }
-        $activity = $wpdb->get_results( $wpdb->prepare(
+        $prepared_sql = $wpdb->prepare(
             $query,
             $params
-        ) );
+        );
+        //dt_write_log($prepared_sql);
+        $activity = $wpdb->get_results($prepared_sql);
 
         //@phpcs:enable
         $activity_simple = array();
@@ -384,7 +540,8 @@ class DT_Data_Reporting_Tools
                 }
             }
             $activity_simple[] = array(
-                "id" => $a->meta_id,
+                "id" => $a->id,
+                "meta_id" => $a->meta_id,
                 "post_id" => $a->object_id,
                 "user_id" => $a->user_id,
                 "user_name" => $a->user_caps,
@@ -399,8 +556,6 @@ class DT_Data_Reporting_Tools
             );
         }
 
-//    $paged = array_slice( $activity_simple, $args["offset"] ?? 0, $args["number"] ?? 1000 );
-        //todo: get the real total apart from limit
         return array(
             "activity" => $activity_simple,
             "total" => $total_activities
@@ -418,6 +573,10 @@ class DT_Data_Reporting_Tools
         return trim( $url );
     }
 
+    /**
+     * Get all configurations
+     * @return array
+     */
     public static function get_configs() {
         $configurations_str = get_option( "dt_data_reporting_configurations" );
         $configurations_int = json_decode( $configurations_str, true );
@@ -432,6 +591,12 @@ class DT_Data_Reporting_Tools
         });
         return $configurations;
     }
+
+    /**
+     * Get configuration by key
+     * @param $config_key
+     * @return mixed|null configuration
+     */
     public static function get_config_by_key( $config_key ) {
         $configurations = self::get_configs();
 
@@ -440,5 +605,69 @@ class DT_Data_Reporting_Tools
         }
 
         return null;
+    }
+
+  /**
+   * Get the last exported values for the given config.
+   * [
+   *   'config-key-1' => [
+   *     'contacts' => 'last-value-exported',
+   *     'contact_activity' => 'last-value-exported',
+   *   ]
+   * ]
+   * @param $config_key
+   * @return |null
+   */
+    public static function get_config_progress_by_key( $config_key ) {
+        $configurations_str = get_option( "dt_data_reporting_configurations_progress" );
+        $configurations = json_decode( $configurations_str, true );
+
+        if ( isset( $configurations[$config_key] ) ) {
+            return $configurations[$config_key];
+        }
+
+        return [];
+    }
+
+  /**
+   * Set last exported values for the given config
+   * @param $config_key
+   * @param $config_progress
+   */
+    public static function set_config_progress_by_key( $config_key, $config_progress ) {
+        $configurations_str = get_option( "dt_data_reporting_configurations_progress" );
+        $configurations = json_decode( $configurations_str, true );
+
+        $configurations[$config_key] = $config_progress;
+
+        update_option( "dt_data_reporting_configurations_progress", json_encode( $configurations ) );
+    }
+
+  /**
+   * Set the last export value for a given data type in the given config
+   * @param $data_type
+   * @param $config_key
+   * @param $item
+   */
+    public static function set_last_exported_value( $data_type, $config_key, $item ) {
+        $value = null;
+
+      // Which field do we use to determine last exported for each type
+        switch ($data_type) {
+            case 'contact_activity':
+                $value = $item['date'];
+                break;
+            case 'contacts':
+            default:
+                $value = $item['last_modified'];
+            break;
+        }
+
+      // If value is not empty, save it
+        if ( !empty( $value ) ) {
+            $config_progress = self::get_config_progress_by_key( $config_key );
+            $config_progress[$data_type] = $value;
+            self::set_config_progress_by_key( $config_key, $config_progress );
+        }
     }
 }

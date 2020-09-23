@@ -155,6 +155,12 @@ class DT_Data_Reporting_Tab_BigQuery
             <?php $this->print_schema( 'contacts' ) ?>
           </td>
         </tr>
+        <tr>
+          <td>
+            <h2>Contact Activity</h2>
+            <?php $this->print_schema( 'contact_activity' ) ?>
+          </td>
+        </tr>
       </tbody>
       </table>
         <?php
@@ -162,25 +168,26 @@ class DT_Data_Reporting_Tab_BigQuery
 
     public function print_schema( $type ) {
         switch ($type) {
-          /*case 'contact_activity':
-            [$columns, $rows] = DT_Data_Reporting_Tools::get_contact_activity(false);
-            $this->export_data($columns, $rows);
-            break;*/
+            case 'contact_activity':
+                // We're not using the actual data, so only get 1 record
+                [$columns, ] = DT_Data_Reporting_Tools::get_contact_activity(false, array( 'limit' => 1 ) );
+
+                break;
             case 'contacts':
             default:
                 // We're not using the actual data, so only get 1 record
-                [ $columns, $rows ] = DT_Data_Reporting_Tools::get_contacts( false, array( 'limit' => 1 ) );
-                echo "<pre><code style='display:block;'>";
-                $bq_columns = array_map(function ( $col) {
-                    return array(
-                    'name' => $col['key'],
-                    'type' => $col['bq_type'],
-                    'mode' => $col['bq_mode'],
-                    );
-                }, $columns);
-                echo json_encode( $bq_columns, JSON_PRETTY_PRINT );
-                echo '</code></pre>';
-            break;
+                [ $columns, ] = DT_Data_Reporting_Tools::get_contacts( false, array( 'limit' => 1 ) );
+                break;
         }
+        echo "<pre><code style='display:block;'>";
+        $bq_columns = array_map(function ( $col) {
+            return array(
+                'name' => $col['key'],
+                'type' => $col['bq_type'],
+                'mode' => $col['bq_mode'],
+            );
+        }, $columns);
+        echo json_encode( $bq_columns, JSON_PRETTY_PRINT );
+        echo '</code></pre>';
     }
 }
