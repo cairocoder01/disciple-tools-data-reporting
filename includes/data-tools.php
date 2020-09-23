@@ -306,55 +306,101 @@ class DT_Data_Reporting_Tools
         $columns = array(
             array(
                 'key' => "id",
-                'name' => 'ID',
+                'name' => "ID",
+                'type' => 'string',
+                'bq_type' => 'STRING',
+                'bq_mode' => 'NULLABLE',
+            ),
+            array(
+                'key' => "meta_id",
+                'name' => 'Meta ID',
+                'type' => 'number',
+                'bq_type' => 'INTEGER',
+                'bq_mode' => 'NULLABLE',
             ),
             array(
                 'key' => "post_id",
                 'name' => 'Contact ID',
+                'type' => 'number',
+                'bq_type' => 'INTEGER',
+                'bq_mode' => 'NULLABLE',
             ),
             array(
                 'key' => "user_id",
                 'name' => 'User ID',
+                'type' => 'number',
+                'bq_type' => 'INTEGER',
+                'bq_mode' => 'NULLABLE',
             ),
             array(
                 'key' => "user_name",
                 'name' => 'User',
+                'type' => 'string',
+                'bq_type' => 'STRING',
+                'bq_mode' => 'NULLABLE',
             ),
             array(
                 'key' => "action_type",
                 'name' => 'Action Type',
+                'type' => 'string',
+                'bq_type' => 'STRING',
+                'bq_mode' => 'NULLABLE',
             ),
             array(
                 'key' => "action_field",
                 'name' => 'Action Field',
+                'type' => 'string',
+                'bq_type' => 'STRING',
+                'bq_mode' => 'NULLABLE',
             ),
             array(
                 'key' => "action_value",
                 'name' => 'Action Value',
+                'type' => 'string',
+                'bq_type' => 'STRING',
+                'bq_mode' => 'NULLABLE',
             ),
             array(
                 'key' => "action_value_friendly",
                 'name' => 'Action Value (Friendly)',
+                'type' => 'string',
+                'bq_type' => 'STRING',
+                'bq_mode' => 'NULLABLE',
             ),
             array(
                 'key' => "action_value_order",
                 'name' => 'Action Value Order',
+                'type' => 'number',
+                'bq_type' => 'INTEGER',
+                'bq_mode' => 'NULLABLE',
             ),
             array(
                 'key' => "action_old_value",
                 'name' => 'Action Old Value',
+                'type' => 'string',
+                'bq_type' => 'STRING',
+                'bq_mode' => 'NULLABLE',
             ),
             array(
                 'key' => "note",
                 'name' => 'Note',
+                'type' => 'string',
+                'bq_type' => 'STRING',
+                'bq_mode' => 'NULLABLE',
             ),
             array(
                 'key' => "date",
-                'name' => 'Date'
+                'name' => 'Date',
+                'type' => 'date',
+                'bq_type' => 'TIMESTAMP',
+                'bq_mode' => 'NULLABLE',
             ),
             array(
                 'key' => 'site',
-                'name' => 'Site'
+                'name' => 'Site',
+                'type' => 'string',
+                'bq_type' => 'STRING',
+                'bq_mode' => 'NULLABLE',
             ),
         );
 
@@ -397,6 +443,7 @@ class DT_Data_Reporting_Tools
 
         // Query dt_activity_log table
         $query_activity_select = "SELECT
+                CONCAT('A', histid) as id,
                 meta_id,
                 object_id,
                 user_id,
@@ -416,7 +463,8 @@ class DT_Data_Reporting_Tools
                  AND object_id IN ( $post_filter_subquery ) ";
 
         // Query wp_comments table
-        $query_comments_select = "SELECT comment_ID as meta_id,
+        $query_comments_select = "SELECT CONCAT('C', comment_ID) as id,
+                comment_ID as meta_id,
                 comment_post_ID as object_id,
                 user_id,
                 comment_author as user_caps,
@@ -490,7 +538,8 @@ class DT_Data_Reporting_Tools
                 }
             }
             $activity_simple[] = array(
-                "id" => $a->meta_id,
+                "id" => $a->id,
+                "meta_id" => $a->meta_id,
                 "post_id" => $a->object_id,
                 "user_id" => $a->user_id,
                 "user_name" => $a->user_caps,
