@@ -322,7 +322,7 @@ class DT_Data_Reporting_Tab_Settings
                       <?php echo isset( $config['url'] ) ? $config['url'] : "" ?>
                     </td>
                   </tr>
-                    <?php if ( isset( $config['token'] ) ): ?>
+                  <?php if ( isset( $config['token'] ) ): ?>
                   <tr>
                     <th>
                       <label>Token</label>
@@ -330,6 +330,44 @@ class DT_Data_Reporting_Tab_Settings
                     <td>
                         <?php echo isset( $config['token'] ) ? $config['token'] : "" ?>
                     </td>
+                  </tr>
+                  <?php endif; ?>
+                  <?php if ( isset( $config['data_types'] ) ): ?>
+                  <tr>
+                      <th>
+                          <label>Data Types</label>
+                      </th>
+                      <td>
+                          <?php
+                          $type_configs = isset($config['data_types']) ? $config['data_types'] : [];
+                          $default_type_config = ['all_data' => 0, 'limit' => 500];
+                          ?>
+                          <table class="form-table">
+                              <?php foreach ( $data_types as $data_type => $type_name ) {
+                                  $type_config =isset($type_configs[$data_type]) ? $type_configs[$data_type] : $default_type_config;
+                                  ?>
+                                  <tr>
+                                      <th><?php echo $type_name ?></th>
+                                      <td>
+                                          <?php if ( $type_config['all_data'] == 1 ): ?>
+                                              All Data
+                                          <?php else: ?>
+                                              Last Updated
+                                              (Max records: <?php echo isset($type_config['limit']) ? $type_config['limit'] : $default_type_config['limit'] ?>)
+                                              <?php if ( isset($config_progress[$key]) && isset($config_progress[$key][$data_type])): ?>
+                                                  <div class="last-exported-value">
+                                                      Exported Until: <?php echo $config_progress[$key][$data_type] ?>
+                                                      <button type="button"
+                                                              data-config-key="<?php echo $key ?>"
+                                                              data-data-type="<?php echo $data_type ?>">Reset</button>
+                                                  </div>
+                                              <?php endif; ?>
+                                          <?php endif; ?>
+                                      </td>
+                                  </tr>
+                              <?php } ?>
+                          </table>
+                      </td>
                   </tr>
                   <?php endif; ?>
                   <tr>
@@ -353,7 +391,7 @@ class DT_Data_Reporting_Tab_Settings
 
     public function save_settings() {
       if ( !empty( $_POST ) ){
-        $action = $_POST['action'];
+        $action = isset($_POST['action']) ? $_POST['action'] : null;
         if ( $action == 'resetprogress') {
           if ( isset($_POST['configKey']) && isset($_POST['dataType']) ) {
             $config_progress = json_decode( get_option( "dt_data_reporting_configurations_progress" ), true );

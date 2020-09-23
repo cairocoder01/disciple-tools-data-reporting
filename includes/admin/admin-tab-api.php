@@ -78,6 +78,11 @@ class DT_Data_Reporting_Tab_API
         $provider = isset( $config['provider'] ) ? $config['provider'] : 'api';
 
         if ( $provider == 'api' ) {
+            // Get the settings for this data type from the config
+            $type_configs = isset( $config['data_types'] ) ? $config['data_types'] : [];
+            $type_config = isset( $type_configs[$type] ) ? $type_configs[$type] : [];
+            $all_data = !isset( $type_config['all_data'] ) || boolval( $type_config['all_data'] );
+
             $args = array(
             'method' => 'POST',
             'headers' => array(
@@ -87,6 +92,7 @@ class DT_Data_Reporting_Tab_API
                 'columns' => $columns,
                 'items' => $rows,
                 'type' => $type,
+                'truncate' => $all_data
             )),
             );
 

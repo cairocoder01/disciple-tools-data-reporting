@@ -11,7 +11,7 @@ class DT_Data_Reporting_Tools
         'tags' => true,
         'sources' => true,
         'type' => true,
-        'last_updated' => true,
+        'last_modified' => true,
         'date' => true,
     ];
 
@@ -27,12 +27,14 @@ class DT_Data_Reporting_Tools
         $config = self::get_config_by_key( $config_key );
         $config_progress = self::get_config_progress_by_key( $config_key );
 
-      // Get the settings for this data type from the config
+        // Get the settings for this data type from the config
         $type_configs = isset( $config['data_types'] ) ? $config['data_types'] : [];
         $type_config = isset( $type_configs[$data_type] ) ? $type_configs[$data_type] : [];
         $last_exported_value = isset( $config_progress[$data_type] ) ? $config_progress[$data_type] : null;
         $all_data = !isset( $type_config['all_data'] ) || boolval( $type_config['all_data'] );
-        $limit = $limit ?? ( isset( $type_config['limit'] ) ? intval( $type_config['limit'] ) : 100 );
+        // Use limit from config only if all_data is false
+        $limit = $limit ?? ( !$all_data && isset( $type_config['limit'] ) ? intval( $type_config['limit'] ) : 100 );
+        // dt_write_log(json_encode($type_config));
 
         $result = null;
         switch ($data_type) {
@@ -59,7 +61,7 @@ class DT_Data_Reporting_Tools
                 // If not exporting everything, add limit and filter for last value
                 if ( !$all_data && !empty( $last_exported_value ) ) {
                     $filter['last_modified'] = [
-                    'start' => $last_exported_value,
+                        'start' => $last_exported_value,
                     ];
                 }
 
