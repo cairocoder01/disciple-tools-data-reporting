@@ -189,6 +189,15 @@ class DT_Data_Reporting {
             // adds links to the plugin description area in the plugin admin list.
             add_filter( 'plugin_row_meta', [ $this, 'plugin_description_links' ], 10, 4 );
         }
+
+        if ( ! wp_next_scheduled( 'dt_dr_cron_hook' ) ) {
+            wp_schedule_event( time(), 'daily', 'dt_dr_cron_hook' );
+        }
+        add_action( 'dt_dr_cron_hook', [ $this, 'cron_export' ] );
+    }
+
+    public function cron_export() {
+        dt_write_log('Running DT Data Reporting CRON task');
     }
 
     /**
