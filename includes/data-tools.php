@@ -654,6 +654,9 @@ class DT_Data_Reporting_Tools
 
       // Which field do we use to determine last exported for each type
         switch ($data_type) {
+            case 'contact_activity':
+                $value = $item['date'];
+                break;
             case 'contacts':
             default:
                 $value = $item['last_modified'];
