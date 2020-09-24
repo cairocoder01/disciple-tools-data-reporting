@@ -443,20 +443,24 @@ class DT_Data_Reporting_Tools
             }
         }
 
+//        $charset = $wpdb->get_charset_collate();
+        $charset = $wpdb->collate;
+        $collate = !empty($charset) ? "COLLATE $charset" : "";
+
         // Query dt_activity_log table
         $query_activity_select = "SELECT
                 CONCAT('A', histid) as id,
                 meta_id,
                 object_id,
                 user_id,
-                user_caps,
-                action,
-                meta_key,
-                meta_value,
-                old_value,
-                object_subtype,
-                field_type,
-                object_note,
+                user_caps $collate as user_caps,
+                action $collate as action,
+                meta_key $collate as meta_key,
+                meta_value $collate as meta_value,
+                old_value $collate as old_value,
+                object_subtype $collate as object_subtype,
+                field_type $collate as field_type,
+                object_note $collate as object_note,
                 FROM_UNIXTIME(hist_time) AS date ";
         $query_activity_from = "FROM `$wpdb->dt_activity_log` ";
         $query_activity_where = "
