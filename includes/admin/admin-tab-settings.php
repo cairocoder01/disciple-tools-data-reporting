@@ -304,6 +304,7 @@ class DT_Data_Reporting_Tab_Settings
           <tbody>
           <tr>
             <td>
+              <?php if ( !empty($configurations_ext) ): ?>
               <?php foreach ( $configurations_ext as $key => $config ): ?>
                 <table class="form-table table-config">
                   <tr>
@@ -381,6 +382,9 @@ class DT_Data_Reporting_Tab_Settings
 
                 </table>
               <?php endforeach; ?>
+              <?php else: ?>
+                No external configurations
+              <?php endif; ?>
             </td>
           </tr>
           </tbody>
