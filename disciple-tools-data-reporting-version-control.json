@@ -1,7 +1,7 @@
 {
   "name": "Disciple Tools - Data Reporting",
   "version": "1.1.0",
-  "download_url": "https://github.com/cairocoder01/disciple-tools-data-reporting/releases/download/v1.1.0/disciple-tools-data-reporting.zip",
+  "download_url": "https://github.com/cairocoder01/disciple-tools-data-reporting/archive/v1.1.0.zip",
   "sections": {
     "description": "Disciple Tools - Data Reporting.",
     "installation": "(Required) You must have Disciple.Tools Theme installed before using this plugin. Once Disciple.Tools is installed, you can use the normal Plugin system to install the plugin.",
