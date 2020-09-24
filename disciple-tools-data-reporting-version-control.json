@@ -1,13 +1,13 @@
 {
   "name": "Disciple Tools - Data Reporting",
-  "version": "1.1.0",
-  "download_url": "https://github.com/cairocoder01/disciple-tools-data-reporting/archive/v1.1.0.zip",
+  "version": "1.1.1",
+  "download_url": "https://github.com/cairocoder01/disciple-tools-data-reporting/releases/download/v1.1.1/disciple-tools-data-reporting.zip",
   "sections": {
     "description": "Disciple Tools - Data Reporting.",
     "installation": "(Required) You must have Disciple.Tools Theme installed before using this plugin. Once Disciple.Tools is installed, you can use the normal Plugin system to install the plugin.",
     "changelog": ""
   },
-  "last_updated": "2020-09-23",
+  "last_updated": "2020-09-24",
   "upgrade_notice": "Support for Contact Activity and exporting only differential data updates",
   "requires": "4.7",
   "tested": "5.5.1",
