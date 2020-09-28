@@ -226,7 +226,7 @@ class DT_Data_Reporting_Tab_Settings
                     $type_configs = isset($config['data_types']) ? $config['data_types'] : [];
                     $default_type_config = ['all_data' => 0, 'limit' => 500];
                     ?>
-                    <table class="form-table">
+                    <table class="form-table striped">
                     <?php foreach ( $data_types as $data_type => $type_name ) {
                       $type_config =isset($type_configs[$data_type]) ? $type_configs[$data_type] : $default_type_config;
                       ?>
@@ -267,6 +267,16 @@ class DT_Data_Reporting_Tab_Settings
                                       data-data-type="<?php echo $data_type ?>">Reset</button>
                             </div>
                           <?php endif; ?>
+
+                            <div>
+                                <label>
+                                    <input type="checkbox"
+                                           name="configurations[<?php echo $key ?>][data_types][<?php echo $data_type ?>][schedule]"
+                                           <?php echo $type_config['schedule'] == 'daily' ? 'checked' : '' ?>
+                                           value="daily" />
+                                    Enable automatic daily export
+                                </label>
+                            </div>
                         </td>
                       </tr>
                     <?php } ?>
@@ -363,6 +373,10 @@ class DT_Data_Reporting_Tab_Settings
                                                               data-data-type="<?php echo $data_type ?>">Reset</button>
                                                   </div>
                                               <?php endif; ?>
+                                          <?php endif; ?>
+
+                                          <?php if ( isset( $type_config['schedule'] ) && $type_config['schedule'] == 'daily'): ?>
+                                          <p>&check; Automatic daily export</p>
                                           <?php endif; ?>
                                       </td>
                                   </tr>
