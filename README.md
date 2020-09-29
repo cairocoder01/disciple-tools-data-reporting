@@ -44,18 +44,29 @@ function data_reporting_providers($providers) {
 * `fields[].type`: Type of field. Currently supports: `text`
 * `fields[].helpText`: (optional) Displayed as further explanation of a field underneath the field on the settings screen.
 
-### Action: `dt_data_reporting_export_provider_{PROVIDER_KEY}`
+### Filter: `dt_data_reporting_export_provider_{PROVIDER_KEY}`
 The key used in the `dt_data_reporting_providers` filter above is used to create the name of this action. So if you created a provider with a key of `custom-provider`, this action would be `dt_data_reporting_export_provider_custom-provider`.
 
 The function is executed in the context of a `<ul>`, so log messaging can be `echo`'ed with a `<li>` tag wrapping it.
+The function should return an object with a boolean key `success` to indicate if the export completed successfully and thus track the last successfully exported values. Additionally, a `messages` property can contain an array of log messages to be store in the export log. See the [sample provider plugin](https://github.com/cairocoder01/disciple-tools-data-reporting-provider-sample) for a specific example.
 
 Example:
 ```
-add_action( "dt_data_reporting_export_provider_custom-provider", "data_reporting_export", 10, 4 );
+add_filter( "dt_data_reporting_export_provider_custom-provider", "data_reporting_export", 10, 4 );
 function data_reporting_export( $columns, $rows, $type, $config ) {
-  echo '<li>Sending to provider from hook</li>';
-  echo '<li>Items: ' . count($rows) . '</li>';
-  echo '<li>Config: ' . print_r($config, true) . '</li>';
+    $result = [
+        'success' => true,
+        'messages' => array(),
+    ];  
+  
+    $result['messages'][] = [
+        'message' => 'Debug config: ' . print_r( $config, true ),
+    ];
+    $result['messages'][] = [
+        'type' => 'success',
+        'message' => 'Exported: ' . count($rows),
+    ];
+    return $result;
 }
 ```
 
@@ -124,7 +135,8 @@ function data_reporting_configurations( $configurations ) {
     ],
     'data_types' => [
       'contacts' => [
-        'all_data' => 1
+        'all_data' => 1,
+        'schedule' => 'daily'
       ],
       'contact_activity' => [
         'all_data' => 0,
@@ -148,4 +160,5 @@ function data_reporting_configurations( $configurations ) {
 * `data_types`: Configuration of each data type to set whether to export all data or only the data since the last export
   * `[type].all_data`: 1 = Export all data every time; 0 = Export only data since last export
   * `[type].limit`: Maximum number of records exported with each export. Recommended to not exceed 5000 as it can cause memory problems on sites with large amounts of data.
+  * `[type].schedule`: Set to `daily` to enable automatic daily exporting via CRON task
 * Any other custom fields defined by custom providers should be added as defined in their documentation.
