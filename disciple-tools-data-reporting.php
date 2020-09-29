@@ -149,7 +149,6 @@ class DT_Data_Reporting {
         // Admin and settings variables
         $this->token             = 'DT_Data_Reporting';
         $this->version             = '1.2.0';
-        $testCodeLint = true;
     }
 
     /**
