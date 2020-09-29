@@ -4,7 +4,7 @@
 class DT_Data_Reporting_Tools
 {
     // limit filtering to only those that are manually implemented for activity
-    private static $filter_fields = ['tags', 'sources', 'type'];
+    private static $filter_fields = [ 'tags', 'sources', 'type' ];
     private static $supported_filters = [
         'sort' => true,
         'limit' => true,
@@ -86,7 +86,7 @@ class DT_Data_Reporting_Tools
      */
     public static function get_contacts( $flatten = false, $filter = null ) {
         // limit filtering to only those that are manually implemented for activity
-        $filter = $filter ? array_intersect_key($filter, self::$supported_filters) : array();
+        $filter = $filter ? array_intersect_key( $filter, self::$supported_filters ) : array();
 
         // By default, sort by last updated date
         if ( !isset( $filter['sort'] ) ) {
@@ -109,7 +109,7 @@ class DT_Data_Reporting_Tools
         $contacts = DT_Posts::list_posts( 'contacts', $filter );
         if ( is_wp_error( $contacts ) ) {
             $error_message = $contacts->get_error_message() ?? '';
-            dt_write_log("Error fetching contacts: $error_message");
+            dt_write_log( "Error fetching contacts: $error_message" );
             return array( null, null, 0 );
         }
 
@@ -117,12 +117,14 @@ class DT_Data_Reporting_Tools
 //        dt_write_log(json_encode($contacts['posts'][0]));
         if ( !isset( $filter['limit'] ) ) {
             // if total is greater than length, recursively get more
-            while (sizeof( $contacts['posts'] ) < $contacts['total']) {
+            $retrieved_posts = sizeof( $contacts['posts'] );
+            while ($retrieved_posts < $contacts['total']) {
                 $filter['offset'] = sizeof( $contacts['posts'] );
                 $next_contacts = DT_Posts::list_posts( 'contacts', $filter );
                 $contacts['posts'] = array_merge( $contacts['posts'], $next_contacts['posts'] );
                 dt_write_log( 'adding ' . sizeof( $next_contacts['posts'] ) );
-                dt_write_log( sizeof( $contacts['posts'] ) . ' of ' . $contacts['total'] );
+                $retrieved_posts = sizeof( $contacts['posts'] );
+                dt_write_log( $retrieved_posts . ' of ' . $contacts['total'] );
             }
         }
         $items = array();
@@ -301,7 +303,7 @@ class DT_Data_Reporting_Tools
      * @return array Columns, rows, and total count
      */
     public static function get_contact_activity( $flatten = false, $filter = null ) {
-        $filter = $filter ? array_intersect_key($filter, self::$supported_filters) : array();
+        $filter = $filter ? array_intersect_key( $filter, self::$supported_filters ) : array();
 
         $activities = self::get_post_activity( 'contacts', $filter );
         dt_write_log( sizeof( $activities['activity'] ) . ' of ' . $activities['total'] );
@@ -696,10 +698,10 @@ class DT_Data_Reporting_Tools
         $export_logs_str = get_option( "dt_data_reporting_export_logs" );
         $export_logs = json_decode( $export_logs_str, true );
 
-        if ( !isset($export_logs[$config_key]) ) {
+        if ( !isset( $export_logs[$config_key] ) ) {
             $export_logs[$config_key] = array();
         }
-        if ( !isset($export_logs[$config_key][$data_type]) ) {
+        if ( !isset( $export_logs[$config_key][$data_type] ) ) {
             $export_logs[$config_key][$data_type] = array();
         }
         $export_logs[$config_key][$data_type] = $results;
@@ -715,9 +717,8 @@ class DT_Data_Reporting_Tools
      * @param $config
      * @return array|void|WP_Error Object with success and messages keys
      */
-    public static function send_data_to_provider($columns, $rows, $type, $config )
-    {
-        $provider = isset($config['provider']) ? $config['provider'] : 'api';
+    public static function send_data_to_provider( $columns, $rows, $type, $config ) {
+        $provider = isset( $config['provider'] ) ? $config['provider'] : 'api';
 
         if ($provider == 'api') {
             // return list of log messages (with type: error, success)
@@ -726,9 +727,9 @@ class DT_Data_Reporting_Tools
                 'messages' => array(),
             ];
             // Get the settings for this data type from the config
-            $type_configs = isset($config['data_types']) ? $config['data_types'] : [];
-            $type_config = isset($type_configs[$type]) ? $type_configs[$type] : [];
-            $all_data = !isset($type_config['all_data']) || boolval($type_config['all_data']);
+            $type_configs = isset( $config['data_types'] ) ? $config['data_types'] : [];
+            $type_config = isset( $type_configs[$type] ) ? $type_configs[$type] : [];
+            $all_data = !isset( $type_config['all_data'] ) || boolval( $type_config['all_data'] );
 
             $args = array(
                 'method' => 'POST',
@@ -744,24 +745,24 @@ class DT_Data_Reporting_Tools
             );
 
             // Add auth token if it is part of the config
-            if (isset($config['token'])) {
+            if (isset( $config['token'] )) {
                 $args['headers']['Authorization'] = 'Bearer ' . $config['token'];
             }
 
             // POST the data to the endpoint
-            $result = wp_remote_post($config['url'], $args);
+            $result = wp_remote_post( $config['url'], $args );
 
-            if (is_wp_error($result)) {
+            if (is_wp_error( $result )) {
                 // Handle endpoint error
                 $error_message = $result->get_error_message() ?? '';
-                dt_write_log($error_message);
+                dt_write_log( $error_message );
                 $export_result['messages'][] = [
                     'type' => 'error',
                     'message' => "Error: $error_message",
                 ];
             } else {
                 // Success
-                $status_code = wp_remote_retrieve_response_code($result);
+                $status_code = wp_remote_retrieve_response_code( $result );
                 $result['success'] = true;
                 if ($status_code !== 200) {
                     $export_result['messages'][] = [
@@ -781,7 +782,7 @@ class DT_Data_Reporting_Tools
             }
             return $export_result;
         } else {
-            return do_action("dt_data_reporting_export_provider_$provider", $columns, $rows, $type, $config);
+            return do_action( "dt_data_reporting_export_provider_$provider", $columns, $rows, $type, $config );
         }
     }
 
@@ -801,8 +802,8 @@ class DT_Data_Reporting_Tools
             $log_messages[] = [ 'message' => 'Configuration is missing endpoint URL' ];
         }
         if ( $provider != 'api' ) {
-            if ( !empty($provider_details) && isset($provider_details['flatten']) ) {
-                $flatten = boolval($provider_details['flatten']);
+            if ( !empty( $provider_details ) && isset( $provider_details['flatten'] ) ) {
+                $flatten = boolval( $provider_details['flatten'] );
             }
         }
         $log_messages[] = [ 'message' => 'Exporting to ' . $config['name'] ];
@@ -810,24 +811,24 @@ class DT_Data_Reporting_Tools
         // Run export based on the type of data requested
         $log_messages[] = [ 'message' => 'Fetching data...' ];
         [ $columns, $rows, $total ] = self::get_data( $type, $config_key, $flatten );
-        $log_messages[] = [ 'message' => 'Exporting ' . count($rows) . ' items from a total of ' . $total . '.' ];
+        $log_messages[] = [ 'message' => 'Exporting ' . count( $rows ) . ' items from a total of ' . $total . '.' ];
         $log_messages[] = [ 'message' => 'Sending data to provider...' ];
 
         // Send data to provider
         $export_result = self::send_data_to_provider( $columns, $rows, $type, $config );
 
         // Merge log messages from above and from provider
-        $export_result['messages'] = array_merge($log_messages, isset($export_result['messages']) ? $export_result['messages'] : []);
+        $export_result['messages'] = array_merge( $log_messages, isset( $export_result['messages'] ) ? $export_result['messages'] : [] );
 
         // If provider was successful, store the last value exported
         $success = $export_result['success'];
-        if ( $success && !empty($rows) ) {
-            $last_item = array_slice($rows, -1)[0];
-            self::set_last_exported_value($type, $config_key, $last_item);
+        if ( $success && !empty( $rows ) ) {
+            $last_item = array_slice( $rows, -1 )[0];
+            self::set_last_exported_value( $type, $config_key, $last_item );
         }
 
         // Store the result of this export for debugging later
-        self::store_export_logs($type, $config_key, $export_result);
+        self::store_export_logs( $type, $config_key, $export_result );
 
         return $export_result;
     }
@@ -836,7 +837,7 @@ class DT_Data_Reporting_Tools
      * Run all exports that are configured to be run automatically
      */
     public static function run_scheduled_exports() {
-        dt_write_log('Running DT Data Reporting CRON task');
+        dt_write_log( 'Running DT Data Reporting CRON task' );
 
         $configurations = self::get_configs();
         $providers = apply_filters( 'dt_data_reporting_providers', array() );
@@ -846,15 +847,15 @@ class DT_Data_Reporting_Tools
 
             $provider = isset( $config['provider'] ) ? $config['provider'] : 'api';
             $provider_details = $provider != 'api' ? $providers[$provider] : array();
-            $type_configs = isset($config['data_types']) ? $config['data_types'] : [];
+            $type_configs = isset( $config['data_types'] ) ? $config['data_types'] : [];
 
             // loop over each data type in each config
-            foreach (array_keys(self::$data_types) as $data_type) {
+            foreach (array_keys( self::$data_types ) as $data_type) {
 
-                $schedule = isset($type_configs[$data_type]) && isset($type_configs[$data_type]['schedule']) ? $type_configs[$data_type]['schedule'] : '';
+                $schedule = isset( $type_configs[$data_type] ) && isset( $type_configs[$data_type]['schedule'] ) ? $type_configs[$data_type]['schedule'] : '';
                 // if scheduled export enabled, run export (get data, send to provider)
                 if ( $schedule == 'daily') {
-                    DT_Data_Reporting_Tools::run_export($config_key, $config, $data_type, $provider_details);
+                    self::run_export( $config_key, $config, $data_type, $provider_details );
                 }
             }
         }

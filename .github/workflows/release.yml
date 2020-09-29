@@ -31,6 +31,9 @@ jobs:
 
     # - name: Run test suite
     #   run: composer run-script test
+
+    - name: Code linting
+      run: composer run-script lint
       
     # Below borrowed from https://github.com/actions/upload-release-asset
     - name: Build project

@@ -36,15 +36,15 @@ class DT_Data_Reporting_Tab_Preview
 
     public function main_column() {
         $limit = 100;
-        [ $columns, $rows, $total ] = DT_Data_Reporting_Tools::get_data($this->type, $this->config_key, false, $limit);
+        [ $columns, $rows, $total ] = DT_Data_Reporting_Tools::get_data( $this->type, $this->config_key, false, $limit );
         $this->main_column_table( $columns, $rows, $total );
     }
     public function main_column_table( $columns, $rows, $total ) {
         if ( $this->config ) {
-            echo '<h2>Preview for Configuration: ' . $this->config['name'] . '</h2>';
+            echo '<h2>Preview for Configuration: ' . esc_html( $this->config['name'] ) . '</h2>';
         }
         ?>
-        <div class="total-results">Showing <?php echo count( $rows ) ?> of <?php echo $total ?></div>
+        <div class="total-results">Showing <?php echo count( $rows ) ?> of <?php echo esc_html( $total ) ?></div>
         <?php if ( count( $rows ) != $total ): ?>
           <em>Showing only the first <?php echo count( $rows ) ?> records as a preview. When exporting, all records will be included.</em>
         <?php endif; ?>
@@ -64,7 +64,7 @@ class DT_Data_Reporting_Tab_Preview
                     <?php
                     if (is_array( $row_value )) {
                         if (sizeof( $row_value )) {
-                            echo "<ul><li>" . implode( '</li><li>', $row_value ) . "</li></ul>";
+                            echo "<ul><li>" . implode( '</li><li>', array_map( 'esc_attr', $row_value ) ) . "</li></ul>";
                         }
                     } else {
                         echo esc_html( $row_value );

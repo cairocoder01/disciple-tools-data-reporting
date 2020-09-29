@@ -24,8 +24,8 @@ if ( ! function_exists( 'dt_write_log' ) ) {
 require( $_SERVER[ 'DOCUMENT_ROOT' ] . '/wp-load.php' ); // loads the wp framework when called
 require_once( plugin_dir_path( __FILE__ ) . '../includes/data-tools.php' );
 
-$type = $_GET['type'];
-switch ( $type ) {
+$data_type = isset( $_GET['type'] ) ? esc_url_raw( wp_unslash( $_GET['type'] ) ) : '';
+switch ( $data_type ) {
     case 'contact_activity':
         [ $columns, $items ] = DT_Data_Reporting_Tools::get_contact_activity();
         break;

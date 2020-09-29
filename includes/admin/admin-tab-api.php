@@ -36,7 +36,7 @@ class DT_Data_Reporting_Tab_API
     public function main_column() {
         $settings_link = 'admin.php?page='.$this->token.'&tab=settings';
         if ( empty( $this->config ) ) {
-            echo "<p>Configuration could not be found. Please update in <a href='$settings_link'>Settings</a></p>";
+            echo "<p>Configuration could not be found. Please update in <a href='" . esc_attr( $settings_link ) . "'>Settings</a></p>";
         } else {
             // Fetch details for this provider
             $providers = apply_filters( 'dt_data_reporting_providers', array() );
@@ -45,14 +45,14 @@ class DT_Data_Reporting_Tab_API
 
             echo '<ul class="api-log">';
 
-            $export_result = DT_Data_Reporting_Tools::run_export($this->config_key, $this->config, $this->type, $provider_details);
+            $export_result = DT_Data_Reporting_Tools::run_export( $this->config_key, $this->config, $this->type, $provider_details );
 
             // Print out log messages from export process
-            if ( isset($export_result['messages']) ) {
+            if ( isset( $export_result['messages'] ) ) {
                 foreach ( $export_result['messages'] as $message ) {
-                    $message_type = isset($message['type']) ? $message['type'] : '';
-                    $content = isset($message['message']) ? $message['message'] : '';
-                    echo "<li class='$message_type'>$content</li>";
+                    $message_type = isset( $message['type'] ) ? $message['type'] : '';
+                    $content = isset( $message['message'] ) ? $message['message'] : '';
+                    echo "<li class='" . esc_attr( $message_type ) . "'>" . esc_html( $content ) . "</li>";
                 }
             }
 

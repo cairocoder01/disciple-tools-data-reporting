@@ -42,6 +42,7 @@
     <!-- TODO: enable these rules: -->
     <exclude name="WordPress.Files.FileName.InvalidClassFileName" />
     <exclude name="WordPress.WP.I18n.MissingTranslatorsComment" />
+    <exclude name="WordPress.WP.I18n.NonSingularStringLiteralText" />
     <exclude name="WordPress.NamingConventions.ValidVariableName.NotSnakeCaseMemberVar" />
 
     <!-- We currently don't want these rules that WordPress imports: -->

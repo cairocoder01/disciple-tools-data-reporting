@@ -170,7 +170,7 @@ class DT_Data_Reporting_Tab_BigQuery
         switch ($type) {
             case 'contact_activity':
                 // We're not using the actual data, so only get 1 record
-                [$columns, ] = DT_Data_Reporting_Tools::get_contact_activity(false, array( 'limit' => 1 ) );
+                [$columns, ] = DT_Data_Reporting_Tools::get_contact_activity( false, array( 'limit' => 1 ) );
 
                 break;
             case 'contacts':

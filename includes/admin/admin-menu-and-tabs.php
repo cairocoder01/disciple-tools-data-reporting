@@ -60,7 +60,7 @@ class DT_Data_Reporting_Menu {
     } // End __construct()
 
 
-    function add_styles() {
+    public function add_styles() {
         echo '<style>
             body.wp-admin.extensions-dt_page_DT_Data_Reporting
             #post-body-content {
@@ -185,7 +185,7 @@ class DT_Data_Reporting_Menu {
 
                 <?php foreach ( $providers as $prov_key => $provider ): ?>
                     <?php if ( has_action( 'dt_data_reporting_tab_provider_' . $prov_key ) ): ?>
-                  <a href="<?php echo esc_attr( $link ) . 'prov-' . $prov_key ?>" class="nav-tab <?php ( $tab == 'prov-' . $prov_key ) ? esc_attr_e( 'nav-tab-active', 'DT_Data_Reporting' ) : print ''; ?>\"><?php esc_attr_e( $provider['name'], 'DT_Data_Reporting' ) ?></a>
+                  <a href="<?php echo esc_attr( $link ) . 'prov-' . esc_attr( $prov_key ) ?>" class="nav-tab <?php ( $tab == 'prov-' . $prov_key ) ? esc_attr_e( 'nav-tab-active', 'DT_Data_Reporting' ) : print ''; ?>\"><?php esc_html_e( $provider['name'], 'DT_Data_Reporting' ) ?></a>
                 <?php endif; ?>
                 <?php endforeach; ?>
 

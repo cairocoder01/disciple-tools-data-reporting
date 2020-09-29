@@ -175,9 +175,9 @@ class DT_Data_Reporting {
 
             $hosted_json = "https://raw.githubusercontent.com/cairocoder01/disciple-tools-data-reporting/master/disciple-tools-data-reporting-version-control.json";
             Puc_v4_Factory::buildUpdateChecker(
-            $hosted_json,
-            __FILE__,
-            'disciple-tools-data-reporting'
+                $hosted_json,
+                __FILE__,
+                'disciple-tools-data-reporting'
             );
 
         }

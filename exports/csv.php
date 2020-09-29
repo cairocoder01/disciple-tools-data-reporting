@@ -72,8 +72,8 @@ function get_post_activity( $post_type ) {
         "total" => sizeof( $activity_simple )
     );
 }
-$type = $_GET['type'];
-switch ( $type ) {
+$data_type = isset( $_GET['type'] ) ? esc_url_raw( wp_unslash( $_GET['type'] ) ) : '';
+switch ( $data_type ) {
     case 'contacts':
     default:
         [ $columns, $items ] = DT_Data_Reporting_Tools::get_contacts( true );
