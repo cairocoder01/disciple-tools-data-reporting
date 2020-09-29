@@ -782,7 +782,18 @@ class DT_Data_Reporting_Tools
             }
             return $export_result;
         } else {
-            return do_action( "dt_data_reporting_export_provider_$provider", $columns, $rows, $type, $config );
+            // fallback for using action with no return value. Filter is preferred to return success and log messages
+            do_action( "dt_data_reporting_export_provider_$provider", $columns, $rows, $type, $config );
+
+            // send data to provider to process and return success indicator and any log messages
+            $provider_result = apply_filters( "dt_data_reporting_export_provider_$provider", $columns, $rows, $type, $config );
+            dt_write_log( 'provider_result: ' . json_encode( $provider_result ) );
+            if ( is_bool( $provider_result ) ) {
+                return [
+                    'success' => $provider_result,
+                ];
+            }
+            return $provider_result;
         }
     }
 
@@ -821,7 +832,7 @@ class DT_Data_Reporting_Tools
         $export_result['messages'] = array_merge( $log_messages, isset( $export_result['messages'] ) ? $export_result['messages'] : [] );
 
         // If provider was successful, store the last value exported
-        $success = $export_result['success'];
+        $success = isset( $export_result['success'] ) ? $export_result['success'] : boolval( $export_result );
         if ( $success && !empty( $rows ) ) {
             $last_item = array_slice( $rows, -1 )[0];
             self::set_last_exported_value( $type, $config_key, $last_item );

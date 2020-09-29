@@ -82,6 +82,12 @@ class DT_Data_Reporting_Tab_Settings
         $providers = apply_filters( 'dt_data_reporting_providers', array() );
         $config_progress = json_decode( get_option( "dt_data_reporting_configurations_progress" ), true );
 
+        $allowed_html = array(
+            'a' => array(
+                'href' => array(),
+                'title' => array()
+            ),
+        );
         ?>
       <form method="POST" action="">
         <?php wp_nonce_field( 'security_headers', 'security_headers_nonce' ); ?>
@@ -286,7 +292,7 @@ class DT_Data_Reporting_Tab_Settings
                                         <?php foreach ( $export_logs[$key][$data_type]['messages'] as $message ) {
                                             $message_type = isset( $message['type'] ) ? $message['type'] : '';
                                             $content = isset( $message['message'] ) ? $message['message'] : '';
-                                            echo "<li class='" . esc_attr( $message_type ) . "'>" . esc_html( $content ) . "</li>";
+                                            echo "<li class='" . esc_attr( $message_type ) . "'>" . wp_kses( $content, $allowed_html ) . "</li>";
                                         } ?>
                                     </ul>
                                 </div>
@@ -406,7 +412,7 @@ class DT_Data_Reporting_Tab_Settings
                                                           <?php foreach ( $export_logs[$key][$data_type]['messages'] as $message ) {
                                                                 $message_type = isset( $message['type'] ) ? $message['type'] : '';
                                                                 $content = isset( $message['message'] ) ? $message['message'] : '';
-                                                                echo "<li class='" . esc_attr( $message_type ) . "'>" . esc_html( $content ) . "</li>";
+                                                                echo "<li class='" . esc_attr( $message_type ) . "'>" . wp_kses( $content, $allowed_html ) . "</li>";
                                                           } ?>
                                                       </ul>
                                                   </div>
