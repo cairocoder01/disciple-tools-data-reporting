@@ -674,4 +674,104 @@ class DT_Data_Reporting_Tools
             self::set_config_progress_by_key( $config_key, $config_progress );
         }
     }
+
+    /**
+     * Store last export results in option in case of issue to debug
+     * @param $data_type - contacts, contact_activity, etc.
+     * @param $config_key
+     * @param $results
+     */
+    public static function store_export_logs( $data_type, $config_key, $results ) {
+        $export_logs_str = get_option( "dt_data_reporting_export_logs" );
+        $export_logs = json_decode( $export_logs_str, true );
+
+        if ( !isset($export_logs[$config_key]) ) {
+            $export_logs[$config_key] = array();
+        }
+        if ( !isset($export_logs[$config_key][$data_type]) ) {
+            $export_logs[$config_key][$data_type] = array();
+        }
+        $export_logs[$config_key][$data_type] = $results;
+
+        update_option( "dt_data_reporting_export_logs", json_encode( $export_logs ) );
+    }
+
+    /**
+     * Send data to provider
+     * @param $columns
+     * @param $rows
+     * @param $type
+     * @param $config
+     * @return array|void|WP_Error Object with success and messages keys
+     */
+    public static function export_data( $columns, $rows, $type, $config )
+    {
+        $provider = isset($config['provider']) ? $config['provider'] : 'api';
+
+        if ($provider == 'api') {
+            // return list of log messages (with type: error, success)
+            $export_result = [
+                'success' => false,
+                'messages' => array(),
+            ];
+            // Get the settings for this data type from the config
+            $type_configs = isset($config['data_types']) ? $config['data_types'] : [];
+            $type_config = isset($type_configs[$type]) ? $type_configs[$type] : [];
+            $all_data = !isset($type_config['all_data']) || boolval($type_config['all_data']);
+
+            $args = array(
+                'method' => 'POST',
+                'headers' => array(
+                    'Content-Type' => 'application/json; charset=utf-8'
+                ),
+                'body' => json_encode(array(
+                    'columns' => $columns,
+                    'items' => $rows,
+                    'type' => $type,
+                    'truncate' => $all_data
+                )),
+            );
+
+            // Add auth token if it is part of the config
+            if (isset($config['token'])) {
+                $args['headers']['Authorization'] = 'Bearer ' . $config['token'];
+            }
+
+            // POST the data to the endpoint
+            $result = wp_remote_post($config['url'], $args);
+
+            if (is_wp_error($result)) {
+                // Handle endpoint error
+                $error_message = $result->get_error_message() ?? '';
+                dt_write_log($error_message);
+                $export_result['messages'][] = [
+                    'type' => 'error',
+                    'message' => "Error: $error_message",
+                ];
+            } else {
+                // Success
+                $status_code = wp_remote_retrieve_response_code($result);
+                $result['success'] = true;
+                if ($status_code !== 200) {
+                    $export_result['messages'][] = [
+                        'type' => 'error',
+                        'message' => "Error: Status Code $status_code",
+                    ];
+                } else {
+                    $export_result['messages'][] = [
+                        'type' => 'success',
+                        'message' => "Success",
+                    ];
+                }
+                // $result_body = json_decode($result['body']);
+                $export_result['messages'][] = [
+                    'message' => $result['body'],
+                ];
+            }
+            return $export_result;
+        } else {
+            return do_action("dt_data_reporting_export_provider_$provider", $columns, $rows, $type, $config);
+        }
+    }
+
 }

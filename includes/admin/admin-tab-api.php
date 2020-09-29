@@ -41,12 +41,13 @@ class DT_Data_Reporting_Tab_API
             // Fetch details for this provider
             $providers = apply_filters( 'dt_data_reporting_providers', array() );
             $provider = isset( $this->config['provider'] ) ? $this->config['provider'] : 'api';
+            $log_messages = array();
 
             $flatten = false;
             echo '<ul class="api-log">';
 
             if ( $provider == 'api' && empty( $this->config['url'] ) ) {
-                echo '<li>Configuration is missing endpoint URL</li>';
+                $log_messages[] = [ 'message' => 'Configuration is missing endpoint URL' ];
             }
             if ( $provider != 'api' ) {
                 $provider_details = $providers[$provider];
@@ -54,76 +55,39 @@ class DT_Data_Reporting_Tab_API
                     $flatten = boolval($provider_details['flatten']);
                 }
             }
-            echo '<li>Exporting to ' . $this->config['name'] . '</li>';
+            $log_messages[] = [ 'message' => 'Exporting to ' . $this->config['name'] ];
 
             // Run export based on the type of data requested
-            echo '<li>Fetching data...</li>';
+            $log_messages[] = [ 'message' => 'Fetching data...' ];
             [ $columns, $rows, $total ] = DT_Data_Reporting_Tools::get_data( $this->type, $this->config_key, $flatten );
-            echo '<li>Exporting ' . count($rows) . ' items from a total of ' . $total . '.</li>';
-            echo '<li>Sending data to provider...</li>';
+            $log_messages[] = [ 'message' => 'Exporting ' . count($rows) . ' items from a total of ' . $total . '.' ];
+            $log_messages[] = [ 'message' => 'Sending data to provider...' ];
 
             // Send data to provider
-            $success = $this->export_data( $columns, $rows, $this->type, $this->config );
+            $export_result = DT_Data_Reporting_Tools::export_data( $columns, $rows, $this->type, $this->config );
+
+            // Print out log messages from provider
+            $export_result['messages'] = array_merge($log_messages, isset($export_result['messages']) ? $export_result['messages'] : []);
+            if ( isset($export_result['messages']) ) {
+                foreach ( $export_result['messages'] as $message ) {
+                    $message_type = isset($message['type']) ? $message['type'] : '';
+                    $content = isset($message['message']) ? $message['message'] : '';
+                    echo "<li class='$message_type'>$content</li>";
+                }
+            }
+            $success = $export_result['success'];
 
             // If provider was successful, store the last value exported
             if ( $success && !empty($rows) ) {
               $last_item = array_slice($rows, -1)[0];
               DT_Data_Reporting_Tools::set_last_exported_value($this->type, $this->config_key, $last_item);
             }
+
+            // Store the result of this export for debugging later
+            DT_Data_Reporting_Tools::store_export_logs($this->type, $this->config_key, $export_result);
+
             echo '<li>Done exporting.</li>';
             echo '</ul>';
-        }
-    }
-    public function export_data( $columns, $rows, $type, $config ) {
-        $provider = isset( $config['provider'] ) ? $config['provider'] : 'api';
-
-        if ( $provider == 'api' ) {
-            // Get the settings for this data type from the config
-            $type_configs = isset( $config['data_types'] ) ? $config['data_types'] : [];
-            $type_config = isset( $type_configs[$type] ) ? $type_configs[$type] : [];
-            $all_data = !isset( $type_config['all_data'] ) || boolval( $type_config['all_data'] );
-
-            $args = array(
-            'method' => 'POST',
-            'headers' => array(
-            'Content-Type' => 'application/json; charset=utf-8'
-            ),
-            'body' => json_encode(array(
-                'columns' => $columns,
-                'items' => $rows,
-                'type' => $type,
-                'truncate' => $all_data
-            )),
-            );
-
-            // Add auth token if it is part of the config
-            if (isset( $config['token'] )) {
-                $args['headers']['Authorization'] = 'Bearer ' . $config['token'];
-            }
-
-            // POST the data to the endpoint
-            $result = wp_remote_post( $config['url'], $args );
-
-            if (is_wp_error( $result )) {
-                // Handle endpoint error
-                $error_message = $result->get_error_message() ?? '';
-                dt_write_log( $error_message );
-                echo "<li class='error'>Error: $error_message</li>";
-                return false;
-            } else {
-                // Success
-                $status_code = wp_remote_retrieve_response_code( $result );
-                if ($status_code !== 200) {
-                    echo "<li class='error'>Error: Status Code $status_code</li>";
-                } else {
-                    echo "<li class='success'>Success</li>";
-                }
-                // $result_body = json_decode($result['body']);
-                echo "<li><pre><code>" . $result['body'] . "</code></pre>";
-                return true;
-            }
-        } else {
-            return do_action( "dt_data_reporting_export_provider_$provider", $columns, $rows, $type, $config );
         }
     }
 }
