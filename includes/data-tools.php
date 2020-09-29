@@ -704,7 +704,7 @@ class DT_Data_Reporting_Tools
      * @param $config
      * @return array|void|WP_Error Object with success and messages keys
      */
-    public static function export_data( $columns, $rows, $type, $config )
+    public static function send_data_to_provider($columns, $rows, $type, $config )
     {
         $provider = isset($config['provider']) ? $config['provider'] : 'api';
 
@@ -774,4 +774,74 @@ class DT_Data_Reporting_Tools
         }
     }
 
+    /**
+     * Run export to fetch data, send to provider, and log results
+     * @param $config_key
+     * @param $config
+     * @param $type
+     * @param $provider_details
+     * @return array|void|WP_Error
+     */
+    public static function run_export( $config_key, $config, $type, $provider_details ) {
+        $provider = isset( $config['provider'] ) ? $config['provider'] : 'api';
+        $flatten = false;
+        $log_messages = array();
+        if ( $provider == 'api' && empty( $config['url'] ) ) {
+            $log_messages[] = [ 'message' => 'Configuration is missing endpoint URL' ];
+        }
+        if ( $provider != 'api' ) {
+            if ( !empty($provider_details) && isset($provider_details['flatten']) ) {
+                $flatten = boolval($provider_details['flatten']);
+            }
+        }
+        $log_messages[] = [ 'message' => 'Exporting to ' . $config['name'] ];
+
+        // Run export based on the type of data requested
+        $log_messages[] = [ 'message' => 'Fetching data...' ];
+        [ $columns, $rows, $total ] = DT_Data_Reporting_Tools::get_data( $type, $config_key, $flatten );
+        $log_messages[] = [ 'message' => 'Exporting ' . count($rows) . ' items from a total of ' . $total . '.' ];
+        $log_messages[] = [ 'message' => 'Sending data to provider...' ];
+
+        // Send data to provider
+        $export_result = DT_Data_Reporting_Tools::send_data_to_provider( $columns, $rows, $type, $config );
+
+        // Merge log messages from above and from provider
+        $export_result['messages'] = array_merge($log_messages, isset($export_result['messages']) ? $export_result['messages'] : []);
+
+        // If provider was successful, store the last value exported
+        $success = $export_result['success'];
+        if ( $success && !empty($rows) ) {
+            $last_item = array_slice($rows, -1)[0];
+            DT_Data_Reporting_Tools::set_last_exported_value($type, $config_key, $last_item);
+        }
+
+        // Store the result of this export for debugging later
+        DT_Data_Reporting_Tools::store_export_logs($type, $config_key, $export_result);
+
+        return $export_result;
+    }
+
+    /**
+     * Run all exports that are configured to be run automatically
+     */
+    public static function run_scheduled_exports() {
+        dt_write_log('Running DT Data Reporting CRON task');
+        // todo: loop over configurations
+        // if scheduled export enabled, run export (get data, send to provider)
+        // log last run date
+
+        // fetch data
+        // [ $columns, $rows, $total ] = DT_Data_Reporting_Tools::get_data( $this->type, $this->config_key, $flatten );
+
+        // export data
+        // DT_Data_Reporting_Tools::export_data(...)
+
+        // set last date
+        /*if ( $success && !empty($rows) ) {
+            $last_item = array_slice($rows, -1)[0];
+            DT_Data_Reporting_Tools::set_last_exported_value($this->type, $this->config_key, $last_item);
+        }*/
+
+        // set last export date?? (duplicate of above?)
+    }
 }

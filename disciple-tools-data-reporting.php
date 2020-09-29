@@ -197,7 +197,8 @@ class DT_Data_Reporting {
     }
 
     public function cron_export() {
-        dt_write_log('Running DT Data Reporting CRON task');
+        require_once( plugin_dir_path( __FILE__ ) . './includes/data-tools.php' );
+        DT_Export_Data_Tools::run_scheduled_exports();
     }
 
     /**

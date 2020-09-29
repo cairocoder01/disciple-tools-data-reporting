@@ -71,7 +71,7 @@ class DT_Data_Reporting_Tab_Settings
         $configurations = json_decode( $configurations_str, true );
         $export_logs_str = get_option( "dt_data_reporting_export_logs" );
         $export_logs = json_decode( $export_logs_str, true );
-        echo "<pre><code>". json_encode($export_logs, JSON_PRETTY_PRINT) . "</code></pre>";
+
         if ( empty( $configurations_str ) ) {
             $configurations = array(
             'default' => array(
@@ -289,7 +289,7 @@ class DT_Data_Reporting_Tab_Settings
 
                             <?php if ( isset($export_logs[$key]) && isset($export_logs[$key][$data_type]) ): ?>
                             <div class="export-logs">
-                                <button type="button">View Export Logs</button>
+                                <button type="button">View Last Export Logs</button>
                                 <div class="log-messages" style="display: none;">
                                     <div class="result">Result: <?php echo $export_logs[$key][$data_type]['success'] ? 'Success' : 'Fail' ?></div>
                                     <ul class="api-log">
@@ -406,7 +406,7 @@ class DT_Data_Reporting_Tab_Settings
 
                                           <?php if ( isset($export_logs[$key]) && isset($export_logs[$key][$data_type]) ): ?>
                                               <div class="export-logs">
-                                                  <button type="button">View Export Logs</button>
+                                                  <button type="button">View Last Export Logs</button>
                                                   <div class="log-messages" style="display: none;">
                                                       <div class="result">Result: <?php echo $export_logs[$key][$data_type]['success'] ? 'Success' : 'Fail' ?></div>
                                                       <ul class="api-log">
