@@ -15,6 +15,11 @@ class DT_Data_Reporting_Tools
         'date' => true,
     ];
 
+    public static $data_types = [
+        'contacts' => 'Contacts',
+        'contact_activity' => 'Contact Activity',
+    ];
+
     /**
      * Fetch data by type
      * @param $data_type contacts|contact_activity
@@ -102,6 +107,12 @@ class DT_Data_Reporting_Tools
         }
 
         $contacts = DT_Posts::list_posts( 'contacts', $filter );
+        if ( is_wp_error( $contacts ) ) {
+            $error_message = $contacts->get_error_message() ?? '';
+            dt_write_log("Error fetching contacts: $error_message");
+            return array( null, null, 0 );
+        }
+
         dt_write_log( sizeof( $contacts['posts'] ) . ' of ' . $contacts['total'] );
 //        dt_write_log(json_encode($contacts['posts'][0]));
         if ( !isset( $filter['limit'] ) ) {
@@ -798,12 +809,12 @@ class DT_Data_Reporting_Tools
 
         // Run export based on the type of data requested
         $log_messages[] = [ 'message' => 'Fetching data...' ];
-        [ $columns, $rows, $total ] = DT_Data_Reporting_Tools::get_data( $type, $config_key, $flatten );
+        [ $columns, $rows, $total ] = self::get_data( $type, $config_key, $flatten );
         $log_messages[] = [ 'message' => 'Exporting ' . count($rows) . ' items from a total of ' . $total . '.' ];
         $log_messages[] = [ 'message' => 'Sending data to provider...' ];
 
         // Send data to provider
-        $export_result = DT_Data_Reporting_Tools::send_data_to_provider( $columns, $rows, $type, $config );
+        $export_result = self::send_data_to_provider( $columns, $rows, $type, $config );
 
         // Merge log messages from above and from provider
         $export_result['messages'] = array_merge($log_messages, isset($export_result['messages']) ? $export_result['messages'] : []);
@@ -812,11 +823,11 @@ class DT_Data_Reporting_Tools
         $success = $export_result['success'];
         if ( $success && !empty($rows) ) {
             $last_item = array_slice($rows, -1)[0];
-            DT_Data_Reporting_Tools::set_last_exported_value($type, $config_key, $last_item);
+            self::set_last_exported_value($type, $config_key, $last_item);
         }
 
         // Store the result of this export for debugging later
-        DT_Data_Reporting_Tools::store_export_logs($type, $config_key, $export_result);
+        self::store_export_logs($type, $config_key, $export_result);
 
         return $export_result;
     }
@@ -826,22 +837,26 @@ class DT_Data_Reporting_Tools
      */
     public static function run_scheduled_exports() {
         dt_write_log('Running DT Data Reporting CRON task');
-        // todo: loop over configurations
-        // if scheduled export enabled, run export (get data, send to provider)
-        // log last run date
 
-        // fetch data
-        // [ $columns, $rows, $total ] = DT_Data_Reporting_Tools::get_data( $this->type, $this->config_key, $flatten );
+        $configurations = self::get_configs();
+        $providers = apply_filters( 'dt_data_reporting_providers', array() );
 
-        // export data
-        // DT_Data_Reporting_Tools::export_data(...)
+        // loop over configurations
+        foreach ($configurations as $config_key => $config) {
 
-        // set last date
-        /*if ( $success && !empty($rows) ) {
-            $last_item = array_slice($rows, -1)[0];
-            DT_Data_Reporting_Tools::set_last_exported_value($this->type, $this->config_key, $last_item);
-        }*/
+            $provider = isset( $config['provider'] ) ? $config['provider'] : 'api';
+            $provider_details = $provider != 'api' ? $providers[$provider] : array();
+            $type_configs = isset($config['data_types']) ? $config['data_types'] : [];
 
-        // set last export date?? (duplicate of above?)
+            // loop over each data type in each config
+            foreach (array_keys(self::$data_types) as $data_type) {
+
+                $schedule = isset($type_configs[$data_type]) && isset($type_configs[$data_type]['schedule']) ? $type_configs[$data_type]['schedule'] : '';
+                // if scheduled export enabled, run export (get data, send to provider)
+                if ( $schedule == 'daily') {
+                    DT_Data_Reporting_Tools::run_export($config_key, $config, $data_type, $provider_details);
+                }
+            }
+        }
     }
 }

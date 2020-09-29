@@ -228,15 +228,11 @@ class DT_Data_Reporting_Tab_Settings
                   </th>
                   <td>
                     <?php
-                    $data_types = [
-                      'contacts' => 'Contacts',
-                      'contact_activity' => 'Contact Activity',
-                    ];
                     $type_configs = isset($config['data_types']) ? $config['data_types'] : [];
                     $default_type_config = ['all_data' => 0, 'limit' => 500];
                     ?>
                     <table class="form-table striped">
-                    <?php foreach ( $data_types as $data_type => $type_name ) {
+                    <?php foreach ( DT_Data_Reporting_Tools::$data_types as $data_type => $type_name ) {
                       $type_config =isset($type_configs[$data_type]) ? $type_configs[$data_type] : $default_type_config;
                       ?>
                       <tr>
@@ -281,7 +277,7 @@ class DT_Data_Reporting_Tab_Settings
                                 <label>
                                     <input type="checkbox"
                                            name="configurations[<?php echo $key ?>][data_types][<?php echo $data_type ?>][schedule]"
-                                           <?php echo $type_config['schedule'] == 'daily' ? 'checked' : '' ?>
+                                           <?php echo isset($type_config['schedule']) && $type_config['schedule'] == 'daily' ? 'checked' : '' ?>
                                            value="daily" />
                                     Enable automatic daily export
                                 </label>
@@ -379,7 +375,7 @@ class DT_Data_Reporting_Tab_Settings
                           $default_type_config = ['all_data' => 0, 'limit' => 500];
                           ?>
                           <table class="form-table">
-                              <?php foreach ( $data_types as $data_type => $type_name ) {
+                              <?php foreach ( DT_Data_Reporting_Tools::$data_types as $data_type => $type_name ) {
                                   $type_config =isset($type_configs[$data_type]) ? $type_configs[$data_type] : $default_type_config;
                                   ?>
                                   <tr>

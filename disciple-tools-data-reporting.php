@@ -198,7 +198,13 @@ class DT_Data_Reporting {
 
     public function cron_export() {
         require_once( plugin_dir_path( __FILE__ ) . './includes/data-tools.php' );
-        DT_Export_Data_Tools::run_scheduled_exports();
+
+        // Set current user to avoid permissions issues when fetching posts
+        wp_set_current_user( 0 );
+        $current_user = wp_get_current_user();
+        $current_user->add_cap( "access_contacts" );
+        $current_user->add_cap( "view_any_contacts" );
+        DT_Data_Reporting_Tools::run_scheduled_exports();
     }
 
     /**
