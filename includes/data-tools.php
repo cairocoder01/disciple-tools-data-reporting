@@ -144,7 +144,7 @@ class DT_Data_Reporting_Tools
             );
             foreach ( $fields as $field_key => $field ){
                 // skip if field is hidden, unless marked as exception above
-                if ( isset( $field['hidden'] ) && $field['hidden'] == true && !in_array( $field_key, self::$included_hidden_fields_contacts) ) {
+                if ( isset( $field['hidden'] ) && $field['hidden'] == true && !in_array( $field_key, self::$included_hidden_fields_contacts ) ) {
                     continue;
                 }
                 // skip if in list of excluded fields
