@@ -20,6 +20,10 @@ class DT_Data_Reporting_Tools
         'contact_activity' => 'Contact Activity',
     ];
 
+
+    private static $excluded_fields_contacts = array( 'tasks', 'facebook_data' );
+    private static $included_hidden_fields_contacts = array( 'accepted', 'source_details', 'type' );
+
     /**
      * Fetch data by type
      * @param $data_type contacts|contact_activity
@@ -131,7 +135,6 @@ class DT_Data_Reporting_Tools
 
         $post_settings = apply_filters( "dt_get_post_type_settings", array(), 'contacts' );
         $fields = $post_settings["fields"];
-        $excluded_fields = array( 'tasks', 'facebook_data' );
         $base_url = self::get_current_site_base_url();
 
         foreach ($contacts['posts'] as $index => $result) {
@@ -140,12 +143,12 @@ class DT_Data_Reporting_Tools
                 'Created' => $result['post_date'],
             );
             foreach ( $fields as $field_key => $field ){
-                // skip if field is hidden
-                if ( isset( $field['hidden'] ) && $field['hidden'] == true ) {
+                // skip if field is hidden, unless marked as exception above
+                if ( isset( $field['hidden'] ) && $field['hidden'] == true && !in_array( $field_key, self::$included_hidden_fields_contacts) ) {
                     continue;
                 }
                 // skip if in list of excluded fields
-                if ( in_array( $field_key, $excluded_fields ) ) {
+                if ( in_array( $field_key, self::$excluded_fields_contacts ) ) {
                     continue;
                 }
 
@@ -234,11 +237,11 @@ class DT_Data_Reporting_Tools
 
         foreach ( $fields as $field_key => $field ){
             // skip if field is hidden
-            if ( isset( $field['hidden'] ) && $field['hidden'] == true ) {
+            if ( isset( $field['hidden'] ) && $field['hidden'] == true && !in_array( $field_key, self::$included_hidden_fields_contacts ) ) {
                 continue;
             }
             // skip if in list of excluded fields
-            if ( in_array( $field_key, $excluded_fields ) ) {
+            if ( in_array( $field_key, self::$excluded_fields_contacts ) ) {
                 continue;
             }
 
@@ -433,8 +436,15 @@ class DT_Data_Reporting_Tools
         $post_settings = apply_filters( "dt_get_post_type_settings", array(), $post_type );
         $fields = $post_settings["fields"];
         $hidden_fields = array( 'duplicate_of' );
+        if ( $post_type == 'contacts' ) {
+            $hidden_fields = array_merge( $hidden_fields, self::$excluded_fields_contacts );
+        }
         foreach ( $fields as $field_key => $field ){
             if ( isset( $field["hidden"] ) && $field["hidden"] === true ){
+                // if field is marked as exception to hidden fields, don't exclude it here
+                if ( $post_type == 'contacts' && in_array( $field_key, self::$included_hidden_fields_contacts ) ) {
+                    continue;
+                }
                 $hidden_fields[] = $field_key;
             }
         }
