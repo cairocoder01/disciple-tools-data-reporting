@@ -450,12 +450,12 @@ class DT_Data_Reporting_Tab_Settings
     public function save_settings() {
         if ( !empty( $_POST ) ){
             if ( isset( $_POST['security_headers_nonce'] ) && wp_verify_nonce( sanitize_key( $_POST['security_headers_nonce'] ), 'security_headers' ) ) {
-                $action = isset( $_POST['action'] ) ? esc_url_raw( wp_unslash( $_POST['action'] ) ) : null;
+                $action = isset( $_POST['action'] ) ? sanitize_key( wp_unslash( $_POST['action'] ) ) : null;
                 if ( $action == 'resetprogress') {
                     if ( isset( $_POST['configKey'] ) && isset( $_POST['dataType'] ) ) {
                         $config_progress = json_decode( get_option( "dt_data_reporting_configurations_progress" ), true );
-                        $config_key = esc_url_raw( wp_unslash( $_POST['configKey'] ) );
-                        $data_type = esc_url_raw( wp_unslash( $_POST['dataType'] ) );
+                        $config_key = sanitize_key( wp_unslash( $_POST['configKey'] ) );
+                        $data_type = sanitize_key( wp_unslash( $_POST['dataType'] ) );
                         if ( isset( $config_progress[$config_key] ) ) {
                             unset( $config_progress[$config_key][$data_type] );
                             update_option( "dt_data_reporting_configurations_progress", json_encode( $config_progress ) );

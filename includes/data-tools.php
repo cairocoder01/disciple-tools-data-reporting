@@ -773,7 +773,7 @@ class DT_Data_Reporting_Tools
             } else {
                 // Success
                 $status_code = wp_remote_retrieve_response_code( $result );
-                $result['success'] = true;
+                $export_result['success'] = true;
                 if ($status_code !== 200) {
                     $export_result['messages'][] = [
                         'type' => 'error',
@@ -837,6 +837,7 @@ class DT_Data_Reporting_Tools
 
         // Send data to provider
         $export_result = self::send_data_to_provider( $columns, $rows, $type, $config );
+        dt_write_log(json_encode($export_result));
 
         // Merge log messages from above and from provider
         $export_result['messages'] = array_merge( $log_messages, isset( $export_result['messages'] ) ? $export_result['messages'] : [] );
