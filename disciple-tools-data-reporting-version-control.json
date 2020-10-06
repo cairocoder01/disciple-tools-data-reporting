@@ -12,8 +12,8 @@
   "requires": "4.7",
   "tested": "5.5.1",
   "banners": {
-    "low": "https://raw.githubusercontent.com/DiscipleTools/disciple-tools-version-control/master/images/dt-placeholder-772x250.jpg",
-    "high": "https://raw.githubusercontent.com/DiscipleTools/disciple-tools-version-control/master/images/dt-placeholder-1544x500.jpg"
+    "low": "https://raw.githubusercontent.com/cairocoder01/disciple-tools-data-reporting/master/assets/banner-772x250.png",
+    "high": "https://raw.githubusercontent.com/cairocoder01/disciple-tools-data-reporting/master/assets/banner-1544x500.png"
   },
   "author": "cairocoder01",
   "author_homepage": "https://github.com/cairocoder01",
