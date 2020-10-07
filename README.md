@@ -1,10 +1,26 @@
+![Data Reporting banner](/assets/banner-772x250.png)
 # Disciple Tools Data Reporting
-The Disciple Tools Data Reporting plugin is intended to assist in exporting data to an external data reporting source, such as Google BigQuery.
-The plugin allows you to manually export your data in CSV and JSON (newline delimited) formats. However, it's primary intended use is for automating data export via a webhook URL to receive JSON formatted data. 
+The Disciple Tools Data Reporting plugin assists in exporting data to an external data reporting source, such as cloud providers like Google Cloud, AWS, and Azure. The plugin allows you to manually download your data in CSV and JSON (newline delimited) formats. However, it's primary intended use is for automating data export directly to your choosen cloud provider.
 
-The plugin has been setup for usage with Google Cloud Platform infrastructure (Cloud Functions, Cloud Storage, and BigQuery), but should theoretically be able to be used with anything as the single point of communication is a webhook URL that you could configure to communicate with any system.
+By default, the plugin can export data in JSON format to a webhook URL for you to process in any way that you need. There are also additional plugins that can be added or created that provide other data provider types for sending data directly to your data store using the APIs or SDKs that are available for them. Currently, a provider of that type is available for Azure with more to come in the future as need arises.
 
-There is also a feature to opt-in to sending anonymized data to a global reporting system for comparing D.T usage across different sites and searching for trends that could be useful for the whole D.T community. 
+Currently, only contacts and contact activity data can be exported, but the same export for groups and group activity data will be coming in upcoming releases.
+
+Multiple exports can be created on a single site so you can export to multiple data stores if you partner with others who would like reporting data available to them.
+
+**Features:**
+* Contact / Contact Activity export
+* Preview of data to be exported
+* Data download (CSV, JSON)
+* Automated nightly export
+* Integration with your cloud storage of choice
+* Multiple export configurations per site
+* Externally-created export configurations created by other plugins
+
+**Upcoming Features:**
+* Group / Group Activity export
+* Configure selection of fields to be exported
+* Documentation for setting up your own cloud reporting environment
 
 ## Custom Providers
 Custom data providers can be created to send the data to any data source that is need via a separate plugin.
