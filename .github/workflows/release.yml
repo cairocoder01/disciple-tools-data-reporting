@@ -47,7 +47,7 @@ jobs:
     - name: Build project
       run: |
         mkdir disciple-tools-data-reporting |
-        cp -r disciple-tools-data-reporting.php LICENSE exports includes languages vendor disciple-tools-data-reporting/ |
+        cp -r disciple-tools-data-reporting.php LICENSE assets exports includes languages vendor disciple-tools-data-reporting/ |
         zip -r disciple-tools-data-reporting.zip disciple-tools-data-reporting
     - name: Create Release
       id: create_release
