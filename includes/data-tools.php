@@ -455,7 +455,7 @@ class DT_Data_Reporting_Tools
         // Subquery to filter by posts associated with the activity
         $post_filter_subquery = "SELECT 
             DISTINCT post_id
-            FROM wp_postmeta
+            FROM `$wpdb->postmeta`
             WHERE 1=1 ";
         foreach( self::$filter_fields as $filter_key ) {
             if ( in_array($filter_key, ['sort', 'limit']) ) {
@@ -505,8 +505,8 @@ class DT_Data_Reporting_Tools
                 NULL as field_type,
                 comment_content as object_note,
                 comment_date_gmt as date ";
-        $query_comments_from = "FROM wp_comments c
-            LEFT JOIN wp_posts p on c.comment_post_ID=p.ID ";
+        $query_comments_from = "FROM `$wpdb->comments` c
+            LEFT JOIN `$wpdb->posts` p on c.comment_post_ID=p.ID ";
         $query_comments_where = "
             WHERE comment_type not in ('comment', 'duplicate')
                 AND p.post_type=%s
