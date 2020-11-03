@@ -80,50 +80,10 @@ switch ( $data_type ) {
         $columns = array_map( function ( $column ) { return $column['name'];
         }, $columns );
         break;
-    case 'contactactivity':
+    case 'contact_activity':
         [ $columns, $items ] = DT_Data_Reporting_Tools::get_contact_activity( true );
         $columns = array_map( function ( $column ) { return $column['name'];
         }, $columns );
-        break;
-    case 'cities':
-        $places = array();
-        /*$results = $wpdb->get_results("
-            SELECT * FROM dt_geonames WHERE feature_code LIKE 'PP%' AND feature_class = 'P' AND population > 100000",
-            ARRAY_A);
-        foreach ($results as $index => $result ) {
-            $places[] = [
-                'geonamid' => $result['geonameid'],
-                'name' => $result['name'],
-                'population' => $result['population'],
-                'latitude' => $result['latitude'],
-                'longitude' => $result['longitude'],
-            ];
-            //    dt_write_log($value);
-        }*/
-        $columns = array( 'geonameid', 'name', 'population', 'latitude', 'longitude' );
-        break;
-
-    case 'list':
-        $places = array();
-        /*$results = $wpdb->get_results("
-            SELECT meta_value
-            FROM $wpdb->postmeta
-            WHERE meta_key = 'zume_raw_record'
-              AND post_id IN (SELECT ID FROM $wpdb->posts WHERE post_type = 'groups')",
-            ARRAY_A);
-        foreach ($results as $index => $result ) {
-            $value = maybe_unserialize( $result['meta_value'] );
-            $places[$index] = [
-                'id' => $index,
-                'name' => $value['group_name'],
-                'address' => $value['address'],
-                'type' => 'church',
-                'lat' => $value['lat'],
-                'lng' => $value['lng'],
-            ];
-            //    dt_write_log($value);
-        }*/
-        $columns = array( 'id', 'name', 'address', 'type', 'lat', 'lng' );
         break;
 }
 
