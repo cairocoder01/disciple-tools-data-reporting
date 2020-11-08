@@ -73,6 +73,9 @@ function get_post_activity( $post_type ) {
     );
 }
 $data_type = isset( $_GET['type'] ) ? esc_url_raw( wp_unslash( $_GET['type'] ) ) : '';
+$data_type = str_replace( 'https://', '', $data_type );
+$data_type = str_replace( 'http://', '', $data_type );  // http://contacts
+$data_filename = strcmp($data_type, '') !== 0 ? $data_type : 'data';
 switch ( $data_type ) {
     case 'contacts':
     default:
@@ -85,12 +88,22 @@ switch ( $data_type ) {
         $columns = array_map( function ( $column ) { return $column['name'];
         }, $columns );
         break;
+    case 'groups':
+        [ $columns, $items ] = DT_Data_Reporting_Tools::get_groups( true );
+        $columns = array_map( function ( $column ) { return $column['name'];
+        }, $columns );
+        break;
+    case 'group_activity':
+        [ $columns, $items ] = DT_Data_Reporting_Tools::get_group_activity( true );
+        $columns = array_map( function ( $column ) { return $column['name'];
+        }, $columns );
+        break;
 }
 
 
 // output headers so that the file is downloaded rather than displayed
 header( 'Content-Type: text/csv; charset=utf-8' );
-header( 'Content-Disposition: attachment; filename=data.csv' );
+header( 'Content-Disposition: attachment; filename='.$data_filename.'.csv' );
 
 // create a file pointer connected to the output stream
 $output = fopen( 'php://output', 'w' );

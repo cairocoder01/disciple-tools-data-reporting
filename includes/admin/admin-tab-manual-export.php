@@ -60,6 +60,27 @@ class DT_Data_Reporting_Tab_Manual_Export
                     </div>
                 </td>
             </tr>
+            <tr>
+                <td>
+                    Export Groups
+
+                    <div class="alignright">
+                        <a href="<?php echo esc_attr( $preview_link ) . 'groups' ?>">Preview <span class="dashicons dashicons-admin-site-alt3"></span></a> |
+                        <a href="<?php echo esc_attr( plugins_url( '../../exports/csv.php?type=groups', __FILE__ ) ) ?>">CSV <span class="dashicons dashicons-download"></span></a> |
+                        <a href="<?php echo esc_attr( plugins_url( '../../exports/json.php?type=groups', __FILE__ ) ) ?>">JSON <span class="dashicons dashicons-download"></span></a>
+                    </div>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    Export Group Activity
+                    <div class="alignright">
+                        <a href="<?php echo esc_attr( $preview_link ) . 'group_activity' ?>">Preview <span class="dashicons dashicons-admin-site-alt3"></span></a> |
+                        <a href="<?php echo esc_attr( plugins_url( '../../exports/csv.php?type=group_activity', __FILE__ ) ) ?>">CSV <span class="dashicons dashicons-download"></a> |
+                        <a href="<?php echo esc_attr( plugins_url( '../../exports/json.php?type=group_activity', __FILE__ ) ) ?>">JSON <span class="dashicons dashicons-download"></a>
+                    </div>
+                </td>
+            </tr>
             </tbody>
         </table>
         <br>
@@ -93,6 +114,25 @@ class DT_Data_Reporting_Tab_Manual_Export
                 <div class="alignright">
                   <a href="<?php echo esc_attr( $preview_link_config ) . 'contact_activity' ?>">Preview <span class="dashicons dashicons-admin-site-alt3"></span></a> |
                   <a href="<?php echo esc_attr( $api_action_link_config ) . 'contact_activity' ?>">Send Data <span class="dashicons dashicons-migrate"></span></a>
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                Export Groups
+
+                <div class="alignright">
+                  <a href="<?php echo esc_attr( $preview_link_config ) . 'groups' ?>">Preview <span class="dashicons dashicons-admin-site-alt3"></span></a> |
+                  <a href="<?php echo esc_attr( $api_action_link_config ) . 'groups' ?>">Send Data <span class="dashicons dashicons-migrate"></span></a>
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                Export Group Activity
+                <div class="alignright">
+                  <a href="<?php echo esc_attr( $preview_link_config ) . 'group_activity' ?>">Preview <span class="dashicons dashicons-admin-site-alt3"></span></a> |
+                  <a href="<?php echo esc_attr( $api_action_link_config ) . 'group_activity' ?>">Send Data <span class="dashicons dashicons-migrate"></span></a>
                 </div>
               </td>
             </tr>
