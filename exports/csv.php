@@ -72,9 +72,7 @@ function get_post_activity( $post_type ) {
         "total" => sizeof( $activity_simple )
     );
 }
-$data_type = isset( $_GET['type'] ) ? esc_url_raw( wp_unslash( $_GET['type'] ) ) : '';
-$data_type = str_replace( 'https://', '', $data_type );
-$data_type = str_replace( 'http://', '', $data_type );  // http://contacts
+$data_type = isset( $_GET['type'] ) ? sanitize_key( wp_unslash( $_GET['type'] ) ) : '';
 $data_filename = strcmp($data_type, '') !== 0 ? $data_type : 'data';
 switch ( $data_type ) {
     case 'contacts':
