@@ -149,12 +149,26 @@ function data_reporting_configurations( $configurations ) {
     'contacts_filter' => [
       'sources' => ['web']
     ],
+    'groups_filter' => [
+      'group_status' => 'active',
+      'group_type' => ['pre-group','church'],
+      'member_count' => ['2','3'],
+      'requires_update' => '0'
+    ],
     'data_types' => [
       'contacts' => [
         'all_data' => 1,
         'schedule' => 'daily'
       ],
       'contact_activity' => [
+        'all_data' => 0,
+        'limit' => 100
+      ],
+      'groups' => [
+        'all_data' => 1,
+        'schedule' => 'daily'
+      ],
+      'group_activity' => [
         'all_data' => 0,
         'limit' => 100
       ]
