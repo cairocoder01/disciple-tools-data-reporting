@@ -25,7 +25,7 @@ class DT_Data_Reporting_Tools
 
     private static $excluded_fields_contacts = array( 'tasks', 'facebook_data' );
     private static $included_hidden_fields_contacts = array( 'accepted', 'source_details', 'type' );
-    private static $excluded_fields_groups = array( );
+    private static $excluded_fields_groups = array();
     private static $included_hidden_fields_groups = array( 'accepted', 'source_details', 'type' );
 
     /**
@@ -461,7 +461,7 @@ class DT_Data_Reporting_Tools
     }
 
     /**
-     * Fetch groups 
+     * Fetch groups
      * @param bool $flatten
      * @param null $filter
      * @return array Columns, rows, and total count

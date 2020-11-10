@@ -25,7 +25,7 @@ require( $_SERVER[ 'DOCUMENT_ROOT' ] . '/wp-load.php' ); // loads the wp framewo
 require_once( plugin_dir_path( __FILE__ ) . '../includes/data-tools.php' );
 
 $data_type = isset( $_GET['type'] ) ? sanitize_key( wp_unslash( $_GET['type'] ) ) : '';
-$data_filename = strcmp($data_type, '') !== 0 ? $data_type : 'data';
+$data_filename = strcmp( $data_type, '' ) !== 0 ? $data_type : 'data';
 switch ( $data_type ) {
     case 'contacts':
     default:

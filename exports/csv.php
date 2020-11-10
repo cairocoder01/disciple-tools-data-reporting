@@ -73,7 +73,7 @@ function get_post_activity( $post_type ) {
     );
 }
 $data_type = isset( $_GET['type'] ) ? sanitize_key( wp_unslash( $_GET['type'] ) ) : '';
-$data_filename = strcmp($data_type, '') !== 0 ? $data_type : 'data';
+$data_filename = strcmp( $data_type, '' ) !== 0 ? $data_type : 'data';
 switch ( $data_type ) {
     case 'contacts':
     default:
