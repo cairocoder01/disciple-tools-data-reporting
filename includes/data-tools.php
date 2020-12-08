@@ -130,12 +130,11 @@ class DT_Data_Reporting_Tools
     public static function get_contacts( $flatten = false, $filter = null ) {
         $is_dt_1_0 = version_compare( wp_get_theme()->version, '1.0.0', '>=' );
 
-        // limit filtering to only those that are manually implemented for activity
-        $filter = $filter ? array_intersect_key( $filter, self::$supported_filters ) : array();
-
-        // By default, sort by last updated date
-        if ( !isset( $filter['sort'] ) ) {
-            $filter['sort'] = 'last_modified';
+        try {
+            $contacts = self::get_posts( 'contacts', $filter );
+        } catch ( Exception $ex ) {
+            dt_write_log( "Error fetching contacts: {$ex->getMessage()}" );
+            return array( null, null, 0 );
         }
 
         // Build contact generations
@@ -151,27 +150,6 @@ class DT_Data_Reporting_Tools
             }
         }
 
-        $contacts = DT_Posts::list_posts( 'contacts', $filter );
-        if ( is_wp_error( $contacts ) ) {
-            $error_message = $contacts->get_error_message() ?? '';
-            dt_write_log( "Error fetching contacts: $error_message" );
-            return array( null, null, 0 );
-        }
-
-        dt_write_log( sizeof( $contacts['posts'] ) . ' of ' . $contacts['total'] );
-//        dt_write_log(json_encode($contacts['posts'][0]));
-        if ( !isset( $filter['limit'] ) ) {
-            // if total is greater than length, recursively get more
-            $retrieved_posts = sizeof( $contacts['posts'] );
-            while ($retrieved_posts < $contacts['total']) {
-                $filter['offset'] = sizeof( $contacts['posts'] );
-                $next_contacts = DT_Posts::list_posts( 'contacts', $filter );
-                $contacts['posts'] = array_merge( $contacts['posts'], $next_contacts['posts'] );
-                dt_write_log( 'adding ' . sizeof( $next_contacts['posts'] ) );
-                $retrieved_posts = sizeof( $contacts['posts'] );
-                dt_write_log( $retrieved_posts . ' of ' . $contacts['total'] );
-            }
-        }
         $items = array();
 
         $post_settings = apply_filters( "dt_get_post_type_settings", array(), 'contacts' );
@@ -365,34 +343,13 @@ class DT_Data_Reporting_Tools
     public static function get_groups( $flatten = false, $filter = null ) {
         $is_dt_1_0 = version_compare( wp_get_theme()->version, '1.0.0', '>=' );
 
-        // limit filtering to only those that are manually implemented for activity
-        $filter = $filter ? array_intersect_key( $filter, self::$supported_filters ) : array();
-
-        // By default, sort by last updated date
-        if ( !isset( $filter['sort'] ) ) {
-            $filter['sort'] = 'last_modified';
-        }
-
-        $groups = DT_Posts::list_posts( 'groups', $filter );
-        if ( is_wp_error( $groups ) ) {
-            $error_message = $groups->get_error_message() ?? '';
-            dt_write_log( "Error fetching groups: $error_message" );
+        try {
+            $groups = self::get_posts( 'groups', $filter );
+        } catch ( Exception $ex ) {
+            dt_write_log( "Error fetching groups: {$ex->getMessage()}" );
             return array( null, null, 0 );
         }
 
-        dt_write_log( sizeof( $groups['posts'] ) . ' of ' . $groups['total'] );
-        if ( !isset( $filter['limit'] ) ) {
-            // if total is greater than length, recursively get more
-            $retrieved_posts = sizeof( $groups['posts'] );
-            while ($retrieved_posts < $groups['total']) {
-                $filter['offset'] = sizeof( $groups['posts'] );
-                $next_groups = DT_Posts::list_posts( 'groups', $filter );
-                $groups['posts'] = array_merge( $groups['posts'], $next_groups['posts'] );
-                dt_write_log( 'adding ' . sizeof( $next_groups['posts'] ) );
-                $retrieved_posts = sizeof( $groups['posts'] );
-                dt_write_log( $retrieved_posts . ' of ' . $groups['total'] );
-            }
-        }
         $items = array();
 
         $post_settings = apply_filters( "dt_get_post_type_settings", array(), 'groups' );
@@ -565,6 +522,45 @@ class DT_Data_Reporting_Tools
         );
 
         return array( $columns, $items, $activities['total'] );
+    }
+
+    /**
+     * Fetch post data by type
+     * @param $post_type
+     * @param null $filter
+     * @return array|WP_Error
+     * @throws Exception
+     */
+    private static function get_posts( $post_type, $filter = null ) {
+        // limit filtering to only those that are manually implemented for activity
+        $filter = $filter ? array_intersect_key( $filter, self::$supported_filters ) : array();
+
+        // By default, sort by last updated date
+        if ( !isset( $filter['sort'] ) ) {
+            $filter['sort'] = 'last_modified';
+        }
+
+        $posts = DT_Posts::list_posts( $post_type, $filter );
+        if ( is_wp_error( $posts ) ) {
+            $error_message = $posts->get_error_message() ?? '';
+            throw new Exception( $error_message );
+        }
+
+        dt_write_log( sizeof( $posts['posts'] ) . ' of ' . $posts['total'] );
+        if ( !isset( $filter['limit'] ) ) {
+            // if total is greater than length, recursively get more
+            $retrieved_posts = sizeof( $posts['posts'] );
+            while ($retrieved_posts < $posts['total']) {
+                $filter['offset'] = sizeof( $posts['posts'] );
+                $next_posts = DT_Posts::list_posts( $post_type, $filter );
+                $posts['posts'] = array_merge( $posts['posts'], $next_posts['posts'] );
+                dt_write_log( 'adding ' . sizeof( $next_posts['posts'] ) );
+                $retrieved_posts = sizeof( $posts['posts'] );
+                dt_write_log( $retrieved_posts . ' of ' . $posts['total'] );
+            }
+        }
+
+        return $posts;
     }
 
     private static function get_post_activity( $post_type, $filter ) {
