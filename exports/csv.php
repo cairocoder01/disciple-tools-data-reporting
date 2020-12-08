@@ -116,3 +116,12 @@ fputcsv( $output, $columns );
 foreach ($items as $row ) {
     fputcsv( $output, $row );
 }
+
+dt_activity_insert([
+    'action' => 'export',
+    'object_type' => $data_type,
+    'object_subtype' => 'non-pii',
+    'meta_key' => 'file',
+    'meta_value' => 'json',
+    'object_note' => 'disciple-tools-data-reporting::csv'
+]);

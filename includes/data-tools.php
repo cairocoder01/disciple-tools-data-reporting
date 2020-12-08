@@ -1162,6 +1162,15 @@ class DT_Data_Reporting_Tools
                 $export_result['messages'][] = [
                     'message' => $result['body'],
                 ];
+
+                dt_activity_insert([
+                    'action' => 'export',
+                    'object_type' => $type,
+                    'object_subtype' => 'non-pii',
+                    'meta_key' => 'provider',
+                    'meta_value' => $provider,
+                    'object_note' => 'disciple-tools-data-reporting'
+                ]);
             }
             return $export_result;
         } else {
@@ -1171,6 +1180,16 @@ class DT_Data_Reporting_Tools
             // send data to provider to process and return success indicator and any log messages
             $provider_result = apply_filters( "dt_data_reporting_export_provider_$provider", $columns, $rows, $type, $config );
             dt_write_log( 'provider_result: ' . json_encode( $provider_result ) );
+
+            dt_activity_insert([
+                'action' => 'export',
+                'object_type' => $type,
+                'object_subtype' => 'non-pii',
+                'meta_key' => 'provider',
+                'meta_value' => $provider,
+                'object_note' => 'disciple-tools-data-reporting'
+            ]);
+
             if ( is_bool( $provider_result ) ) {
                 return [
                     'success' => $provider_result,

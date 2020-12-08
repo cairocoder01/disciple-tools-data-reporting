@@ -55,3 +55,12 @@ foreach ($items as $row ) {
     fwrite( $output, json_encode( $row ).PHP_EOL );
 }
 fclose( $output );
+
+dt_activity_insert([
+    'action' => 'export',
+    'object_type' => $data_type,
+    'object_subtype' => 'non-pii',
+    'meta_key' => 'file',
+    'meta_value' => 'json',
+    'object_note' => 'disciple-tools-data-reporting'
+]);
