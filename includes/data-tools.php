@@ -203,63 +203,7 @@ class DT_Data_Reporting_Tools
                     continue;
                 }
 
-                $field_value = null;
-                if (key_exists( $field_key, $result )) {
-                    switch ($type) {
-                        case 'key_select':
-                            $field_value = self::get_label( $result, $field_key );
-                            break;
-                        case 'multi_select':
-                            $field_value = $flatten ? implode( ",", $result[$field_key] ) : $result[$field_key];
-                            break;
-                        case 'user_select':
-                            $field_value = $result[$field_key]['id'];
-                            break;
-                        case 'date':
-                            $field_value = !empty( $result[$field_key]["timestamp"] ) ? gmdate( "Y-m-d H:i:s", $result[$field_key]['timestamp'] ) : "";
-                            break;
-                        case 'location':
-                            $location_ids = array_map( function ( $location ) { return $location['label'];
-                            }, $result[$field_key] );
-                            $field_value = $flatten ? implode( ",", $location_ids ) : $location_ids;
-                            break;
-                        case 'connection':
-                            $connection_ids = array_map( function ( $connection ) { return $connection['ID'];
-                            }, $result[$field_key] );
-                            $field_value = $flatten ? implode( ",", $connection_ids ) : $connection_ids;
-                            break;
-                        case 'number':
-                            $field_value = empty($result[$field_key]) ? null : intval($result[$field_key]);
-                            break;
-                        default:
-                            $field_value = $result[$field_key];
-                            if ( is_array( $field_value ) ) {
-                                $field_value = json_encode( $field_value );
-                            }
-                            break;
-                    }
-                } else {
-                    // Set default/blank value
-                    switch ($type) {
-                        case 'number':
-                            $field_value = $field['default'] ?? 0;
-                            break;
-                        case 'key_select':
-                            $field_value = null;
-                            break;
-                        case 'multi_select':
-                            $field_value = $flatten ? null : array();
-                            break;
-                        case 'array':
-                        case 'boolean':
-                        case 'date':
-                        case 'text':
-                        case 'location':
-                        default:
-                            $field_value = $field['default'] ?? null;
-                            break;
-                    }
-                }
+                $field_value = self::get_field_value( $result, $field_key, $type, $flatten );
 
                 // if we calculated the baptism generation, set it here
                 if ( $field_key == 'baptism_generation' && isset( $contact_generations[$result['ID']] ) ) {
@@ -545,60 +489,7 @@ class DT_Data_Reporting_Tools
                 }
 
                 $type = $field['type'];
-                $field_value = null;
-                if (key_exists( $field_key, $result )) {
-                    switch ($type) {
-                        case 'key_select':
-                            $field_value = self::get_label( $result, $field_key );
-                            break;
-                        case 'multi_select':
-                            $field_value = $flatten ? implode( ",", $result[$field_key] ) : $result[$field_key];
-                            break;
-                        case 'user_select':
-                            $field_value = $result[$field_key]['id'];
-                            break;
-                        case 'date':
-                            $field_value = !empty( $result[$field_key]["timestamp"] ) ? gmdate( "Y-m-d H:i:s", $result[$field_key]['timestamp'] ) : "";
-                            break;
-                        case 'location':
-                            $location_ids = array_map( function ( $location ) { return $location['label'];
-                            }, $result[$field_key] );
-                            $field_value = $flatten ? implode( ",", $location_ids ) : $location_ids;
-                            break;
-                        case 'connection':
-                            $connection_ids = array_map( function ( $connection ) { return $connection['ID'];
-                            }, $result[$field_key] );
-                            $field_value = $flatten ? implode( ",", $connection_ids ) : $connection_ids;
-                            break;
-                        default:
-                            $field_value = $result[$field_key];
-                            if ( is_array( $field_value ) ) {
-                                $field_value = json_encode( $field_value );
-                            }
-                            break;
-                    }
-                } else {
-                    // Set default/blank value
-                    switch ($type) {
-                        case 'number':
-                            $field_value = $field['default'] ?? 0;
-                            break;
-                        case 'key_select':
-                            $field_value = null;
-                            break;
-                        case 'multi_select':
-                            $field_value = $flatten ? null : array();
-                            break;
-                        case 'array':
-                        case 'boolean':
-                        case 'date':
-                        case 'text':
-                        case 'location':
-                        default:
-                            $field_value = $field['default'] ?? null;
-                            break;
-                    }
-                }
+                $field_value = self::get_field_value( $result, $field_key, $type, $flatten );
 
                 $field_value = apply_filters( 'dt_data_reporting_field_output', $field_value, $type, $field_key, $flatten );
                 $group[$field_key] = $field_value;
@@ -984,6 +875,67 @@ class DT_Data_Reporting_Tools
 
     private static function get_label( $result, $key ) {
         return ( array_key_exists( $key, $result ) && is_array( $result[$key] ) && array_key_exists( 'label', $result[$key] ) ) ? $result[$key]['label'] : '';
+    }
+
+    private static function get_field_value($result, $field_key, $type, $flatten ) {
+        if (key_exists( $field_key, $result )) {
+            switch ($type) {
+                case 'key_select':
+                    $field_value = self::get_label( $result, $field_key );
+                    break;
+                case 'multi_select':
+                    $field_value = $flatten ? implode( ",", $result[$field_key] ) : $result[$field_key];
+                    break;
+                case 'user_select':
+                    $field_value = $result[$field_key]['id'];
+                    break;
+                case 'date':
+                    $field_value = !empty( $result[$field_key]["timestamp"] ) ? gmdate( "Y-m-d H:i:s", $result[$field_key]['timestamp'] ) : "";
+                    break;
+                case 'location':
+                    $location_ids = array_map( function ( $location ) { return $location['label'];
+                    }, $result[$field_key] );
+                    $field_value = $flatten ? implode( ",", $location_ids ) : $location_ids;
+                    break;
+                case 'connection':
+                    $connection_ids = array_map( function ( $connection ) { return $connection['ID'];
+                    }, $result[$field_key] );
+                    $field_value = $flatten ? implode( ",", $connection_ids ) : $connection_ids;
+                    break;
+                case 'number':
+                    $field_value = empty($result[$field_key]) ? '' : intval($result[$field_key]);
+                    break;
+                default:
+                    $field_value = $result[$field_key];
+                    if ( is_array( $field_value ) ) {
+                        $field_value = json_encode( $field_value );
+                    }
+                    break;
+            }
+        } else {
+            // Set default/blank value
+            switch ($type) {
+                case 'number':
+                    $field_value = $field['default'] ?? 0;
+                    break;
+                case 'key_select':
+                    $field_value = null;
+                    break;
+                case 'multi_select':
+                    $field_value = $flatten ? null : array();
+                    break;
+                case 'array':
+                case 'boolean':
+                case 'date':
+                case 'text':
+                case 'location':
+                default:
+                    $field_value = $field['default'] ?? null;
+                    break;
+            }
+        }
+
+        return $field_value;
     }
 
     protected static function get_current_site_base_url() {
