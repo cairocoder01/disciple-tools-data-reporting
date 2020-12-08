@@ -124,6 +124,8 @@ class DT_Data_Reporting_Tools
      * @return array Columns, rows, and total count
      */
     public static function get_contacts( $flatten = false, $filter = null ) {
+        $is_dt_1_0 = version_compare( wp_get_theme()->version, '1.0.0', '>=');
+
         // limit filtering to only those that are manually implemented for activity
         $filter = $filter ? array_intersect_key( $filter, self::$supported_filters ) : array();
 
@@ -177,6 +179,13 @@ class DT_Data_Reporting_Tools
                 'ID' => $result['ID'],
                 'Created' => $result['post_date'],
             );
+
+            // Theme v1.0.0 changes post_date to a proper date object we need to format
+            if ( $is_dt_1_0 && isset($result['post_date']['timestamp']) ) {
+                $contact['Created'] = !empty( $result['post_date']["timestamp"] ) ? gmdate( "Y-m-d H:i:s", $result['post_date']['timestamp'] ) : "";
+            }
+
+            // Loop over all fields to parse/format each
             foreach ( $fields as $field_key => $field ){
                 // skip if field is hidden, unless marked as exception above
                 if ( isset( $field['hidden'] ) && $field['hidden'] == true && !in_array( $field_key, self::$included_hidden_fields_contacts ) ) {
