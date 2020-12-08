@@ -23,7 +23,7 @@ class DT_Data_Reporting_Tools
     ];
 
 
-    private static $excluded_fields_contacts = array( 'tasks', 'facebook_data' );
+    private static $excluded_fields_contacts = array( 'name', 'nickname', 'tasks', 'facebook_data' );
     private static $included_hidden_fields_contacts = array( 'accepted', 'source_details', 'type' );
     private static $excluded_fields_groups = array();
     private static $included_hidden_fields_groups = array( 'accepted', 'source_details', 'type' );
@@ -188,6 +188,12 @@ class DT_Data_Reporting_Tools
                 }
 
                 $type = $field['type'];
+
+                // skip communication_channel fields since they are all PII
+                if ( $type == 'communication_channel' ) {
+                    continue;
+                }
+
                 $field_value = null;
                 if (key_exists( $field_key, $result )) {
                     switch ($type) {
@@ -277,6 +283,11 @@ class DT_Data_Reporting_Tools
             }
             // skip if in list of excluded fields
             if ( in_array( $field_key, self::$excluded_fields_contacts ) ) {
+                continue;
+            }
+
+            // skip communication_channel fields since they are all PII
+            if ( $field['type'] == 'communication_channel' ) {
                 continue;
             }
 
