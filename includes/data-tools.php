@@ -228,6 +228,9 @@ class DT_Data_Reporting_Tools
                             }, $result[$field_key] );
                             $field_value = $flatten ? implode( ",", $connection_ids ) : $connection_ids;
                             break;
+                        case 'number':
+                            $field_value = empty($result[$field_key]) ? null : intval($result[$field_key]);
+                            break;
                         default:
                             $field_value = $result[$field_key];
                             if ( is_array( $field_value ) ) {
@@ -260,7 +263,12 @@ class DT_Data_Reporting_Tools
 
                 // if we calculated the baptism generation, set it here
                 if ( $field_key == 'baptism_generation' && isset( $contact_generations[$result['ID']] ) ) {
-                    $field_value = $contact_generations[$result['ID']];
+                    if ( $fields[$field_key]['type'] === 'number' ) {
+                        $generation = $contact_generations[$result['ID']];
+                        $field_value = empty($generation) ? '' : intval($generation);
+                    } else {
+                        $field_value = $contact_generations[$result['ID']];
+                    }
                 }
 
                 $field_value = apply_filters( 'dt_data_reporting_field_output', $field_value, $type, $field_key, $flatten );
