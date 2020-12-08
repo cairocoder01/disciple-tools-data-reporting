@@ -23,10 +23,14 @@ class DT_Data_Reporting_Tools
     ];
 
 
-    private static $excluded_fields_contacts = array( 'name', 'nickname', 'tasks', 'facebook_data' );
-    private static $included_hidden_fields_contacts = array( 'accepted', 'source_details', 'type' );
-    private static $excluded_fields_groups = array();
-    private static $included_hidden_fields_groups = array( 'accepted', 'source_details', 'type' );
+    private static $excluded_fields = array(
+        'contacts' => array( 'name', 'nickname', 'tasks', 'facebook_data' ),
+        'groups' => array( 'name' ),
+    );
+    private static $included_hidden_fields = array(
+        'contacts' => array( 'accepted', 'source_details', 'type' ),
+        'groups' => array( 'type' ),
+    );
 
     /**
      * Fetch data by type
@@ -124,7 +128,7 @@ class DT_Data_Reporting_Tools
      * @return array Columns, rows, and total count
      */
     public static function get_contacts( $flatten = false, $filter = null ) {
-        $is_dt_1_0 = version_compare( wp_get_theme()->version, '1.0.0', '>=');
+        $is_dt_1_0 = version_compare( wp_get_theme()->version, '1.0.0', '>=' );
 
         // limit filtering to only those that are manually implemented for activity
         $filter = $filter ? array_intersect_key( $filter, self::$supported_filters ) : array();
@@ -181,18 +185,18 @@ class DT_Data_Reporting_Tools
             );
 
             // Theme v1.0.0 changes post_date to a proper date object we need to format
-            if ( $is_dt_1_0 && isset($result['post_date']['timestamp']) ) {
+            if ( $is_dt_1_0 && isset( $result['post_date']['timestamp'] ) ) {
                 $contact['Created'] = !empty( $result['post_date']["timestamp"] ) ? gmdate( "Y-m-d H:i:s", $result['post_date']['timestamp'] ) : "";
             }
 
             // Loop over all fields to parse/format each
             foreach ( $fields as $field_key => $field ){
                 // skip if field is hidden, unless marked as exception above
-                if ( isset( $field['hidden'] ) && $field['hidden'] == true && !in_array( $field_key, self::$included_hidden_fields_contacts ) ) {
+                if ( isset( $field['hidden'] ) && $field['hidden'] == true && !in_array( $field_key, self::$included_hidden_fields['contacts'] ) ) {
                     continue;
                 }
                 // skip if in list of excluded fields
-                if ( in_array( $field_key, self::$excluded_fields_contacts ) ) {
+                if ( in_array( $field_key, self::$excluded_fields['contacts'] ) ) {
                     continue;
                 }
 
@@ -209,7 +213,7 @@ class DT_Data_Reporting_Tools
                 if ( $field_key == 'baptism_generation' && isset( $contact_generations[$result['ID']] ) ) {
                     if ( $fields[$field_key]['type'] === 'number' ) {
                         $generation = $contact_generations[$result['ID']];
-                        $field_value = empty($generation) ? '' : intval($generation);
+                        $field_value = empty( $generation ) ? '' : intval( $generation );
                     } else {
                         $field_value = $contact_generations[$result['ID']];
                     }
@@ -222,87 +226,7 @@ class DT_Data_Reporting_Tools
 
             $items[] = $contact;
         }
-        $columns = array();
-        array_push( $columns, array(
-            'key' => "id",
-            'name' => "ID",
-            'type' => 'number',
-            'bq_type' => 'INTEGER',
-            'bq_mode' => 'NULLABLE',
-            ), array(
-            'key' => "created",
-            'name' => "Created",
-            'type' => 'date',
-            'bq_type' => 'TIMESTAMP',
-            'bq_mode' => 'NULLABLE',
-        ));
-
-        foreach ( $fields as $field_key => $field ){
-            // skip if field is hidden
-            if ( isset( $field['hidden'] ) && $field['hidden'] == true && !in_array( $field_key, self::$included_hidden_fields_contacts ) ) {
-                continue;
-            }
-            // skip if in list of excluded fields
-            if ( in_array( $field_key, self::$excluded_fields_contacts ) ) {
-                continue;
-            }
-
-            // skip communication_channel fields since they are all PII
-            if ( $field['type'] == 'communication_channel' ) {
-                continue;
-            }
-
-            $column = array(
-            'key' => $field_key,
-            'name' => $field['name'],
-            'type' => $field['type'],
-            );
-            switch ($field['type']) {
-                case 'array':
-                case 'location':
-                case 'multi_select':
-                    $column['bq_type'] = 'STRING';
-                    $column['bq_mode'] = 'REPEATED';
-                break;
-                case 'connection':
-                case 'user_select':
-                    $column['bq_type'] = 'INTEGER';
-                    $column['bq_mode'] = 'REPEATED';
-                break;
-                case 'date':
-                    $column['bq_type'] = 'TIMESTAMP';
-                    $column['bq_mode'] = 'NULLABLE';
-                break;
-                case 'number':
-                    $column['bq_type'] = 'INTEGER';
-                    $column['bq_mode'] = 'NULLABLE';
-                break;
-                case 'boolean':
-                    $column['bq_type'] = 'BOOLEAN';
-                    $column['bq_mode'] = 'NULLABLE';
-                break;
-                case 'key_select':
-                case 'text':
-                default:
-                    $column['bq_type'] = 'STRING';
-                    $column['bq_mode'] = 'NULLABLE';
-                break;
-            }
-            if ( $field_key == 'last_modified' ) {
-                $column['type'] = 'date';
-                $column['bq_type'] = 'TIMESTAMP';
-                $column['bq_mode'] = 'NULLABLE';
-
-            }
-            array_push( $columns, $column );
-        }
-        array_push( $columns, array(
-            'key' => 'site',
-            'name' => 'Site',
-            'type' => 'text',
-            'bq_type' => 'STRING',
-            'bq_mode' => 'NULLABLE',
-        ));
+        $columns = self::build_columns( $fields, 'contacts' );
         return array( $columns, $items, $contacts['total'] );
     }
 
@@ -439,6 +363,8 @@ class DT_Data_Reporting_Tools
      * @return array Columns, rows, and total count
      */
     public static function get_groups( $flatten = false, $filter = null ) {
+        $is_dt_1_0 = version_compare( wp_get_theme()->version, '1.0.0', '>=' );
+
         // limit filtering to only those that are manually implemented for activity
         $filter = $filter ? array_intersect_key( $filter, self::$supported_filters ) : array();
 
@@ -478,17 +404,30 @@ class DT_Data_Reporting_Tools
                 'ID' => $result['ID'],
                 'Created' => $result['post_date'],
             );
+
+            // Theme v1.0.0 changes post_date to a proper date object we need to format
+            if ( $is_dt_1_0 && isset( $result['post_date']['timestamp'] ) ) {
+                $group['Created'] = !empty( $result['post_date']["timestamp"] ) ? gmdate( "Y-m-d H:i:s", $result['post_date']['timestamp'] ) : "";
+            }
+
+            // Loop over all fields to parse/format each
             foreach ( $fields as $field_key => $field ){
                 // skip if field is hidden, unless marked as exception above
-                if ( isset( $field['hidden'] ) && $field['hidden'] == true && !in_array( $field_key, self::$included_hidden_fields_groups ) ) {
+                if ( isset( $field['hidden'] ) && $field['hidden'] == true && !in_array( $field_key, self::$included_hidden_fields['groups'] ) ) {
                     continue;
                 }
                 // skip if in list of excluded fields
-                if ( in_array( $field_key, self::$excluded_fields_groups ) ) {
+                if ( in_array( $field_key, self::$excluded_fields['groups'] ) ) {
                     continue;
                 }
 
                 $type = $field['type'];
+
+                // skip communication_channel fields since they are all PII
+                if ( $type == 'communication_channel' ) {
+                    continue;
+                }
+
                 $field_value = self::get_field_value( $result, $field_key, $type, $flatten );
 
                 $field_value = apply_filters( 'dt_data_reporting_field_output', $field_value, $type, $field_key, $flatten );
@@ -498,82 +437,7 @@ class DT_Data_Reporting_Tools
 
             $items[] = $group;
         }
-        $columns = array();
-        array_push( $columns, array(
-            'key' => "id",
-            'name' => "ID",
-            'type' => 'number',
-            'bq_type' => 'INTEGER',
-            'bq_mode' => 'NULLABLE',
-            ), array(
-            'key' => "created",
-            'name' => "Created",
-            'type' => 'date',
-            'bq_type' => 'TIMESTAMP',
-            'bq_mode' => 'NULLABLE',
-        ));
-
-        foreach ( $fields as $field_key => $field ){
-            // skip if field is hidden
-            if ( isset( $field['hidden'] ) && $field['hidden'] == true && !in_array( $field_key, self::$included_hidden_fields_groups ) ) {
-                continue;
-            }
-            // skip if in list of excluded fields
-            if ( in_array( $field_key, self::$excluded_fields_groups ) ) {
-                continue;
-            }
-
-            $column = array(
-            'key' => $field_key,
-            'name' => $field['name'],
-            'type' => $field['type'],
-            );
-            switch ($field['type']) {
-                case 'array':
-                case 'location':
-                case 'multi_select':
-                    $column['bq_type'] = 'STRING';
-                    $column['bq_mode'] = 'REPEATED';
-                break;
-                case 'connection':
-                case 'user_select':
-                    $column['bq_type'] = 'INTEGER';
-                    $column['bq_mode'] = 'REPEATED';
-                break;
-                case 'date':
-                    $column['bq_type'] = 'TIMESTAMP';
-                    $column['bq_mode'] = 'NULLABLE';
-                break;
-                case 'number':
-                    $column['bq_type'] = 'INTEGER';
-                    $column['bq_mode'] = 'NULLABLE';
-                break;
-                case 'boolean':
-                    $column['bq_type'] = 'BOOLEAN';
-                    $column['bq_mode'] = 'NULLABLE';
-                break;
-                case 'key_select':
-                case 'text':
-                default:
-                    $column['bq_type'] = 'STRING';
-                    $column['bq_mode'] = 'NULLABLE';
-                break;
-            }
-            if ( $field_key == 'last_modified' ) {
-                $column['type'] = 'date';
-                $column['bq_type'] = 'TIMESTAMP';
-                $column['bq_mode'] = 'NULLABLE';
-
-            }
-            array_push( $columns, $column );
-        }
-        array_push( $columns, array(
-            'key' => 'site',
-            'name' => 'Site',
-            'type' => 'text',
-            'bq_type' => 'STRING',
-            'bq_mode' => 'NULLABLE',
-        ));
+        $columns = self::build_columns( $fields, 'groups' );
         return array( $columns, $items, $groups['total'] );
     }
 
@@ -713,20 +577,12 @@ class DT_Data_Reporting_Tools
 
         $post_settings = apply_filters( "dt_get_post_type_settings", array(), $post_type );
         $fields = $post_settings["fields"];
-        $hidden_fields = array( 'duplicate_of' );
-        if ( $post_type == 'contacts' ) {
-            $hidden_fields = array_merge( $hidden_fields, self::$excluded_fields_contacts );
-        }
-        if ( $post_type == 'groups' ) {
-            $hidden_fields = array_merge( $hidden_fields, self::$excluded_fields_groups );
-        }
+        $hidden_fields = array_merge( array( 'duplicate_of' ), self::$excluded_fields[$post_type] );
+
         foreach ( $fields as $field_key => $field ){
             if ( isset( $field["hidden"] ) && $field["hidden"] === true ){
                 // if field is marked as exception to hidden fields, don't exclude it here
-                if ( $post_type == 'contacts' && in_array( $field_key, self::$included_hidden_fields_contacts ) ) {
-                    continue;
-                }
-                if ( $post_type == 'groups' && in_array( $field_key, self::$included_hidden_fields_groups ) ) {
+                if ( in_array( $field_key, self::$included_hidden_fields[$post_type] ) ) {
                     continue;
                 }
                 $hidden_fields[] = $field_key;
@@ -877,7 +733,15 @@ class DT_Data_Reporting_Tools
         return ( array_key_exists( $key, $result ) && is_array( $result[$key] ) && array_key_exists( 'label', $result[$key] ) ) ? $result[$key]['label'] : '';
     }
 
-    private static function get_field_value($result, $field_key, $type, $flatten ) {
+    /**
+     * Get field value from result, taking in to account the field type
+     * @param $result
+     * @param $field_key
+     * @param $type
+     * @param $flatten
+     * @return array|false|int|mixed|string
+     */
+    private static function get_field_value( $result, $field_key, $type, $flatten ) {
         if (key_exists( $field_key, $result )) {
             switch ($type) {
                 case 'key_select':
@@ -903,7 +767,7 @@ class DT_Data_Reporting_Tools
                     $field_value = $flatten ? implode( ",", $connection_ids ) : $connection_ids;
                     break;
                 case 'number':
-                    $field_value = empty($result[$field_key]) ? '' : intval($result[$field_key]);
+                    $field_value = empty( $result[$field_key] ) ? '' : intval( $result[$field_key] );
                     break;
                 default:
                     $field_value = $result[$field_key];
@@ -1234,5 +1098,95 @@ class DT_Data_Reporting_Tools
                 }
             }
         }
+    }
+
+    /**
+     * @param $fields
+     * @return array
+     */
+    private static function build_columns( $fields, $type ): array
+    {
+        $columns = array();
+        array_push($columns, array(
+            'key' => "id",
+            'name' => "ID",
+            'type' => 'number',
+            'bq_type' => 'INTEGER',
+            'bq_mode' => 'NULLABLE',
+            ), array(
+            'key' => "created",
+            'name' => "Created",
+            'type' => 'date',
+            'bq_type' => 'TIMESTAMP',
+            'bq_mode' => 'NULLABLE',
+        ));
+
+        foreach ($fields as $field_key => $field) {
+            // skip if field is hidden
+            if (isset( $field['hidden'] ) && $field['hidden'] == true && !in_array( $field_key, self::$included_hidden_fields[$type] )) {
+                continue;
+            }
+            // skip if in list of excluded fields
+            if (in_array( $field_key, self::$excluded_fields[$type] )) {
+                continue;
+            }
+
+            // skip communication_channel fields since they are all PII
+            if ($field['type'] == 'communication_channel') {
+                continue;
+            }
+
+            $column = array(
+                'key' => $field_key,
+                'name' => $field['name'],
+                'type' => $field['type'],
+            );
+            switch ($field['type']) {
+                case 'array':
+                case 'location':
+                case 'multi_select':
+                    $column['bq_type'] = 'STRING';
+                    $column['bq_mode'] = 'REPEATED';
+                    break;
+                case 'connection':
+                case 'user_select':
+                    $column['bq_type'] = 'INTEGER';
+                    $column['bq_mode'] = 'REPEATED';
+                    break;
+                case 'date':
+                    $column['bq_type'] = 'TIMESTAMP';
+                    $column['bq_mode'] = 'NULLABLE';
+                    break;
+                case 'number':
+                    $column['bq_type'] = 'INTEGER';
+                    $column['bq_mode'] = 'NULLABLE';
+                    break;
+                case 'boolean':
+                    $column['bq_type'] = 'BOOLEAN';
+                    $column['bq_mode'] = 'NULLABLE';
+                    break;
+                case 'key_select':
+                case 'text':
+                default:
+                    $column['bq_type'] = 'STRING';
+                    $column['bq_mode'] = 'NULLABLE';
+                    break;
+            }
+            if ($field_key == 'last_modified') {
+                $column['type'] = 'date';
+                $column['bq_type'] = 'TIMESTAMP';
+                $column['bq_mode'] = 'NULLABLE';
+
+            }
+            array_push( $columns, $column );
+        }
+        array_push($columns, array(
+            'key' => 'site',
+            'name' => 'Site',
+            'type' => 'text',
+            'bq_type' => 'STRING',
+            'bq_mode' => 'NULLABLE',
+        ));
+        return $columns;
     }
 }
