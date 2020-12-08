@@ -529,7 +529,7 @@ class DT_Data_Reporting_Tools
      * @param $post_type
      * @param null $filter
      * @return array|WP_Error
-     * @throws Exception
+     * @throws Exception If DT_Posts::list_posts throws an error.
      */
     private static function get_posts( $post_type, $filter = null ) {
         // limit filtering to only those that are manually implemented for activity
