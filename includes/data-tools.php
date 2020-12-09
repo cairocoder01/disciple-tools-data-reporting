@@ -155,6 +155,7 @@ class DT_Data_Reporting_Tools
         $post_settings = apply_filters( "dt_get_post_type_settings", array(), 'contacts' );
         $fields = $post_settings["fields"];
         $base_url = self::get_current_site_base_url();
+        $locations = self::get_location_data( $contacts['posts'] );
 
         foreach ($contacts['posts'] as $index => $result) {
             $contact = array(
@@ -185,7 +186,7 @@ class DT_Data_Reporting_Tools
                     continue;
                 }
 
-                $field_value = self::get_field_value( $result, $field_key, $type, $flatten );
+                $field_value = self::get_field_value( $result, $field_key, $type, $flatten, $locations );
 
                 // if we calculated the baptism generation, set it here
                 if ( $field_key == 'baptism_generation' && isset( $contact_generations[$result['ID']] ) ) {
@@ -355,6 +356,7 @@ class DT_Data_Reporting_Tools
         $post_settings = apply_filters( "dt_get_post_type_settings", array(), 'groups' );
         $fields = $post_settings["fields"];
         $base_url = self::get_current_site_base_url();
+        $locations = self::get_location_data( $groups['posts'] );
 
         foreach ($groups['posts'] as $index => $result) {
             $group = array(
@@ -385,7 +387,7 @@ class DT_Data_Reporting_Tools
                     continue;
                 }
 
-                $field_value = self::get_field_value( $result, $field_key, $type, $flatten );
+                $field_value = self::get_field_value( $result, $field_key, $type, $flatten, $locations );
 
                 $field_value = apply_filters( 'dt_data_reporting_field_output', $field_value, $type, $field_key, $flatten );
                 $group[$field_key] = $field_value;
@@ -730,6 +732,49 @@ class DT_Data_Reporting_Tools
     }
 
     /**
+     * Fetch location grid data to get country code and admin level 1 for each
+     * so we can filter out any more detailed data
+     * @param $posts
+     * @return mixed
+     */
+    private static function get_location_data( $posts ) {
+        global $wpdb;
+
+        // get all of the location IDs from each post's location_grid field
+        $grid_ids = array_reduce( $posts, function ( $ids, $post ) {
+            if ( isset( $post['location_grid'] ) ) {
+                $location_ids = array_map(function ( $location) {
+                    return $location['id'];
+                }, $post['location_grid']);
+                $ids = array_merge( $ids, $location_ids );
+            }
+            return $ids;
+        }, []);
+
+        // return empty if no posts have location data
+        if ( count( $grid_ids ) == 0 ) {
+            return array();
+        }
+
+        // Query to get country_code and admin1 name for each location
+        $locations = $wpdb->get_results( $wpdb->prepare("
+            select orig.grid_id, orig.country_code, a1.name
+            from $wpdb->dt_location_grid orig
+            left join $wpdb->dt_location_grid a1 on orig.admin1_grid_id=a1.grid_id
+            where orig.grid_id in (" .
+            implode( ',', array_fill( 0, count( $grid_ids ), '%d' ) ) .
+            ")",
+            $grid_ids
+        ), ARRAY_A );
+
+        // index results by grid_id for easy access without searching
+        return array_reduce( $locations, function ( $map, $location ) {
+            $map[$location['grid_id']] = $location;
+            return $map;
+        }, []);
+    }
+
+    /**
      * Get field value from result, taking in to account the field type
      * @param $result
      * @param $field_key
@@ -737,7 +782,7 @@ class DT_Data_Reporting_Tools
      * @param $flatten
      * @return array|false|int|mixed|string
      */
-    private static function get_field_value( $result, $field_key, $type, $flatten ) {
+    private static function get_field_value( $result, $field_key, $type, $flatten, $locations ) {
         if (key_exists( $field_key, $result )) {
             switch ($type) {
                 case 'key_select':
@@ -753,9 +798,26 @@ class DT_Data_Reporting_Tools
                     $field_value = !empty( $result[$field_key]["timestamp"] ) ? gmdate( "Y-m-d H:i:s", $result[$field_key]['timestamp'] ) : "";
                     break;
                 case 'location':
-                    $location_ids = array_map( function ( $location ) { return $location['label'];
+                    // Map country and admin1 data from location_grid table to restrict
+                    // location to only admin level 1 (first level within a country, like states/provinces)
+                    $location_names = array_map( function ( $location ) use ( $locations ) {
+                        if ( isset( $locations[$location['id']] ) ) {
+                            $grid_loc = $locations[$location['id']];
+                            // Try to return "{2-letter-country-code}-{admin1-name}"
+                            if ( !empty( $grid_loc['name'] ) ) {
+                                return $grid_loc['country_code'] . "-" . $grid_loc['name'];
+                            }
+                            // fall back to just country code
+                            return $grid_loc['country_code'];
+                        }
+                        // if no grid data, return null for safety of not exposing PII
+                        return null;
                     }, $result[$field_key] );
-                    $field_value = $flatten ? implode( ",", $location_ids ) : $location_ids;
+
+                    // Remove null and duplicates
+                    $location_names = array_unique( array_filter( $location_names ) );
+
+                    $field_value = $flatten ? implode( ",", $location_names ) : $location_names;
                     break;
                 case 'connection':
                     $connection_ids = array_map( function ( $connection ) { return $connection['ID'];
@@ -1019,7 +1081,7 @@ class DT_Data_Reporting_Tools
 
             // send data to provider to process and return success indicator and any log messages
             $provider_result = apply_filters( "dt_data_reporting_export_provider_$provider", $columns, $rows, $type, $config );
-            dt_write_log( 'provider_result: ' . json_encode( $provider_result ) );
+            // dt_write_log( 'provider_result: ' . json_encode( $provider_result ) );
 
             dt_activity_insert([
                 'action' => 'export',
@@ -1069,7 +1131,7 @@ class DT_Data_Reporting_Tools
 
         // Send data to provider
         $export_result = self::send_data_to_provider( $columns, $rows, $type, $config );
-        dt_write_log( json_encode( $export_result ) );
+        // dt_write_log( json_encode( $export_result ) );
 
         // Merge log messages from above and from provider
         $export_result['messages'] = array_merge( $log_messages, isset( $export_result['messages'] ) ? $export_result['messages'] : [] );
