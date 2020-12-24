@@ -10,8 +10,62 @@ class DT_Data_Reporting_Tab_Settings
     public function __construct() {
     }
 
+    public function styles() {
+        ?>
+        <style>
+            /** switch **/
+            [type="checkbox"] {
+                position: absolute;
+                left: -9999px;
+            }
+
+            .switch {
+                position: relative;
+            }
+            .switch label {
+                display: flex;
+                align-items: center;
+                justify-content: flex-start;
+            }
+            .switch label span:last-child {
+                position: relative;
+                width: 50px;
+                height: 26px;
+                margin-left: 0.5rem;
+                border-radius: 15px;
+                box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.4);
+                background: #eee;
+                transition: all 0.3s;
+            }
+            .switch label span:last-child::before,
+            .switch label span:last-child::after {
+                content: "";
+                position: absolute;
+            }
+            .switch label span:last-child::before {
+                left: 1px;
+                top: 1px;
+                width: 24px;
+                height: 24px;
+                background: #fff;
+                border-radius: 50%;
+                z-index: 1;
+                transition: transform 0.3s;
+            }
+            .switch [type="checkbox"]:checked + label span:last-child {
+                background: #46b450;
+            }
+            .switch [type="checkbox"]:checked + label span:last-child::before {
+                transform: translateX(24px);
+            }
+        </style>
+        <?php
+    }
+
     public function content() {
         $this->save_settings();
+
+        $this->styles();
         ?>
         <div class="wrap">
             <div id="poststuff">
@@ -114,6 +168,69 @@ class DT_Data_Reporting_Tab_Settings
           </tbody>
         </table>
         <br>-->
+        <table class="wp-list-table widefat striped itsec-log-entries itsec-logs-color">
+            <thead>
+            <tr>
+                <th scope="col" class="column-enabled">Enabled</th>
+                <th scope="col" class="column-name">Name</th>
+                <th scope="col" class="column-provider">Provider</th>
+                <th scope="col" class="column-schedule"></th>
+                <th scope="col" class="column-actions"></th>
+            </tr>
+            </thead>
+            <tbody>
+            <?php foreach ( $configurations as $key => $config ): ?>
+              <?php $config_provider = isset( $config['provider'] ) ? $config['provider'] : 'api'; ?>
+              <tr>
+                  <td>
+                    <span class="switch">
+                      <input type="checkbox"
+                             id="config_enabled_<?php echo esc_attr( $key ) ?>"
+                             name="configs[<?php echo esc_attr( $key ) ?>][enabled]"
+                             value="1"
+                             <?php echo isset( $config['active'] ) && $config['active'] == 1 ? 'checked' : "" ?>
+                      />
+                      <label for="config_enabled_<?php echo esc_attr( $key ) ?>">
+                        <span></span>
+                      </label>
+                    </span>
+                  </td>
+                  <td><?php echo esc_html( $config['name'] ) ?></td>
+                  <td><?php echo esc_html( $config_provider ) ?></td>
+                  <td></td>
+                  <td><a href="javascript:;">Edit</a></td>
+              </tr>
+            <?php endforeach; ?>
+            </tbody>
+        </table>
+
+        <?php if ( !empty( $configurations_ext ) ): ?>
+        <h3>External Configurations</h3>
+        <table class="wp-list-table widefat striped itsec-log-entries itsec-logs-color">
+          <thead>
+          <tr>
+            <th scope="col" class="column-name">Name</th>
+            <th scope="col" class="column-provider">Provider</th>
+            <th scope="col" class="column-enabled">Enabled</th>
+            <th scope="col" class="column-schedule"></th>
+            <th scope="col" class="column-actions"></th>
+          </tr>
+          </thead>
+          <tbody>
+          <?php foreach ( $configurations_ext as $key => $config ): ?>
+            <?php $config_provider = isset( $config['provider'] ) ? $config['provider'] : 'api'; ?>
+            <tr>
+              <td><?php echo esc_html( $config['name'] ) ?></td>
+              <td><?php echo esc_html( $config_provider ) ?></td>
+              <td><?php echo isset( $config['active'] ) && $config['active'] == 1 ? '&check; Yes' : '&cross; No' ?></td>
+              <td></td>
+              <td><a href="javascript:;">View Details</a></td>
+            </tr>
+          <?php endforeach; ?>
+          </tbody>
+        </table>
+        <br>
+      <?php endif; ?>
 
         <table class="widefat striped">
           <thead>
