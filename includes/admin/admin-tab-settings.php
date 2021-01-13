@@ -47,7 +47,7 @@ class DT_Data_Reporting_Tab_Settings
         ?>
         <style>
             /** switch **/
-            [type="checkbox"] {
+            .switch [type="checkbox"] {
                 position: absolute;
                 left: -9999px;
             }
@@ -104,7 +104,7 @@ class DT_Data_Reporting_Tab_Settings
             var self = this;
             var data = {
               'action': 'dtdr_enable_config',
-              '_key': this.value,
+              'key': this.value,
               'enabled': this.checked,
             };
 
