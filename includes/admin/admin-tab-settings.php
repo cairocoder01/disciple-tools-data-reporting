@@ -8,6 +8,39 @@ class DT_Data_Reporting_Tab_Settings
     public $type = 'contacts';
 
     public function __construct() {
+      // add_action( 'wp_ajax_dtdr_enable_config', [$this, 'enable_config'] );
+      add_action( 'admin_footer', [ $this, 'scripts' ] );
+    }
+
+    public static function ajax_enable_config() {
+      $key = $_POST['key'];
+      $enabled = filter_var( $_POST['enabled'], FILTER_VALIDATE_BOOLEAN );
+
+      $response_code = 400;
+      $response = [
+        'success' => false,
+        'message' => '',
+      ];
+      if ( empty($key) ) {
+        $response['message'] = 'Missing config key';
+      } else {
+
+        $configurations_str = get_option("dt_data_reporting_configurations");
+        $configurations = json_decode($configurations_str, true);
+        if (isset($configurations[$key])) {
+          $configurations[$key]['active'] = $enabled ? 1 : 0;
+          update_option("dt_data_reporting_configurations", json_encode($configurations));
+
+          $response_code = 200;
+          $response['success'] = true;
+          $response['message'] = 'Config updated';
+        } else {
+          $response['message'] = 'Config key does not exist';
+        }
+      }
+      wp_send_json( $response, $response_code );
+
+      wp_die(); // this is required to terminate immediately and return a proper response
     }
 
     public function styles() {
@@ -60,6 +93,33 @@ class DT_Data_Reporting_Tab_Settings
             }
         </style>
         <?php
+    }
+
+    public function scripts() {
+      ?>
+      <script type="text/javascript" >
+        jQuery(document).ready(function($) {
+
+          $('.config-enable-checkbox').change(function () {
+            var self = this;
+            var data = {
+              'action': 'dtdr_enable_config',
+              '_key': this.value,
+              'enabled': this.checked,
+            };
+
+            // since 2.8 ajaxurl is always defined in the admin header and points to admin-ajax.php
+            jQuery.post(ajaxurl, data).fail(function(xhr) {
+              var response = xhr.responseJSON;
+              if (!response || !response.success) {
+                console.error('Error saving active state of config.', response);
+                self.checked = !self.checked;
+              }
+            });
+          })
+        });
+      </script>
+      <?php
     }
 
     public function content() {
@@ -185,9 +245,10 @@ class DT_Data_Reporting_Tab_Settings
                   <td>
                     <span class="switch">
                       <input type="checkbox"
+                             class="config-enable-checkbox"
                              id="config_enabled_<?php echo esc_attr( $key ) ?>"
                              name="configs[<?php echo esc_attr( $key ) ?>][enabled]"
-                             value="1"
+                             value="<?php echo esc_attr( $key ) ?>"
                              <?php echo isset( $config['active'] ) && $config['active'] == 1 ? 'checked' : "" ?>
                       />
                       <label for="config_enabled_<?php echo esc_attr( $key ) ?>">

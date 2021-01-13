@@ -57,8 +57,14 @@ class DT_Data_Reporting_Menu {
         require_once( plugin_dir_path( __FILE__ ) . './admin-tab-preview.php' );
         require_once( plugin_dir_path( __FILE__ ) . './admin-tab-api.php' );
         require_once( plugin_dir_path( __FILE__ ) . './admin-tab-settings.php' );
+
+        // init settings to setup ajax hooks
+        add_action( 'wp_ajax_dtdr_enable_config', [ $this, 'ajax_enable_config' ] );
     } // End __construct()
 
+    public function ajax_enable_config() {
+      DT_Data_Reporting_Tab_Settings::ajax_enable_config();
+    }
 
     public function add_styles() {
         echo '<style>
