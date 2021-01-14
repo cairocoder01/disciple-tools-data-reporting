@@ -64,7 +64,6 @@ class DT_Data_Reporting_Tab_Settings
                 position: relative;
                 width: 50px;
                 height: 26px;
-                margin-left: 0.5rem;
                 border-radius: 15px;
                 box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.4);
                 background: #eee;
@@ -99,6 +98,36 @@ class DT_Data_Reporting_Tab_Settings
       ?>
       <script type="text/javascript" >
         jQuery(document).ready(function($) {
+          $( ".dialog" ).dialog({
+            autoOpen: false,
+            width: 'auto',
+            modal: true,
+            resizable: true,
+            closeOnEscape: true,
+            position: {
+              my: "center",
+              at: "center",
+              of: window
+            },
+            create: function () {
+              // style fix for WordPress admin
+              $('.ui-dialog-titlebar-close').addClass('ui-button');
+            },
+          });
+
+          $('.dialog').on('click', '.nav-tab', function (evt) {
+            if (evt) {
+              evt.preventDefault();
+            }
+            $('.dlg-tab-content').hide();
+            var selector = this.getAttribute('href');
+            $(selector).show();
+          });
+
+          $('.edit-trigger').on('click', function () {
+            var key = $(this).data('key');
+            $('#dialog-' + key).dialog('open');
+          });
 
           $('.config-enable-checkbox').change(function () {
             var self = this;
@@ -124,6 +153,9 @@ class DT_Data_Reporting_Tab_Settings
 
     public function content() {
         $this->save_settings();
+
+        wp_enqueue_script( 'jquery-ui-dialog' );
+        wp_enqueue_style( 'wp-jquery-ui-dialog' );
 
         $this->styles();
         ?>
@@ -259,7 +291,7 @@ class DT_Data_Reporting_Tab_Settings
                   <td><?php echo esc_html( $config['name'] ) ?></td>
                   <td><?php echo esc_html( $config_provider ) ?></td>
                   <td></td>
-                  <td><a href="javascript:;">Edit</a></td>
+                  <td><a href="javascript:;" class="edit-trigger" data-key="<?php echo esc_attr( $key ) ?>">Edit</a></td>
               </tr>
             <?php endforeach; ?>
             </tbody>
@@ -503,6 +535,8 @@ class DT_Data_Reporting_Tab_Settings
           </tr>
           </tbody>
         </table>
+        <?php $this->edit_dialogs( $configurations ); ?>
+
         <br>
         <button type="submit" class="button right">Save Settings</button>
         <br>
@@ -623,6 +657,47 @@ class DT_Data_Reporting_Tab_Settings
         </table>
       </form>
         <?php
+    }
+
+    public function edit_dialogs( $configurations ) {
+      echo "<div style='display:none;'>";
+      foreach ( $configurations as $key => $config ):
+        $config_provider = isset( $config['provider'] ) ? $config['provider'] : 'api'; ?>
+
+        <div class="dialog" id="dialog-<?php echo esc_attr( $key ) ?>">
+          <h2 class="nav-tab-wrapper">
+            <a href="#dlg-tab-general-<?php echo esc_attr( $key )?>" class="nav-tab">General</a>
+            <a href="#dlg-tab-provider-<?php echo esc_attr( $key )?>" class="nav-tab">Provider</a>
+            <a href="#dlg-tab-data-types-<?php echo esc_attr( $key )?>" class="nav-tab">Data Types</a>
+          </h2>
+          <div class="wrap">
+            <div id="dlg-tab-general-<?php echo esc_attr( $key ) ?>" class="dlg-tab-content">
+              <table class="form-table table-config" id="config_<?php echo esc_attr( $key ) ?>">
+                <tr>
+                  <th>
+                    <label for="dlg_name_<?php echo esc_attr( $key ) ?>">Name</label>
+                  </th>
+                  <td>
+                    <input type="text"
+                           name="configurations[<?php echo esc_attr( $key ) ?>][name]"
+                           id="dlg_name_<?php echo esc_attr( $key ) ?>"
+                           value="<?php echo esc_attr( isset( $config['name'] ) ? $config['name'] : "" ) ?>"
+                           style="width: 100%;" />
+                    <div class="muted">Label to identify this configuration. This can be anything that helps you understand or remember this configuration.</div>
+                  </td>
+                </tr>
+              </table>
+            </div>
+            <div id="dlg-tab-provider-<?php echo esc_attr( $key ) ?>" class="dlg-tab-content" style="display: none;">
+              <h3>Provider</h3>
+            </div>
+            <div id="dlg-tab-data-types-<?php echo esc_attr( $key ) ?>" class="dlg-tab-content" style="display: none;">
+              <h3>Data Types</h3>
+            </div>
+          </div>
+        </div>
+      <?php endforeach;
+      echo "</div>";
     }
 
     public function save_settings() {
