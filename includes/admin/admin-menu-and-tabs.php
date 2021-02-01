@@ -61,7 +61,8 @@ class DT_Data_Reporting_Menu {
 
 
     public function add_styles() {
-        echo '<style>
+        if ( is_admin() && isset( $_GET['page'] ) && 'DT_Data_Reporting' === sanitize_key( wp_unslash( $_GET['page'] ) ) ) {
+            echo '<style>
             body.wp-admin.extensions-dt_page_DT_Data_Reporting
             #post-body-content {
               overflow-y: auto;
@@ -76,7 +77,7 @@ class DT_Data_Reporting_Menu {
             code {
               display: block;
             }
-            
+
             #poststuff h2 {
               padding-left: 0;
               font-size: 1.2rem;
@@ -102,10 +103,10 @@ class DT_Data_Reporting_Menu {
               font-size: 0.8rem;
               line-height: 2rem;
             }
-            
+
             .export-logs {
               padding: .5rem 0;
-            }            
+            }
             .export-logs .result {
               font-weight: bold;
               background-color: lightgray;
@@ -115,7 +116,7 @@ class DT_Data_Reporting_Menu {
               background-color: lightgray;
               font-family: monospace;
               padding: 1rem;
-            }            
+            }
             ul.api-log li {
               list-style-type: \'>\';
               padding-left: 0.5rem;
@@ -129,6 +130,7 @@ class DT_Data_Reporting_Menu {
               font-weight: bold;
             }
           </style>';
+        }
     }
 
     /**
