@@ -10,11 +10,12 @@
   "last_updated": "2021-02-01",
   "upgrade_notice": "Fix conflicting admin styles",
   "requires": "4.7",
-  "tested": "5.6",
+  "tested": "5.9.3",
   "banners": {
     "low": "https://raw.githubusercontent.com/cairocoder01/disciple-tools-data-reporting/master/assets/banner-772x250.png",
     "high": "https://raw.githubusercontent.com/cairocoder01/disciple-tools-data-reporting/master/assets/banner-1544x500.png"
   },
+  "icon": "https://raw.githubusercontent.com/cairocoder01/disciple-tools-data-reporting/master/assets/icon-128x128.png",
   "author": "cairocoder01",
   "author_homepage": "https://github.com/cairocoder01",
   "homepage": "https://github.com/Data Reporting/disciple-tools-data-reporting",

@@ -4,7 +4,7 @@
  * Plugin URI: https://github.com/cairocoder01/disciple-tools-data-reporting
  * Description: Disciple Tools - Data Reporting is intended to assist in exporting data to an external data reporting source, such as Google BigQuery.
  * of the Disciple Tools system.
- * Version:  1.4.2
+ * Version:  1.4.3
  * Author URI: https://github.com/cairocoder01
  * GitHub Plugin URI: https://github.com/cairocoder01/disciple-tools-data-reporting
  * Requires at least: 4.7.0
@@ -20,7 +20,6 @@
 if ( ! defined( 'ABSPATH' ) ) {
     exit; // Exit if accessed directly
 }
-$dt_data_reporting_required_dt_theme_version = '0.32.0';
 
 /**
  * Gets the instance of the `DT_Data_Reporting_Plugin` class.
@@ -30,7 +29,7 @@ $dt_data_reporting_required_dt_theme_version = '0.32.0';
  * @return object|bool
  */
 function dt_data_reporting_plugin() {
-    global $dt_data_reporting_required_dt_theme_version;
+	  $dt_data_reporting_required_dt_theme_version = '0.32.0';
     $wp_theme = wp_get_theme();
     $version = $wp_theme->version;
 
@@ -52,15 +51,10 @@ function dt_data_reporting_plugin() {
     if ( !defined( 'DT_FUNCTIONS_READY' ) ){
         require_once get_template_directory() . '/dt-core/global-functions.php';
     }
-    /*
-     * Don't load the plugin on every rest request. Only those with the 'sample' namespace
-     */
-    $is_rest = dt_is_rest();
-    if ( !$is_rest ){
-        return DT_Data_Reporting::get_instance();
-    }
+
+    return DT_Data_Reporting::instance();
 }
-add_action( 'after_setup_theme', 'dt_data_reporting_plugin' );
+add_action( 'after_setup_theme', 'dt_data_reporting_plugin', 20 );
 
 /**
  * Singleton class for setting up the plugin.
@@ -70,39 +64,13 @@ add_action( 'after_setup_theme', 'dt_data_reporting_plugin' );
  */
 class DT_Data_Reporting {
 
-    /**
-     * Declares public variables
-     *
-     * @since  0.1
-     * @access public
-     * @return object
-     */
-    public $token;
-    public $version;
-    public $dir_path = '';
-    public $dir_uri = '';
-    public $img_uri = '';
-    public $includes_path;
-
-    /**
-     * Returns the instance.
-     *
-     * @since  0.1
-     * @access public
-     * @return object
-     */
-    public static function get_instance() {
-
-        static $instance = null;
-
-        if ( is_null( $instance ) ) {
-            $instance = new DT_Data_Reporting();
-            $instance->setup();
-            $instance->includes();
-            $instance->setup_actions();
-        }
-        return $instance;
-    }
+	private static $_instance = null;
+	public static function instance() {
+		if ( is_null( self::$_instance ) ) {
+			self::$_instance = new self();
+		}
+		return self::$_instance;
+	}
 
     /**
      * Constructor method.
@@ -112,89 +80,24 @@ class DT_Data_Reporting {
      * @return void
      */
     private function __construct() {
-    }
 
-    /**
-     * Loads files needed by the plugin.
-     *
-     * @since  0.1
-     * @access public
-     * @return void
-     */
-    private function includes() {
-        if ( is_admin() ) {
-            require_once( 'includes/admin/admin-menu-and-tabs.php' );
-        }
-    }
+      // adds starter admin page and section for plugin
+			if ( is_admin() ) {
+				require_once( 'includes/admin/admin-menu-and-tabs.php' );
+			}
 
-    /**
-     * Sets up globals.
-     *
-     * @since  0.1
-     * @access public
-     * @return void
-     */
-    private function setup() {
+			$this->i18n();
 
-        // Main plugin directory path and URI.
-        $this->dir_path     = trailingslashit( plugin_dir_path( __FILE__ ) );
-        $this->dir_uri      = trailingslashit( plugin_dir_url( __FILE__ ) );
+			if ( is_admin() ) { // adds links to the plugin description area in the plugin admin list.
+				add_filter( 'plugin_row_meta', [ $this, 'plugin_description_links' ], 10, 4 );
+			}
 
-        // Plugin directory paths.
-        $this->includes_path      = trailingslashit( $this->dir_path . 'includes' );
+			if ( ! wp_next_scheduled( 'dt_dr_cron_hook' ) ) {
+				wp_schedule_event( time(), 'daily', 'dt_dr_cron_hook' );
+			}
+			add_action( 'dt_dr_cron_hook', [ $this, 'cron_export' ] );
 
-        // Plugin directory URIs.
-        $this->img_uri      = trailingslashit( $this->dir_uri . 'img' );
-
-        // Admin and settings variables
-        $this->token             = 'DT_Data_Reporting';
-        $this->version             = '1.4.2';
-    }
-
-    /**
-     * Sets up main plugin actions and filters.
-     *
-     * @since  0.1
-     * @access public
-     * @return void
-     */
-    private function setup_actions() {
-
-        if ( is_admin() ){
-            // Check for plugin updates
-            if ( ! class_exists( 'Puc_v4_Factory' ) ) {
-                require( get_template_directory() . '/dt-core/libraries/plugin-update-checker/plugin-update-checker.php' );
-            }
-            /**
-             * Below is the publicly hosted .json file that carries the version information. This file can be hosted
-             * anywhere as long as it is publicly accessible. You can download the version file listed below and use it as
-             * a template.
-             * Also, see the instructions for version updating to understand the steps involved.
-             * @see https://github.com/DiscipleTools/disciple-tools-version-control/wiki/How-to-Update-the-Starter-Plugin
-             */
-
-            $hosted_json = "https://raw.githubusercontent.com/cairocoder01/disciple-tools-data-reporting/master/disciple-tools-data-reporting-version-control.json";
-            Puc_v4_Factory::buildUpdateChecker(
-                $hosted_json,
-                __FILE__,
-                'disciple-tools-data-reporting'
-            );
-
-        }
-
-        // Internationalize the text strings used.
-        add_action( 'init', array( $this, 'i18n' ), 2 );
-
-        if ( is_admin() ) {
-            // adds links to the plugin description area in the plugin admin list.
-            add_filter( 'plugin_row_meta', [ $this, 'plugin_description_links' ], 10, 4 );
-        }
-
-        if ( ! wp_next_scheduled( 'dt_dr_cron_hook' ) ) {
-            wp_schedule_event( time(), 'daily', 'dt_dr_cron_hook' );
-        }
-        add_action( 'dt_dr_cron_hook', [ $this, 'cron_export' ] );
-    }
+		}
 
     public function cron_export() {
         require_once( plugin_dir_path( __FILE__ ) . './includes/data-tools.php' );
@@ -238,14 +141,6 @@ class DT_Data_Reporting {
      * @return void
      */
     public static function activation() {
-
-        // Confirm 'Administrator' has 'manage_dt' privilege. This is key in 'remote' configuration when
-        // Disciple Tools theme is not installed, otherwise this will already have been installed by the Disciple Tools Theme
-        $role = get_role( 'administrator' );
-        if ( !empty( $role ) ) {
-            $role->add_cap( 'manage_dt' ); // gives access to dt plugin options
-        }
-
     }
 
     /**
@@ -367,3 +262,32 @@ if ( !function_exists( "dt_hook_ajax_notice_handler" )){
         }
     }
 }
+
+/**
+ * Check for plugin updates even when the active theme is not Disciple.Tools
+ *
+ * Below is the publicly hosted .json file that carries the version information. This file can be hosted
+ * anywhere as long as it is publicly accessible. You can download the version file listed below and use it as
+ * a template.
+ * Also, see the instructions for version updating to understand the steps involved.
+ * @see https://github.com/DiscipleTools/disciple-tools-version-control/wiki/How-to-Update-the-Starter-Plugin
+ */
+add_action( 'plugins_loaded', function (){
+   if ( is_admin() && !( is_multisite() && class_exists( "DT_Multisite" ) ) || wp_doing_cron() ){
+       // Check for plugin updates
+       if ( ! class_exists( 'Puc_v4_Factory' ) ) {
+           if ( file_exists( get_template_directory() . '/dt-core/libraries/plugin-update-checker/plugin-update-checker.php' )){
+               require( get_template_directory() . '/dt-core/libraries/plugin-update-checker/plugin-update-checker.php' );
+           }
+       }
+       if ( class_exists( 'Puc_v4_Factory' ) ){
+
+           Puc_v4_Factory::buildUpdateChecker(
+               'https://raw.githubusercontent.com/cairocoder01/disciple-tools-data-reporting/master/disciple-tools-data-reporting-version-control.json',
+               __FILE__,
+               'disciple-tools-data-reporting'
+           );
+
+       }
+   }
+} );
