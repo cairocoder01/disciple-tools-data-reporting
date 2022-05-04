@@ -29,7 +29,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  * @return object|bool
  */
 function dt_data_reporting_plugin() {
-	  $dt_data_reporting_required_dt_theme_version = '0.32.0';
+      $dt_data_reporting_required_dt_theme_version = '0.32.0';
     $wp_theme = wp_get_theme();
     $version = $wp_theme->version;
 
@@ -64,13 +64,13 @@ add_action( 'after_setup_theme', 'dt_data_reporting_plugin', 20 );
  */
 class DT_Data_Reporting {
 
-	private static $_instance = null;
-	public static function instance() {
-		if ( is_null( self::$_instance ) ) {
-			self::$_instance = new self();
-		}
-		return self::$_instance;
-	}
+    private static $_instance = null;
+    public static function instance() {
+        if ( is_null( self::$_instance ) ) {
+            self::$_instance = new self();
+        }
+        return self::$_instance;
+    }
 
     /**
      * Constructor method.
@@ -82,22 +82,22 @@ class DT_Data_Reporting {
     private function __construct() {
 
       // adds starter admin page and section for plugin
-			if ( is_admin() ) {
-				require_once( 'includes/admin/admin-menu-and-tabs.php' );
-			}
+        if ( is_admin() ) {
+            require_once( 'includes/admin/admin-menu-and-tabs.php' );
+        }
 
-			$this->i18n();
+            $this->i18n();
 
-			if ( is_admin() ) { // adds links to the plugin description area in the plugin admin list.
-				add_filter( 'plugin_row_meta', [ $this, 'plugin_description_links' ], 10, 4 );
-			}
+        if ( is_admin() ) { // adds links to the plugin description area in the plugin admin list.
+            add_filter( 'plugin_row_meta', [ $this, 'plugin_description_links' ], 10, 4 );
+        }
 
-			if ( ! wp_next_scheduled( 'dt_dr_cron_hook' ) ) {
-				wp_schedule_event( time(), 'daily', 'dt_dr_cron_hook' );
-			}
-			add_action( 'dt_dr_cron_hook', [ $this, 'cron_export' ] );
+        if ( ! wp_next_scheduled( 'dt_dr_cron_hook' ) ) {
+            wp_schedule_event( time(), 'daily', 'dt_dr_cron_hook' );
+        }
+            add_action( 'dt_dr_cron_hook', [ $this, 'cron_export' ] );
 
-		}
+    }
 
     public function cron_export() {
         require_once( plugin_dir_path( __FILE__ ) . './includes/data-tools.php' );
@@ -273,21 +273,21 @@ if ( !function_exists( "dt_hook_ajax_notice_handler" )){
  * @see https://github.com/DiscipleTools/disciple-tools-version-control/wiki/How-to-Update-the-Starter-Plugin
  */
 add_action( 'plugins_loaded', function (){
-   if ( is_admin() && !( is_multisite() && class_exists( "DT_Multisite" ) ) || wp_doing_cron() ){
-       // Check for plugin updates
-       if ( ! class_exists( 'Puc_v4_Factory' ) ) {
-           if ( file_exists( get_template_directory() . '/dt-core/libraries/plugin-update-checker/plugin-update-checker.php' )){
-               require( get_template_directory() . '/dt-core/libraries/plugin-update-checker/plugin-update-checker.php' );
-           }
-       }
-       if ( class_exists( 'Puc_v4_Factory' ) ){
+    if ( is_admin() && !( is_multisite() && class_exists( "DT_Multisite" ) ) || wp_doing_cron() ){
+        // Check for plugin updates
+        if ( ! class_exists( 'Puc_v4_Factory' ) ) {
+            if ( file_exists( get_template_directory() . '/dt-core/libraries/plugin-update-checker/plugin-update-checker.php' )){
+                require( get_template_directory() . '/dt-core/libraries/plugin-update-checker/plugin-update-checker.php' );
+            }
+        }
+        if ( class_exists( 'Puc_v4_Factory' ) ){
 
-           Puc_v4_Factory::buildUpdateChecker(
-               'https://raw.githubusercontent.com/cairocoder01/disciple-tools-data-reporting/master/disciple-tools-data-reporting-version-control.json',
-               __FILE__,
-               'disciple-tools-data-reporting'
-           );
+            Puc_v4_Factory::buildUpdateChecker(
+                'https://raw.githubusercontent.com/cairocoder01/disciple-tools-data-reporting/master/disciple-tools-data-reporting-version-control.json',
+                __FILE__,
+                'disciple-tools-data-reporting'
+            );
 
-       }
-   }
+        }
+    }
 } );
