@@ -1,14 +1,14 @@
 {
   "name": "Disciple Tools - Data Reporting",
-  "version": "1.4.4",
+  "version": "1.4.5",
   "download_url": "https://github.com/cairocoder01/disciple-tools-data-reporting/releases/latest/download/disciple-tools-data-reporting.zip",
   "sections": {
     "description": "The Disciple Tools Data Reporting plugin assists in exporting data to an external data reporting source, such as cloud providers like Google Cloud, AWS, and Azure. The plugin allows you to manually download your data in CSV and JSON (newline delimited) formats. However, it's primary intended use is for automating data export directly to your choosen cloud provider.",
     "installation": "(Required) You must have Disciple.Tools Theme installed before using this plugin. Once Disciple.Tools is installed, you can use the normal Plugin system to install the plugin.",
     "changelog": ""
   },
-  "last_updated": "2022-06-07",
-  "upgrade_notice": "Handle tags field type",
+  "last_updated": "2022-06-08",
+  "upgrade_notice": "Update version control to support multi-site better",
   "requires": "4.7",
   "tested": "6.0",
   "banners": {
