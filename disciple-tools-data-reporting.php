@@ -4,12 +4,13 @@
  * Plugin URI: https://github.com/cairocoder01/disciple-tools-data-reporting
  * Description: Disciple Tools - Data Reporting is intended to assist in exporting data to an external data reporting source, such as Google BigQuery.
  * of the Disciple Tools system.
- * Version:  1.4.4
+ * Text Domain: disciple-tools-data-reporting
+ * Version:  1.4.5
  * Author URI: https://github.com/cairocoder01
  * GitHub Plugin URI: https://github.com/cairocoder01/disciple-tools-data-reporting
  * Requires at least: 4.7.0
  * (Requires 4.7+ because of the integration of the REST API at 4.7 and the security requirements of this milestone version.)
- * Tested up to: 5.6
+ * Tested up to: 6.0
  *
  * @package Disciple_Tools
  * @link    https://github.com/cairocoder01
@@ -162,7 +163,7 @@ class DT_Data_Reporting {
      * @return void
      */
     public function i18n() {
-        load_plugin_textdomain( 'DT_Data_Reporting', false, trailingslashit( dirname( plugin_basename( __FILE__ ) ) ). 'languages' );
+        load_plugin_textdomain( 'disciple-tools-data-reporting', false, trailingslashit( dirname( plugin_basename( __FILE__ ) ) ). 'languages' );
     }
 
     /**
@@ -173,7 +174,7 @@ class DT_Data_Reporting {
      * @return string
      */
     public function __toString() {
-        return 'DT_Data_Reporting';
+        return 'disciple-tools-data-reporting';
     }
 
     /**
@@ -225,7 +226,7 @@ function dt_data_reporting_hook_admin_notice() {
     $current_version = $wp_theme->version;
     $message = __( "'Disciple Tools - Data Reporting' plugin requires 'Disciple Tools' theme to work. Please activate 'Disciple Tools' theme or make sure it is latest version.", "dt_data_reporting" );
     if ( $wp_theme->get_template() === "disciple-tools-theme" ){
-        $message .= sprintf( esc_html__( 'Current Disciple Tools version: %1$s, required version: %2$s', 'DT_Data_Reporting' ), esc_html( $current_version ), esc_html( $dt_data_reporting_required_dt_theme_version ) );
+        $message .= sprintf( esc_html__( 'Current Disciple Tools version: %1$s, required version: %2$s', 'disciple-tools-data-reporting' ), esc_html( $current_version ), esc_html( $dt_data_reporting_required_dt_theme_version ) );
     }
     // Check if it's been dismissed...
     if ( ! get_option( 'dismissed-dt-data-reporting', false ) ) { ?>

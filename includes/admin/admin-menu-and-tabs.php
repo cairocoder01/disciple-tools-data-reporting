@@ -20,7 +20,7 @@ DT_Data_Reporting_Menu::instance();
  */
 class DT_Data_Reporting_Menu {
 
-    public $token = 'DT_Data_Reporting';
+    public $token = 'disciple-tools-data-reporting';
 
     private static $_instance = null;
 
@@ -61,19 +61,19 @@ class DT_Data_Reporting_Menu {
 
 
     public function add_styles() {
-        if ( is_admin() && isset( $_GET['page'] ) && 'DT_Data_Reporting' === sanitize_key( wp_unslash( $_GET['page'] ) ) ) {
+        if ( is_admin() && isset( $_GET['page'] ) && 'disciple-tools-data-reporting' === sanitize_key( wp_unslash( $_GET['page'] ) ) ) {
             echo '<style>
-            body.wp-admin.extensions-dt_page_DT_Data_Reporting
+            body.wp-admin.extensions-dt_page_disciple-tools-data-reporting
             #post-body-content {
               overflow-y: auto;
             }
-            body.wp-admin.extensions-dt_page_DT_Data_Reporting
+            body.wp-admin.extensions-dt_page_disciple-tools-data-reporting
             ul {
               list-style: inherit;
               padding-inline-start: 2em;
               margin: 0;
             }
-            body.wp-admin.extensions-dt_page_DT_Data_Reporting
+            body.wp-admin.extensions-dt_page_disciple-tools-data-reporting
             code {
               display: block;
             }
@@ -138,7 +138,7 @@ class DT_Data_Reporting_Menu {
      * @since 0.1
      */
     public function register_menu() {
-        add_submenu_page( 'dt_extensions', __( 'Data Reporting', 'DT_Data_Reporting' ), __( 'Data Reporting', 'DT_Data_Reporting' ), 'manage_dt', $this->token, array( $this, 'content' ) );
+        add_submenu_page( 'dt_extensions', __( 'Data Reporting', 'disciple-tools-data-reporting' ), __( 'Data Reporting', 'disciple-tools-data-reporting' ), 'manage_dt', $this->token, array( $this, 'content' ) );
     }
 
     /**
@@ -177,24 +177,24 @@ class DT_Data_Reporting_Menu {
         $providers = apply_filters( 'dt_data_reporting_providers', array() );
         ?>
         <div class="wrap">
-            <h2><?php esc_attr_e( 'Data Reporting', 'DT_Data_Reporting' ) ?></h2>
+            <h2><?php esc_attr_e( 'Data Reporting', 'disciple-tools-data-reporting' ) ?></h2>
             <h2 class="nav-tab-wrapper">
-                <a href="<?php echo esc_attr( $link ) . 'getting-started' ?>" class="nav-tab <?php ( $tab == 'getting-started' || ! isset( $tab ) ) ? esc_attr_e( 'nav-tab-active', 'DT_Data_Reporting' ) : print ''; ?>"><?php esc_attr_e( 'Getting Started', 'DT_Data_Reporting' ) ?></a>
-                <a href="<?php echo esc_attr( $link ) . 'export' ?>" class="nav-tab <?php ( $tab == 'export' ) ? esc_attr_e( 'nav-tab-active', 'DT_Data_Reporting' ) : print ''; ?>"><?php esc_attr_e( 'Manual Export', 'DT_Data_Reporting' ) ?></a>
-                <a href="<?php echo esc_attr( $link ) . 'bigquery' ?>" class="nav-tab <?php ( $tab == 'bigquery' ) ? esc_attr_e( 'nav-tab-active', 'DT_Data_Reporting' ) : print ''; ?>"><?php esc_attr_e( 'BigQuery Setup', 'DT_Data_Reporting' ) ?></a>
-                <a href="<?php echo esc_attr( $link ) . 'settings' ?>" class="nav-tab <?php ( $tab == 'settings' ) ? esc_attr_e( 'nav-tab-active', 'DT_Data_Reporting' ) : print ''; ?>"><?php esc_attr_e( 'Settings', 'DT_Data_Reporting' ) ?></a>
+                <a href="<?php echo esc_attr( $link ) . 'getting-started' ?>" class="nav-tab <?php ( $tab == 'getting-started' || ! isset( $tab ) ) ? esc_attr_e( 'nav-tab-active', 'disciple-tools-data-reporting' ) : print ''; ?>"><?php esc_attr_e( 'Getting Started', 'disciple-tools-data-reporting' ) ?></a>
+                <a href="<?php echo esc_attr( $link ) . 'export' ?>" class="nav-tab <?php ( $tab == 'export' ) ? esc_attr_e( 'nav-tab-active', 'disciple-tools-data-reporting' ) : print ''; ?>"><?php esc_attr_e( 'Manual Export', 'disciple-tools-data-reporting' ) ?></a>
+                <a href="<?php echo esc_attr( $link ) . 'bigquery' ?>" class="nav-tab <?php ( $tab == 'bigquery' ) ? esc_attr_e( 'nav-tab-active', 'disciple-tools-data-reporting' ) : print ''; ?>"><?php esc_attr_e( 'BigQuery Setup', 'disciple-tools-data-reporting' ) ?></a>
+                <a href="<?php echo esc_attr( $link ) . 'settings' ?>" class="nav-tab <?php ( $tab == 'settings' ) ? esc_attr_e( 'nav-tab-active', 'disciple-tools-data-reporting' ) : print ''; ?>"><?php esc_attr_e( 'Settings', 'disciple-tools-data-reporting' ) ?></a>
 
                 <?php foreach ( $providers as $prov_key => $provider ): ?>
                     <?php if ( has_action( 'dt_data_reporting_tab_provider_' . $prov_key ) ): ?>
-                  <a href="<?php echo esc_attr( $link ) . 'prov-' . esc_attr( $prov_key ) ?>" class="nav-tab <?php ( $tab == 'prov-' . $prov_key ) ? esc_attr_e( 'nav-tab-active', 'DT_Data_Reporting' ) : print ''; ?>\"><?php esc_html_e( $provider['name'], 'DT_Data_Reporting' ) ?></a>
+                  <a href="<?php echo esc_attr( $link ) . 'prov-' . esc_attr( $prov_key ) ?>" class="nav-tab <?php ( $tab == 'prov-' . $prov_key ) ? esc_attr_e( 'nav-tab-active', 'disciple-tools-data-reporting' ) : print ''; ?>\"><?php esc_html_e( $provider['name'], 'disciple-tools-data-reporting' ) ?></a>
                 <?php endif; ?>
                 <?php endforeach; ?>
 
                 <?php if ($tab === 'preview' ): ?>
-                    <a href="<?php echo esc_attr( $link ) . 'preview' ?>" class="nav-tab <?php ( $tab == 'preview' ) ? esc_attr_e( 'nav-tab-active', 'DT_Data_Reporting' ) : print ''; ?>"><?php esc_attr_e( 'Preview', 'DT_Data_Reporting' ) ?></a>
+                    <a href="<?php echo esc_attr( $link ) . 'preview' ?>" class="nav-tab <?php ( $tab == 'preview' ) ? esc_attr_e( 'nav-tab-active', 'disciple-tools-data-reporting' ) : print ''; ?>"><?php esc_attr_e( 'Preview', 'disciple-tools-data-reporting' ) ?></a>
                 <?php endif; ?>
                 <?php if ($tab === 'api-send' ): ?>
-                    <a href="<?php echo esc_attr( $link ) . 'api-send' ?>" class="nav-tab <?php ( $tab == 'api-send' ) ? esc_attr_e( 'nav-tab-active', 'DT_Data_Reporting' ) : print ''; ?>"><?php esc_attr_e( 'Export Log', 'DT_Data_Reporting' ) ?></a>
+                    <a href="<?php echo esc_attr( $link ) . 'api-send' ?>" class="nav-tab <?php ( $tab == 'api-send' ) ? esc_attr_e( 'nav-tab-active', 'disciple-tools-data-reporting' ) : print ''; ?>"><?php esc_attr_e( 'Export Log', 'disciple-tools-data-reporting' ) ?></a>
                 <?php endif; ?>
             </h2>
 
