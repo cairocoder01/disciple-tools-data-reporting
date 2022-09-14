@@ -696,6 +696,7 @@ class DT_Data_Reporting_Tools
                 switch ($fields[$a->meta_key]["type"]) {
                     case 'key_select':
                     case 'multi_select':
+                    case 'tags':
                         $keys = array_keys( $fields[$a->meta_key]["default"] );
                         $value_friendly = $fields[$a->meta_key]["default"][$a->meta_value]["label"] ?? $a->meta_value;
                         $value_order = array_search( $a->meta_value, $keys ) + 1;
@@ -789,6 +790,7 @@ class DT_Data_Reporting_Tools
                     $field_value = self::get_label( $result, $field_key );
                     break;
                 case 'multi_select':
+                case 'tags':
                     $field_value = $flatten ? implode( ",", $result[$field_key] ) : $result[$field_key];
                     break;
                 case 'user_select':
@@ -844,6 +846,7 @@ class DT_Data_Reporting_Tools
                     $field_value = null;
                     break;
                 case 'multi_select':
+                case 'tags':
                     $field_value = $flatten ? null : array();
                     break;
                 case 'array':
@@ -1222,6 +1225,7 @@ class DT_Data_Reporting_Tools
                 case 'array':
                 case 'location':
                 case 'multi_select':
+                case 'tags':
                     $column['bq_type'] = 'STRING';
                     $column['bq_mode'] = 'REPEATED';
                     break;
