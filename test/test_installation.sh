@@ -3,7 +3,7 @@
 # Test installing this plugin using the Wordpress CLI, with a command like this
 # one:
 #
-# wp plugin install --activate https://github.com/ZumeProject/disciple-tools-zume/archive/master.zip
+# wp plugin install --activate (github link)/archive/master.zip
 #
 # If this fails, we know we have an issue that we need to fix to make the plugin
 # installable again
@@ -31,4 +31,4 @@ chmod +x wp-cli.phar
 ./wp-cli.phar core install --url=localhost --title=test --admin_user=admin --admin_email=example@example.com
 
 # Install plugin
-./wp-cli.phar plugin install --activate "https://github.com/$GITHUB_REPOSITORY/archive/$TRAVIS_SHA.zip"
+./wp-cli.phar plugin install --activate "https://github.com/$GITHUB_REPOSITORY/archive/$GITHUB_SHA.zip"
