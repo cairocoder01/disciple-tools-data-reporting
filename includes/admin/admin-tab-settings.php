@@ -135,6 +135,38 @@ class DT_Data_Reporting_Tab_Settings
             .switch [type="checkbox"]:checked + label span:last-child::before {
                 transform: translateX(24px);
             }
+
+            .table-config td { max-width: 50vw; }
+
+          /** Tabs **/
+          table.accordion { border-collapse: collapse; }
+          table.accordion thead .icon { text-align: right; }
+          table.accordion thead td { padding: 0; }
+          table.accordion thead .toggle {
+            display: block;
+            padding: 8px 10px;
+            color: inherit;
+            font-weight: 600;
+          }
+          table.accordion tbody { visibility: visible; }
+          table.accordion.collapsed tbody { visibility: collapse; }
+
+          /** Data Types Tab **/
+          .data-type-config-table label.label { display: block; font-weight: 600; }
+          .data-type-config-table .muted { opacity: 0.65; }
+
+          .data-type-config-table label.radio {
+            display: block;
+            padding-left: 2rem;
+            position: relative;
+            margin-top: 0.5rem;
+          }
+
+          .data-type-config-table label.radio input[type=radio] {
+            position: absolute;
+            left: 0;
+            top: 0.5rem;
+          }
         </style>
         <?php
     }
@@ -176,6 +208,7 @@ class DT_Data_Reporting_Tab_Settings
             $('#dialog-' + key).dialog('open');
           });
 
+          // Toggle Enabled option from main list table
           $('.config-list-table').on('change', '.config-enable-checkbox', function () {
             var self = this;
             var data = {
@@ -203,6 +236,7 @@ class DT_Data_Reporting_Tab_Settings
               });
           });
 
+          // Dialog form submission
           $('.dialog form').on('submit', function (evt) {
             if (evt) {
               evt.preventDefault();
@@ -241,6 +275,11 @@ class DT_Data_Reporting_Tab_Settings
           $('.table-config').on('change', '.provider', function () {
             $('tr[class^=provider-]').hide();
             $('tr.provider-' + $(this).val()).show();
+          });
+
+          // Accordion toggle (dialog data types tab)
+          $('.accordion').on('click', '.toggle', function () {
+            this.closest('table').classList.toggle('collapsed');
           });
 
           // todo: remove this code for old UI
@@ -753,8 +792,11 @@ class DT_Data_Reporting_Tab_Settings
     public function edit_dialogs( $configurations ) {
       $providers = apply_filters( 'dt_data_reporting_providers', array() );
 
+      $post_types = DT_Posts::get_post_types();
+
       echo "<div style='display:none;'>";
       foreach ( $configurations as $key => $config ):
+        $config['key'] = $key;
         $config_provider = isset( $config['provider'] ) ? $config['provider'] : 'api'; ?>
 
         <div class="dialog" id="dialog-<?php echo esc_attr( $key ) ?>">
@@ -766,8 +808,10 @@ class DT_Data_Reporting_Tab_Settings
               <a href="#dlg-tab-general-<?php echo esc_attr( $key )?>" class="nav-tab">General</a>
               <a href="#dlg-tab-provider-<?php echo esc_attr( $key )?>" class="nav-tab">Provider</a>
               <a href="#dlg-tab-data-types-<?php echo esc_attr( $key )?>" class="nav-tab">Data Types</a>
+              <a href="#dlg-tab-logs-<?php echo esc_attr( $key )?>" class="nav-tab">Logs</a>
             </h2>
             <div class="wrap">
+              <!-- General Tab -->
               <div id="dlg-tab-general-<?php echo esc_attr( $key ) ?>" class="dlg-tab-content">
                 <table class="form-table table-config">
                   <tr>
@@ -804,6 +848,7 @@ class DT_Data_Reporting_Tab_Settings
                   </tr>
                 </table>
               </div>
+              <!-- Provider Tab -->
               <div id="dlg-tab-provider-<?php echo esc_attr( $key ) ?>" class="dlg-tab-content" style="display: none;">
                 <table class="form-table table-config">
                   <tr>
@@ -888,8 +933,42 @@ class DT_Data_Reporting_Tab_Settings
                   ?>
                 </table>
               </div>
+              <!-- Data Types Tab -->
               <div id="dlg-tab-data-types-<?php echo esc_attr( $key ) ?>" class="dlg-tab-content" style="display: none;">
-                <h3>Data Types</h3>
+                <?php foreach( $post_types as $post_type ): ?>
+                  <?php
+                    $post_type_settings = DT_Posts::get_post_settings( $post_type );
+                    $post_type_label = $post_type_settings['label_plural']
+                  ?>
+                  <table class="widefat striped accordion collapsed data-type-config-table">
+                    <thead>
+                    <tr>
+                      <td><a href="javascript:;" class="toggle">
+                          <?php echo esc_html( $post_type_label ) ?>
+                        </a></td>
+                    </tr>
+                    </thead>
+                    <tbody>
+                      <?php $this->post_type_config_settings( $config, $post_type ) ?>
+                    </tbody>
+                  </table>
+                  <table class="widefat striped accordion collapsed data-type-config-table">
+                    <thead>
+                    <tr>
+                      <td><a href="javascript:;" class="toggle">
+                          <?php echo esc_html( $post_type_label ) ?> Activity
+                        </a></td>
+                    </tr>
+                    </thead>
+                    <tbody>
+                      <?php $this->post_type_config_settings( $config, rtrim( $post_type, 's' ) . '_activity' ) ?>
+                    </tbody>
+                  </table>
+                <?php endforeach; ?>
+              </div>
+              <!-- Logs Tab -->
+              <div id="dlg-tab-logs-<?php echo esc_attr( $key ) ?>" class="dlg-tab-content" style="display: none;">
+                <h3>Logs</h3>
               </div>
             </div>
 
@@ -899,6 +978,102 @@ class DT_Data_Reporting_Tab_Settings
         </div>
       <?php endforeach;
       echo "</div>";
+    }
+
+    public function post_type_config_settings( $config, $data_type ) {
+      $type_configs = isset( $config['data_types'] ) ? $config['data_types'] : [];
+      $default_type_config = [
+        'all_data' => 0,
+        'limit' => 500
+      ];
+      $type_config =isset( $type_configs[$data_type] ) ? $type_configs[$data_type] : $default_type_config;
+      //foreach ( DT_Data_Reporting_Tools::$data_types as $data_type => $type_name ) {
+          ?>
+        <tr>
+          <td>
+            <label class="label">Export Style</label>
+            <label class="radio">
+              <input type="radio"
+                     name="data_types[<?php echo esc_attr( $data_type ) ?>][all_data]"
+                     value="1"
+                     class="data-type-all-data"
+                     <?php echo $type_config['all_data'] == 1 ? 'checked' : '' ?>
+                     />
+              All Data
+              <div class="muted">Sends all data whenever an export is run.</div>
+            </label>
+            <label class="radio">
+              <input type="radio"
+                     name="data_types[<?php echo esc_attr( $data_type ) ?>][all_data]"
+                     value="0"
+                     class="data-type-all-data"
+                     <?php echo $type_config['all_data'] == 0 ? 'checked' : '' ?>
+                     />
+              Last Updated
+              <div class="muted">Only sends the data that has changed since the last export with a maximum number of records configured below.</div>
+            </label>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            <label class="label">Max Records</label>
+            <input type="text"
+                   placeholder="Max records"
+                   name="data_types[<?php echo esc_attr( $data_type ) ?>][limit]"
+                   class="data-type-limit"
+                   value="<?php echo esc_attr( isset( $type_config['limit'] ) ? $type_config['limit'] : $default_type_config['limit'] ) ?>"
+            />
+            <div class="muted">When exporting only Last Updated records, this is the max number of records that will be sent at one time.</div>
+
+          </td>
+        </tr>
+            <?php /*if ( isset( $config_progress[$key] ) && isset( $config_progress[$key][$data_type] )): ?>
+              <div class="last-exported-value">
+                Exported Until: <?php echo esc_html( $config_progress[$key][$data_type] ) ?>
+                <button type="button"
+                        data-config-key="<?php echo esc_attr( $key ) ?>"
+                        data-data-type="<?php echo esc_attr( $data_type ) ?>">Reset</button>
+              </div>
+            <?php endif; */ ?>
+
+        <tr>
+          <td>
+            <label class="label">Export Daily</label>
+            <span class="switch">
+              <input type="checkbox"
+                     class="config-enable-checkbox"
+                     id="dlg_data_types_<?php echo esc_attr( $data_type ) ?>_schedule_<?php echo esc_attr( $config['key'] ) ?>"
+                     name="data_types[<?php echo esc_attr( $data_type ) ?>][schedule]"
+                     value="daily"
+                     <?php echo isset( $type_config['schedule'] ) && $type_config['schedule'] == 'daily' ? 'checked' : '' ?>
+              />
+              <label for="dlg_data_types_<?php echo esc_attr( $data_type ) ?>_schedule_<?php echo esc_attr( $config['key'] ) ?>">
+                <span></span>
+              </label>
+            </span>
+            <div class="muted">Enable scheduled exports for this type to be run on a daily basis. Data will automatically be sent to your provider without manual triggering it.</div>
+
+          </td>
+        </tr>
+
+              <?php /*if ( isset( $export_logs[$key] ) && isset( $export_logs[$key][$data_type] ) ): ?>
+              <div class="export-logs">
+                  <button type="button">View Last Export Logs</button>
+                  <div class="log-messages" style="display: none;">
+                      <div class="result">Result: <?php echo $export_logs[$key][$data_type]['success'] ? 'Success' : 'Fail' ?></div>
+                      <ul class="api-log">
+                          <?php foreach ( $export_logs[$key][$data_type]['messages'] as $message ) {
+                              $message_type = isset( $message['type'] ) ? $message['type'] : '';
+                              $content = isset( $message['message'] ) ? $message['message'] : '';
+                              echo "<li class='" . esc_attr( $message_type ) . "'>" . wp_kses( $content, $allowed_html ) . "</li>";
+                          } ?>
+                      </ul>
+                  </div>
+              </div>
+              <?php endif;*/ ?>
+          </td>
+        </tr>
+      <?php
     }
 
     public function save_settings() {
