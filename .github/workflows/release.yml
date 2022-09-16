@@ -1,18 +1,61 @@
 name: Release
 
 on:
-  workflow_run:
-    workflows: ["Tests"]
-    branches: [master]
-    types: [completed]
   push:
     tags:
     - 'v*' # Push events to matching v*, i.e. v1.0, v20.15.10
 
 jobs:
+  tests:
+    runs-on: ubuntu-latest
+
+    services:
+      mysql:
+        image: mysql:5.7
+        env:
+          MYSQL_DATABASE: testdb
+          MYSQL_USER: user
+          MYSQL_PASSWORD: password
+          MYSQL_ROOT_PASSWORD: rootpassword
+        ports:
+          - 3306:3306
+        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
+
+    strategy:
+      fail-fast: true
+      matrix:
+        php: ["7.4", "8.0"]
+
+    name: PHP ${{ matrix.php }}
+    steps:
+      - uses: actions/checkout@v2
+
+      - uses: actions/setup-node@v2
+        with:
+          node-version: 16.x
+
+      - name: Install PHP
+        uses: shivammathur/setup-php@master
+        with:
+          php-version: ${{ matrix.php }}
+
+      - name: Report PHP version
+        run: php -v
+
+      - name: Install dependencies
+        run: composer install --no-interaction
+
+      - name: Test Syntax
+        run: ./test/test_for_syntax_errors.sh
+
+      - name: Test Installation
+        run: ./test/test_installation.sh
+
+      - name: Test phpcs
+        run: ./test/test_phpcs.sh
   build:
     runs-on: ubuntu-latest
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    needs: tests
 
     steps:
     - uses: actions/checkout@v2
