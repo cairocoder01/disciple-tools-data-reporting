@@ -1,10 +1,10 @@
 {
     "scripts": {
         "lint": [
-            "sh includes/admin/test/test_phpcs.sh"
+            "sh test/test_phpcs.sh"
         ],
         "lint-fix": [
-            "sh includes/admin/test/test_phpcbf.sh"
+            "sh test/test_phpcbf.sh"
         ]
     },
     "require-dev": {

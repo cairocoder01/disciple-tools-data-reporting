@@ -61,13 +61,17 @@ class DT_Data_Reporting_Menu {
         // init settings to setup ajax hooks
         add_action( 'wp_ajax_dtdr_enable_config', [ $this, 'ajax_enable_config' ] );
         add_action( 'wp_ajax_dtdr_save_config', [ $this, 'ajax_save_config' ] );
+        add_action( 'wp_ajax_dtdr_reset_progress', [ $this, 'ajax_reset_progress' ] );
     } // End __construct()
 
     public function ajax_enable_config() {
-      DT_Data_Reporting_Tab_Settings::ajax_enable_config();
+        DT_Data_Reporting_Tab_Settings::ajax_enable_config();
     }
     public function ajax_save_config() {
-      DT_Data_Reporting_Tab_Settings::ajax_save_config();
+        DT_Data_Reporting_Tab_Settings::ajax_save_config();
+    }
+    public function ajax_reset_progress() {
+        DT_Data_Reporting_Tab_Settings::ajax_reset_progress();
     }
 
     public function add_styles() {

@@ -1021,6 +1021,7 @@ class DT_Data_Reporting_Tools
 
             $args = array(
                 'method' => 'POST',
+                'timeout'     => 45,
                 'headers' => array(
                     'Content-Type' => 'application/json; charset=utf-8'
                 ),
