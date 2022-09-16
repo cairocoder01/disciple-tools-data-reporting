@@ -15,13 +15,6 @@ class DT_Data_Reporting_Tools
         'date' => true,
     ];
 
-    public static $data_types = [
-        'contacts' => 'Contacts',
-        'contact_activity' => 'Contact Activity',
-        'groups' => 'Groups',
-        'group_activity' => 'Group Activity',
-    ];
-
 
     private static $excluded_fields = array(
         'contacts' => array( 'name', 'nickname', 'tasks', 'facebook_data' ),
@@ -963,13 +956,11 @@ class DT_Data_Reporting_Tools
             $type_configs = isset( $config['data_types'] ) ? $config['data_types'] : [];
 
             // loop over each data type in each config
-          //todo: loop over all post types instead of this hard-coded list
-            foreach (array_keys( self::$data_types ) as $data_type) {
-
-                $schedule = isset( $type_configs[$data_type] ) && isset( $type_configs[$data_type]['schedule'] ) ? $type_configs[$data_type]['schedule'] : '';
+            foreach ( $type_configs as $type => $type_config ) {
+                $schedule = isset( $type_config ) && isset( $type_config['schedule'] ) ? $type_config['schedule'] : '';
                 // if scheduled export enabled, run export (get data, send to provider)
                 if ( $schedule == 'daily') {
-                    self::run_export( $config_key, $config, $data_type, $provider_details );
+                    self::run_export( $config_key, $config, $type, $provider_details );
                 }
             }
         }
