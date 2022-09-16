@@ -50,6 +50,7 @@ class DT_Data_Reporting_Menu {
 
         add_action( "admin_menu", array( $this, "register_menu" ) );
         add_action( "admin_head", array( $this, "add_styles" ) );
+        add_action( "admin_footer", array( $this, "add_scripts" ) );
 
         require_once( plugin_dir_path( __FILE__ ) . '../data-tools.php' );
         require_once( plugin_dir_path( __FILE__ ) . './admin-tab-manual-export.php' );
@@ -144,8 +145,46 @@ class DT_Data_Reporting_Menu {
               color: #28a745;
               font-weight: bold;
             }
+            
+            /** Accordion **/
+            table.accordion { border-collapse: collapse; }
+            table.accordion thead td, table.accordion thead th { padding: 0; }
+            table.accordion thead .toggle {
+              display: block;
+              padding: 8px 10px;
+              color: inherit;
+              font-weight: 600;
+              display: flex;
+              justify-content: space-between;
+            }
+            table.accordion tbody { visibility: visible; }
+            table.accordion.collapsed tbody { visibility: collapse; }
+            table.accordion.collapsed thead .icon.open { display: none; }
+            table.accordion:not(.collapsed) thead .icon.closed { display: none; }
+            
+            table.accordion.schema tbody td { padding: 0; }
+            table.schema pre { margin: 0; }
+            table.schema code {
+                font-size: 0.7rem;
+                line-height: normal;
+                max-height: 75vh;
+                overflow-y: scroll;
+            }
           </style>';
         }
+    }
+
+    public function add_scripts() {
+        ?>
+      <script>
+        jQuery(document).ready(function ($) {
+          // Accordion toggle (dialog data types tab)
+          $('.accordion').on('click', '.toggle', function () {
+            this.closest('table').classList.toggle('collapsed');
+          });
+        });
+      </script>
+        <?php
     }
 
     /**

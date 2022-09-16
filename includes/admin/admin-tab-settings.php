@@ -178,19 +178,7 @@ class DT_Data_Reporting_Tab_Settings
           .dialog { min-width: 50vw; }
           .dialog .nav-tab-wrapper + .wrap,
           .dialog .nav-tab-wrapper + .wrap table { margin-top: 0; }
-
-          /** Tabs **/
-          table.accordion { border-collapse: collapse; }
-          table.accordion thead .icon { text-align: right; }
-          table.accordion thead td { padding: 0; background: #dcdcde; }
-          table.accordion thead .toggle {
-            display: block;
-            padding: 8px 10px;
-            color: inherit;
-            font-weight: 600;
-          }
-          table.accordion tbody { visibility: visible; }
-          table.accordion.collapsed tbody { visibility: collapse; }
+          .dialog table.accordion thead td { background: #dcdcde; }
 
           /** Data Types Tab **/
           .data-type-config-table label.label { display: block; font-weight: 600; }
@@ -315,11 +303,6 @@ class DT_Data_Reporting_Tab_Settings
           $('.table-config').on('change', '.provider', function () {
             $('tr[class^=provider-]').hide();
             $('tr.provider-' + $(this).val()).show();
-          });
-
-          // Accordion toggle (dialog data types tab)
-          $('.accordion').on('click', '.toggle', function () {
-            this.closest('table').classList.toggle('collapsed');
           });
 
           // Reset last exported progress
@@ -624,6 +607,8 @@ class DT_Data_Reporting_Tab_Settings
                     <tr>
                       <td><a href="javascript:;" class="toggle">
                             <?php echo esc_html( $post_type_label ) ?>
+                          <img src="<?php echo esc_html( get_template_directory_uri() . '/dt-assets/images/chevron_down.svg' ) ?>" class="icon closed"/>
+                          <img src="<?php echo esc_html( get_template_directory_uri() . '/dt-assets/images/chevron_up.svg' ) ?>" class="icon open"/>
                         </a></td>
                     </tr>
                     </thead>
@@ -636,6 +621,8 @@ class DT_Data_Reporting_Tab_Settings
                     <tr>
                       <td><a href="javascript:;" class="toggle">
                             <?php echo esc_html( $post_type_label ) ?> Activity
+                          <img src="<?php echo esc_html( get_template_directory_uri() . '/dt-assets/images/chevron_down.svg' ) ?>" class="icon closed"/>
+                          <img src="<?php echo esc_html( get_template_directory_uri() . '/dt-assets/images/chevron_up.svg' ) ?>" class="icon open"/>
                         </a></td>
                     </tr>
                     </thead>

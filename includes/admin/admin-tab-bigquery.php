@@ -34,6 +34,7 @@ class DT_Data_Reporting_Tab_BigQuery
     }
 
     public function main_column() {
+        $post_types = DT_Posts::get_post_types();
         ?>
       <table class="widefat">
       <thead>
@@ -149,18 +150,49 @@ class DT_Data_Reporting_Tab_BigQuery
         <tr><th>BigQuery Schemas</th></tr>
       </thead>
       <tbody>
-        <tr>
-          <td>
-            <h2>Contacts</h2>
-            <?php $this->print_schema( 'contacts' ) ?>
-          </td>
-        </tr>
-        <tr>
-          <td>
-            <h2>Contact Activity</h2>
-            <?php $this->print_schema( 'contact_activity' ) ?>
-          </td>
-        </tr>
+        <?php foreach ( $post_types as $post_type ):
+            $post_type_settings = DT_Posts::get_post_settings( $post_type );
+            $activity_type = rtrim( $post_type, 's' ) . '_activity';
+            ?>
+          <tr>
+            <td>
+              <table class="widefat schema accordion collapsed">
+                <thead>
+                <tr><th>
+                    <a href="javascript:;" class="toggle">
+                      <?php esc_html_e( $post_type_settings['label_plural'] ) ?>
+                      <img src="<?php echo esc_html( get_template_directory_uri() . '/dt-assets/images/chevron_down.svg' ) ?>" class="icon closed"/>
+                      <img src="<?php echo esc_html( get_template_directory_uri() . '/dt-assets/images/chevron_up.svg' ) ?>" class="icon open"/>
+                    </a>
+                  </th></tr>
+                </thead>
+                <tbody>
+                  <tr><td>
+                    <?php $this->print_schema( $post_type ) ?>
+                    </td></tr>
+                </tbody>
+              </table>
+            </td>
+          </tr>
+          <tr>
+            <td>
+              <table class="widefat schema accordion collapsed">
+                <thead>
+                <tr><th><a href="javascript:;" class="toggle">
+                      <?php esc_html_e( $post_type_settings['label_singular'] ) ?> Activity
+                      <img src="<?php echo esc_html( get_template_directory_uri() . '/dt-assets/images/chevron_down.svg' ) ?>" class="icon closed"/>
+                      <img src="<?php echo esc_html( get_template_directory_uri() . '/dt-assets/images/chevron_up.svg' ) ?>" class="icon open"/>
+                    </a></th></tr>
+                </thead>
+                <tbody>
+                  <tr><td>
+                    <?php $this->print_schema( $activity_type ) ?>
+                    </td></tr>
+                </tbody>
+              </table>
+            </td>
+          </tr>
+      <?php endforeach; ?>
       </tbody>
       </table>
         <?php
