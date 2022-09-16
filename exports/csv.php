@@ -73,29 +73,18 @@ function get_post_activity( $post_type ) {
     );
 }
 $data_type = isset( $_GET['type'] ) ? sanitize_key( wp_unslash( $_GET['type'] ) ) : '';
+$root_type = str_replace( '_activity', 's', $data_type );
+$is_activity = $root_type !== $data_type;
 $data_filename = strcmp( $data_type, '' ) !== 0 ? $data_type : 'data';
-switch ( $data_type ) {
-    case 'contacts':
-    default:
-        [ $columns, $items ] = DT_Data_Reporting_Tools::get_contacts( true );
-        $columns = array_map( function ( $column ) { return $column['name'];
-        }, $columns );
-        break;
-    case 'contact_activity':
-        [ $columns, $items ] = DT_Data_Reporting_Tools::get_contact_activity( true );
-        $columns = array_map( function ( $column ) { return $column['name'];
-        }, $columns );
-        break;
-    case 'groups':
-        [ $columns, $items ] = DT_Data_Reporting_Tools::get_groups( true );
-        $columns = array_map( function ( $column ) { return $column['name'];
-        }, $columns );
-        break;
-    case 'group_activity':
-        [ $columns, $items ] = DT_Data_Reporting_Tools::get_group_activity( true );
-        $columns = array_map( function ( $column ) { return $column['name'];
-        }, $columns );
-        break;
+
+if ( $is_activity ) {
+    [ $columns, $items ] = DT_Data_Reporting_Tools::get_post_activity( $root_type );
+    $columns = array_map( function ( $column ) { return $column['name'];
+    }, $columns );
+} else {
+    [ $columns, $items ] = DT_Data_Reporting_Tools::get_posts( $root_type, true );
+    $columns = array_map( function ( $column ) { return $column['name'];
+    }, $columns );
 }
 
 

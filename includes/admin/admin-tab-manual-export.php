@@ -32,6 +32,8 @@ class DT_Data_Reporting_Tab_Manual_Export
         $preview_link = 'admin.php?page='.$this->token.'&tab=preview&type=';
 
         $configurations = DT_Data_Reporting_Tools::get_configs();
+
+        $post_types = DT_Posts::get_post_types();
         ?>
         <!-- Box -->
         <table class="widefat striped table-export">
@@ -39,48 +41,32 @@ class DT_Data_Reporting_Tab_Manual_Export
             <th>Default Data Export</th>
             </thead>
             <tbody>
-            <tr>
-                <td>
-                    Export Contacts
+            <?php foreach ( $post_types as $post_type ):
+                $post_type_settings = DT_Posts::get_post_settings( $post_type );
+                $activity_type = rtrim( $post_type, 's' ) . '_activity';
+                ?>
+                <tr>
+                    <td>
+                        Export <?php esc_html_e( $post_type_settings['label_plural'] ) ?>
 
-                    <div class="alignright">
-                        <a href="<?php echo esc_attr( $preview_link ) . 'contacts' ?>">Preview <span class="dashicons dashicons-admin-site-alt3"></span></a> |
-                        <a href="<?php echo esc_attr( plugins_url( '../../exports/csv.php?type=contacts', __FILE__ ) ) ?>">CSV <span class="dashicons dashicons-download"></span></a> |
-                        <a href="<?php echo esc_attr( plugins_url( '../../exports/json.php?type=contacts', __FILE__ ) ) ?>">JSON <span class="dashicons dashicons-download"></span></a>
-                    </div>
-                </td>
-            </tr>
-            <tr>
-                <td>
-                    Export Contact Activity
-                    <div class="alignright">
-                        <a href="<?php echo esc_attr( $preview_link ) . 'contact_activity' ?>">Preview <span class="dashicons dashicons-admin-site-alt3"></span></a> |
-                        <a href="<?php echo esc_attr( plugins_url( '../../exports/csv.php?type=contact_activity', __FILE__ ) ) ?>">CSV <span class="dashicons dashicons-download"></a> |
-                        <a href="<?php echo esc_attr( plugins_url( '../../exports/json.php?type=contact_activity', __FILE__ ) ) ?>">JSON <span class="dashicons dashicons-download"></a>
-                    </div>
-                </td>
-            </tr>
-            <tr>
-                <td>
-                    Export Groups
-
-                    <div class="alignright">
-                        <a href="<?php echo esc_attr( $preview_link ) . 'groups' ?>">Preview <span class="dashicons dashicons-admin-site-alt3"></span></a> |
-                        <a href="<?php echo esc_attr( plugins_url( '../../exports/csv.php?type=groups', __FILE__ ) ) ?>">CSV <span class="dashicons dashicons-download"></span></a> |
-                        <a href="<?php echo esc_attr( plugins_url( '../../exports/json.php?type=groups', __FILE__ ) ) ?>">JSON <span class="dashicons dashicons-download"></span></a>
-                    </div>
-                </td>
-            </tr>
-            <tr>
-                <td>
-                    Export Group Activity
-                    <div class="alignright">
-                        <a href="<?php echo esc_attr( $preview_link ) . 'group_activity' ?>">Preview <span class="dashicons dashicons-admin-site-alt3"></span></a> |
-                        <a href="<?php echo esc_attr( plugins_url( '../../exports/csv.php?type=group_activity', __FILE__ ) ) ?>">CSV <span class="dashicons dashicons-download"></a> |
-                        <a href="<?php echo esc_attr( plugins_url( '../../exports/json.php?type=group_activity', __FILE__ ) ) ?>">JSON <span class="dashicons dashicons-download"></a>
-                    </div>
-                </td>
-            </tr>
+                        <div class="alignright">
+                            <a href="<?php echo esc_attr( $preview_link . $post_type ) ?>">Preview <span class="dashicons dashicons-admin-site-alt3"></span></a> |
+                            <a href="<?php echo esc_attr( plugins_url( '../../exports/csv.php?type=' . $post_type, __FILE__ ) ) ?>">CSV <span class="dashicons dashicons-download"></span></a> |
+                            <a href="<?php echo esc_attr( plugins_url( '../../exports/json.php?type=' . $post_type, __FILE__ ) ) ?>">JSON <span class="dashicons dashicons-download"></span></a>
+                        </div>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        Export <?php esc_html_e( $post_type_settings['label_singular'] ) ?> Activity
+                        <div class="alignright">
+                            <a href="<?php echo esc_attr( $preview_link . $activity_type ) ?>">Preview <span class="dashicons dashicons-admin-site-alt3"></span></a> |
+                            <a href="<?php echo esc_attr( plugins_url( '../../exports/csv.php?type=' . $activity_type, __FILE__ ) ) ?>">CSV <span class="dashicons dashicons-download"></a> |
+                            <a href="<?php echo esc_attr( plugins_url( '../../exports/json.php?type=' . $activity_type, __FILE__ ) ) ?>">JSON <span class="dashicons dashicons-download"></a>
+                        </div>
+                    </td>
+                </tr>
+            <?php endforeach; ?>
             </tbody>
         </table>
         <br>
@@ -98,44 +84,30 @@ class DT_Data_Reporting_Tab_Manual_Export
             <th>Configuration: <span class="config-name"><?php echo esc_html( $config['name'] ) ?></span></th>
             </thead>
             <tbody>
-            <tr>
-              <td>
-                Export Contacts
+                <?php foreach ( $post_types as $post_type ):
+                    $post_type_settings = DT_Posts::get_post_settings( $post_type );
+                    $activity_type = rtrim( $post_type, 's' ) . '_activity';
+                    ?>
+                <tr>
+                  <td>
+                    Export <?php esc_html_e( $post_type_settings['label_plural'] ) ?>
 
-                <div class="alignright">
-                  <a href="<?php echo esc_attr( $preview_link_config ) . 'contacts' ?>">Preview <span class="dashicons dashicons-admin-site-alt3"></span></a> |
-                  <a href="<?php echo esc_attr( $api_action_link_config ) . 'contacts' ?>">Send Data <span class="dashicons dashicons-migrate"></span></a>
-                </div>
-              </td>
-            </tr>
-            <tr>
-              <td>
-                Export Contact Activity
-                <div class="alignright">
-                  <a href="<?php echo esc_attr( $preview_link_config ) . 'contact_activity' ?>">Preview <span class="dashicons dashicons-admin-site-alt3"></span></a> |
-                  <a href="<?php echo esc_attr( $api_action_link_config ) . 'contact_activity' ?>">Send Data <span class="dashicons dashicons-migrate"></span></a>
-                </div>
-              </td>
-            </tr>
-            <tr>
-              <td>
-                Export Groups
-
-                <div class="alignright">
-                  <a href="<?php echo esc_attr( $preview_link_config ) . 'groups' ?>">Preview <span class="dashicons dashicons-admin-site-alt3"></span></a> |
-                  <a href="<?php echo esc_attr( $api_action_link_config ) . 'groups' ?>">Send Data <span class="dashicons dashicons-migrate"></span></a>
-                </div>
-              </td>
-            </tr>
-            <tr>
-              <td>
-                Export Group Activity
-                <div class="alignright">
-                  <a href="<?php echo esc_attr( $preview_link_config ) . 'group_activity' ?>">Preview <span class="dashicons dashicons-admin-site-alt3"></span></a> |
-                  <a href="<?php echo esc_attr( $api_action_link_config ) . 'group_activity' ?>">Send Data <span class="dashicons dashicons-migrate"></span></a>
-                </div>
-              </td>
-            </tr>
+                    <div class="alignright">
+                      <a href="<?php echo esc_attr( $preview_link_config . $post_type ) ?>">Preview <span class="dashicons dashicons-admin-site-alt3"></span></a> |
+                      <a href="<?php echo esc_attr( $api_action_link_config . $post_type ) ?>">Send Data <span class="dashicons dashicons-migrate"></span></a>
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <td>
+                    Export <?php esc_html_e( $post_type_settings['label_singular'] ) ?> Activity
+                    <div class="alignright">
+                      <a href="<?php echo esc_attr( $preview_link_config . $activity_type ) ?>">Preview <span class="dashicons dashicons-admin-site-alt3"></span></a> |
+                      <a href="<?php echo esc_attr( $api_action_link_config . $activity_type ) ?>">Send Data <span class="dashicons dashicons-migrate"></span></a>
+                    </div>
+                  </td>
+                </tr>
+            <?php endforeach; ?>
             </tbody>
           </table>
           <br>

@@ -25,16 +25,29 @@ class DT_Data_Reporting_Tools
 
     private static $excluded_fields = array(
         'contacts' => array( 'name', 'nickname', 'tasks', 'facebook_data' ),
-        'groups' => array( 'name' ),
+        'default' => array( 'name' ),
     );
+
+    private static function is_excluded_field( $type, $field_key ) {
+        if ( array_key_exists( $type, self::$excluded_fields ) ) {
+            return in_array( $field_key, self::$excluded_fields[$type] );
+        }
+        return in_array( $field_key, self::$excluded_fields['default'] );
+    }
     private static $included_hidden_fields = array(
         'contacts' => array( 'accepted', 'source_details', 'type' ),
-        'groups' => array( 'type' ),
+        'default' => array( 'type' )
     );
+    private static function is_included_hidden_field( $type, $field_key ) {
+        if ( array_key_exists( $type, self::$included_hidden_fields ) ) {
+            return in_array( $field_key, self::$included_hidden_fields[$type] );
+        }
+        return in_array( $field_key, self::$included_hidden_fields['default'] );
+    }
 
     /**
      * Fetch data by type
-     * @param $data_type contacts|contact_activity|groups|group_activity
+     * @param $data_type contacts|contact_activity|{post_type}|{post_type_singular}_activity
      * @param $config_key
      * @param bool $flatten
      * @param null $limit
@@ -53,477 +66,254 @@ class DT_Data_Reporting_Tools
         $limit = $limit ?? ( !$all_data && isset( $type_config['limit'] ) ? intval( $type_config['limit'] ) : 100 );
         // dt_write_log(json_encode($type_config));
 
+        // for activity types, convert `contact_activity` to `contacts` to get correct filter
+        $root_type = str_replace( '_activity', 's', $data_type );
+        $is_activity = $root_type !== $data_type;
+        $filter_key = $root_type . '_filter';
+        $filter = $config && isset( $config[$filter_key] ) ? $config[$filter_key] : null;
+
+        if ( $limit ) {
+            $filter['limit'] = $limit;
+        }
+        // If not exporting everything, add limit and filter for last value
+        if ( !$all_data && !empty( $last_exported_value ) ) {
+            $filter['last_modified'] = [
+                'start' => $last_exported_value,
+            ];
+        }
+
+        // Fetch the data
         $result = null;
-        switch ($data_type) {
-            case 'group_activity':
-                $filter = $config && isset( $config['groups_filter'] ) ? $config['groups_filter'] : null;
-
-                if ( $limit ) {
-                    $filter['limit'] = $limit;
-                }
-                // If not exporting everything, add limit and filter for last value
-                if ( !$all_data && !empty( $last_exported_value ) ) {
-                    $filter['last_modified'] = [
-                        'start' => $last_exported_value,
-                    ];
-                }
-
-                // Fetch the data
-                $result = self::get_group_activity( false, $filter );
-            break;
-            case 'groups':
-                $filter = $config && isset( $config['groups_filter'] ) ? $config['groups_filter'] : null;
-
-                if ( $limit ) {
-                    $filter['limit'] = $limit;
-                }
-                // If not exporting everything, add limit and filter for last value
-                if ( !$all_data && !empty( $last_exported_value ) ) {
-                    $filter['last_modified'] = [
-                        'start' => $last_exported_value,
-                    ];
-                }
-
-                // Fetch the data
-                $result = self::get_groups( $flatten, $filter );
-            break;
-            case 'contact_activity':
-                $filter = $config && isset( $config['contacts_filter'] ) ? $config['contacts_filter'] : array();
-                if ( $limit ) {
-                    $filter['limit'] = $limit;
-                }
-                // If not exporting everything, add limit and filter for last value
-                if ( !$all_data && !empty( $last_exported_value ) ) {
-                    $filter['date'] = [
-                        'start' => $last_exported_value,
-                    ];
-                }
-                $result = self::get_contact_activity( false, $filter );
-            break;
-            case 'contacts':
-            default:
-                $filter = $config && isset( $config['contacts_filter'] ) ? $config['contacts_filter'] : null;
-
-                if ( $limit ) {
-                    $filter['limit'] = $limit;
-                }
-                // If not exporting everything, add limit and filter for last value
-                if ( !$all_data && !empty( $last_exported_value ) ) {
-                    $filter['last_modified'] = [
-                        'start' => $last_exported_value,
-                    ];
-                }
-
-                // Fetch the data
-                $result = self::get_contacts( $flatten, $filter );
+        if ( $is_activity ) {
+            $result = self::get_post_activity( $root_type, $filter );
+        } else {
+            $result = self::get_posts( $data_type, $flatten, $filter );
         }
 
         return $result;
     }
 
     /**
-     * Fetch contacts
+     * Fetch post activity
+     * @param string $post_type
+     * @param null $filter
+     * @return array Columns, rows, and total count
+     */
+    public static function get_post_activity( $post_type, $filter = null ) {
+        $filter = $filter ? array_intersect_key( $filter, self::$supported_filters ) : array();
+
+        $activities = self::query_post_activity( $post_type, $filter );
+        dt_write_log( sizeof( $activities['activity'] ) . ' of ' . $activities['total'] );
+        $items = array();
+
+        $base_url = self::get_current_site_base_url();
+
+        foreach ($activities['activity'] as $index => $result) {
+            $activity = $result;
+            $activity['site'] = $base_url;
+
+            $items[] = $activity;
+        }
+
+        $columns = array(
+            array(
+                'key' => "id",
+                'name' => "ID",
+                'type' => 'string',
+                'bq_type' => 'STRING',
+                'bq_mode' => 'NULLABLE',
+            ),
+            array(
+                'key' => "meta_id",
+                'name' => 'Meta ID',
+                'type' => 'number',
+                'bq_type' => 'INTEGER',
+                'bq_mode' => 'NULLABLE',
+            ),
+            array(
+                'key' => "post_id",
+                'name' => 'Post ID',
+                'type' => 'number',
+                'bq_type' => 'INTEGER',
+                'bq_mode' => 'NULLABLE',
+            ),
+            array(
+                'key' => "user_id",
+                'name' => 'User ID',
+                'type' => 'number',
+                'bq_type' => 'INTEGER',
+                'bq_mode' => 'NULLABLE',
+            ),
+            array(
+                'key' => "user_name",
+                'name' => 'User',
+                'type' => 'string',
+                'bq_type' => 'STRING',
+                'bq_mode' => 'NULLABLE',
+            ),
+            array(
+                'key' => "action_type",
+                'name' => 'Action Type',
+                'type' => 'string',
+                'bq_type' => 'STRING',
+                'bq_mode' => 'NULLABLE',
+            ),
+            array(
+                'key' => "action_field",
+                'name' => 'Action Field',
+                'type' => 'string',
+                'bq_type' => 'STRING',
+                'bq_mode' => 'NULLABLE',
+            ),
+            array(
+                'key' => "action_value",
+                'name' => 'Action Value',
+                'type' => 'string',
+                'bq_type' => 'STRING',
+                'bq_mode' => 'NULLABLE',
+            ),
+            array(
+                'key' => "action_value_friendly",
+                'name' => 'Action Value (Friendly)',
+                'type' => 'string',
+                'bq_type' => 'STRING',
+                'bq_mode' => 'NULLABLE',
+            ),
+            array(
+                'key' => "action_value_order",
+                'name' => 'Action Value Order',
+                'type' => 'number',
+                'bq_type' => 'INTEGER',
+                'bq_mode' => 'NULLABLE',
+            ),
+            array(
+                'key' => "action_old_value",
+                'name' => 'Action Old Value',
+                'type' => 'string',
+                'bq_type' => 'STRING',
+                'bq_mode' => 'NULLABLE',
+            ),
+            array(
+                'key' => "note",
+                'name' => 'Note',
+                'type' => 'string',
+                'bq_type' => 'STRING',
+                'bq_mode' => 'NULLABLE',
+            ),
+            array(
+                'key' => "date",
+                'name' => 'Date',
+                'type' => 'date',
+                'bq_type' => 'TIMESTAMP',
+                'bq_mode' => 'NULLABLE',
+            ),
+            array(
+                'key' => 'site',
+                'name' => 'Site',
+                'type' => 'string',
+                'bq_type' => 'STRING',
+                'bq_mode' => 'NULLABLE',
+            ),
+        );
+
+        return array( $columns, $items, $activities['total'] );
+    }
+
+
+    /**
+     * Fetch post data to return
+     * @param string $post_type
      * @param bool $flatten
      * @param null $filter
      * @return array Columns, rows, and total count
      */
-    public static function get_contacts( $flatten = false, $filter = null ) {
+    public static function get_posts( $post_type, $flatten = false, $filter = null ) {
         $is_dt_1_0 = version_compare( wp_get_theme()->version, '1.0.0', '>=' );
 
+      // Fetch all post data
         try {
-            $contacts = self::get_posts( 'contacts', $filter );
+            $posts = self::query_posts( $post_type, $filter );
         } catch ( Exception $ex ) {
-            dt_write_log( "Error fetching contacts: {$ex->getMessage()}" );
+            dt_write_log( "Error fetching $post_type: {$ex->getMessage()}" );
             return array( null, null, 0 );
         }
 
-        // Build contact generations
-        // taken from [dt-theme]/dt-metrics/counters/counter-baptism.php::save_all_contact_generations
-        $raw_baptism_generation_list = Disciple_Tools_Counter_Baptism::query_get_all_baptism_connections();
-        $all_baptisms = Disciple_Tools_Counter_Baptism::build_baptism_generation_counts( $raw_baptism_generation_list );
         $contact_generations = array();
-        foreach ( $all_baptisms as $baptism_generation ){
-            $generation = $baptism_generation["generation"];
-            $baptisms = $baptism_generation["ids"];
-            foreach ( $baptisms as $contact ){
-                $contact_generations[$contact] = $generation;
+        if ( $post_type === 'contacts' ) {
+          // Build contact generations
+          // taken from [dt-theme]/dt-metrics/counters/counter-baptism.php::save_all_contact_generations
+            $raw_baptism_generation_list = Disciple_Tools_Counter_Baptism::query_get_all_baptism_connections();
+            $all_baptisms = Disciple_Tools_Counter_Baptism::build_baptism_generation_counts( $raw_baptism_generation_list );
+            foreach ($all_baptisms as $baptism_generation) {
+                $generation = $baptism_generation["generation"];
+                $baptisms = $baptism_generation["ids"];
+                foreach ($baptisms as $contact) {
+                    $contact_generations[$contact] = $generation;
+                }
             }
         }
 
         $items = array();
 
-        $post_settings = apply_filters( "dt_get_post_type_settings", array(), 'contacts' );
+        $post_settings = apply_filters( "dt_get_post_type_settings", array(), $post_type );
         $fields = $post_settings["fields"];
         $base_url = self::get_current_site_base_url();
-        $locations = self::get_location_data( $contacts['posts'] );
+        $locations = self::get_location_data( $posts['posts'] );
 
-        foreach ($contacts['posts'] as $index => $result) {
-            $contact = array(
-                'ID' => $result['ID'],
-                'Created' => $result['post_date'],
+      // process each post
+        foreach ($posts['posts'] as $index => $result) {
+            $post = array(
+            'ID' => $result['ID'],
+            'Created' => $result['post_date'],
             );
 
-            // Theme v1.0.0 changes post_date to a proper date object we need to format
+          // Theme v1.0.0 changes post_date to a proper date object we need to format
             if ( $is_dt_1_0 && isset( $result['post_date']['timestamp'] ) ) {
-                $contact['Created'] = !empty( $result['post_date']["timestamp"] ) ? gmdate( "Y-m-d H:i:s", $result['post_date']['timestamp'] ) : "";
+                $post['Created'] = !empty( $result['post_date']["timestamp"] ) ? gmdate( "Y-m-d H:i:s", $result['post_date']['timestamp'] ) : "";
             }
 
-            // Loop over all fields to parse/format each
+          // Loop over all fields to parse/format each
             foreach ( $fields as $field_key => $field ){
-                // skip if field is hidden, unless marked as exception above
-                if ( isset( $field['hidden'] ) && $field['hidden'] == true && !in_array( $field_key, self::$included_hidden_fields['contacts'] ) ) {
+              // skip if field is hidden, unless marked as exception above
+                if ( isset( $field['hidden'] ) && $field['hidden'] == true && !self::is_included_hidden_field( $post_type, $field_key ) ) {
                     continue;
                 }
-                // skip if in list of excluded fields
-                if ( in_array( $field_key, self::$excluded_fields['contacts'] ) ) {
+              // skip if in list of excluded fields
+                if ( self::is_excluded_field( $post_type, $field_key ) ) {
                     continue;
                 }
 
                 $type = $field['type'];
 
-                // skip communication_channel fields since they are all PII
+              // skip communication_channel fields since they are all PII
                 if ( $type == 'communication_channel' ) {
                     continue;
                 }
 
                 $field_value = self::get_field_value( $result, $field_key, $type, $flatten, $locations );
 
-                // if we calculated the baptism generation, set it here
-                if ( $field_key == 'baptism_generation' && isset( $contact_generations[$result['ID']] ) ) {
-                    if ( $fields[$field_key]['type'] === 'number' ) {
-                        $generation = $contact_generations[$result['ID']];
-                        $field_value = empty( $generation ) ? '' : intval( $generation );
-                    } else {
-                        $field_value = $contact_generations[$result['ID']];
+
+                if ( $post_type === 'contacts' ) {
+                  // if we calculated the baptism generation, set it here
+                    if ( $field_key == 'baptism_generation' && isset( $contact_generations[$result['ID']] ) ) {
+                        if ( $fields[$field_key]['type'] === 'number' ) {
+                            $generation = $contact_generations[$result['ID']];
+                            $field_value = empty( $generation ) ? '' : intval( $generation );
+                        } else {
+                            $field_value = $contact_generations[$result['ID']];
+                        }
                     }
                 }
 
                 $field_value = apply_filters( 'dt_data_reporting_field_output', $field_value, $type, $field_key, $flatten );
-                $contact[$field_key] = $field_value;
+                $post[$field_key] = $field_value;
             }
-            $contact['site'] = $base_url;
+            $post['site'] = $base_url;
 
-            $items[] = $contact;
+            $items[] = $post;
         }
-        $columns = self::build_columns( $fields, 'contacts' );
-        return array( $columns, $items, $contacts['total'] );
-    }
-
-    /**
-     * Fetch contact activity
-     * @param bool $flatten
-     * @param null $filter
-     * @return array Columns, rows, and total count
-     */
-    public static function get_contact_activity( $flatten = false, $filter = null ) {
-        $filter = $filter ? array_intersect_key( $filter, self::$supported_filters ) : array();
-
-        $activities = self::get_post_activity( 'contacts', $filter );
-        dt_write_log( sizeof( $activities['activity'] ) . ' of ' . $activities['total'] );
-        $items = array();
-
-        $base_url = self::get_current_site_base_url();
-
-        foreach ($activities['activity'] as $index => $result) {
-            $activity = $result;
-            $activity['site'] = $base_url;
-
-            $items[] = $activity;
-        }
-
-        $columns = array(
-            array(
-                'key' => "id",
-                'name' => "ID",
-                'type' => 'string',
-                'bq_type' => 'STRING',
-                'bq_mode' => 'NULLABLE',
-            ),
-            array(
-                'key' => "meta_id",
-                'name' => 'Meta ID',
-                'type' => 'number',
-                'bq_type' => 'INTEGER',
-                'bq_mode' => 'NULLABLE',
-            ),
-            array(
-                'key' => "post_id",
-                'name' => 'Contact ID',
-                'type' => 'number',
-                'bq_type' => 'INTEGER',
-                'bq_mode' => 'NULLABLE',
-            ),
-            array(
-                'key' => "user_id",
-                'name' => 'User ID',
-                'type' => 'number',
-                'bq_type' => 'INTEGER',
-                'bq_mode' => 'NULLABLE',
-            ),
-            array(
-                'key' => "user_name",
-                'name' => 'User',
-                'type' => 'string',
-                'bq_type' => 'STRING',
-                'bq_mode' => 'NULLABLE',
-            ),
-            array(
-                'key' => "action_type",
-                'name' => 'Action Type',
-                'type' => 'string',
-                'bq_type' => 'STRING',
-                'bq_mode' => 'NULLABLE',
-            ),
-            array(
-                'key' => "action_field",
-                'name' => 'Action Field',
-                'type' => 'string',
-                'bq_type' => 'STRING',
-                'bq_mode' => 'NULLABLE',
-            ),
-            array(
-                'key' => "action_value",
-                'name' => 'Action Value',
-                'type' => 'string',
-                'bq_type' => 'STRING',
-                'bq_mode' => 'NULLABLE',
-            ),
-            array(
-                'key' => "action_value_friendly",
-                'name' => 'Action Value (Friendly)',
-                'type' => 'string',
-                'bq_type' => 'STRING',
-                'bq_mode' => 'NULLABLE',
-            ),
-            array(
-                'key' => "action_value_order",
-                'name' => 'Action Value Order',
-                'type' => 'number',
-                'bq_type' => 'INTEGER',
-                'bq_mode' => 'NULLABLE',
-            ),
-            array(
-                'key' => "action_old_value",
-                'name' => 'Action Old Value',
-                'type' => 'string',
-                'bq_type' => 'STRING',
-                'bq_mode' => 'NULLABLE',
-            ),
-            array(
-                'key' => "note",
-                'name' => 'Note',
-                'type' => 'string',
-                'bq_type' => 'STRING',
-                'bq_mode' => 'NULLABLE',
-            ),
-            array(
-                'key' => "date",
-                'name' => 'Date',
-                'type' => 'date',
-                'bq_type' => 'TIMESTAMP',
-                'bq_mode' => 'NULLABLE',
-            ),
-            array(
-                'key' => 'site',
-                'name' => 'Site',
-                'type' => 'string',
-                'bq_type' => 'STRING',
-                'bq_mode' => 'NULLABLE',
-            ),
-        );
-
-        return array( $columns, $items, $activities['total'] );
-    }
-
-    /**
-     * Fetch groups
-     * @param bool $flatten
-     * @param null $filter
-     * @return array Columns, rows, and total count
-     */
-    public static function get_groups( $flatten = false, $filter = null ) {
-        $is_dt_1_0 = version_compare( wp_get_theme()->version, '1.0.0', '>=' );
-
-        try {
-            $groups = self::get_posts( 'groups', $filter );
-        } catch ( Exception $ex ) {
-            dt_write_log( "Error fetching groups: {$ex->getMessage()}" );
-            return array( null, null, 0 );
-        }
-
-        $items = array();
-
-        $post_settings = apply_filters( "dt_get_post_type_settings", array(), 'groups' );
-        $fields = $post_settings["fields"];
-        $base_url = self::get_current_site_base_url();
-        $locations = self::get_location_data( $groups['posts'] );
-
-        foreach ($groups['posts'] as $index => $result) {
-            $group = array(
-                'ID' => $result['ID'],
-                'Created' => $result['post_date'],
-            );
-
-            // Theme v1.0.0 changes post_date to a proper date object we need to format
-            if ( $is_dt_1_0 && isset( $result['post_date']['timestamp'] ) ) {
-                $group['Created'] = !empty( $result['post_date']["timestamp"] ) ? gmdate( "Y-m-d H:i:s", $result['post_date']['timestamp'] ) : "";
-            }
-
-            // Loop over all fields to parse/format each
-            foreach ( $fields as $field_key => $field ){
-                // skip if field is hidden, unless marked as exception above
-                if ( isset( $field['hidden'] ) && $field['hidden'] == true && !in_array( $field_key, self::$included_hidden_fields['groups'] ) ) {
-                    continue;
-                }
-                // skip if in list of excluded fields
-                if ( in_array( $field_key, self::$excluded_fields['groups'] ) ) {
-                    continue;
-                }
-
-                $type = $field['type'];
-
-                // skip communication_channel fields since they are all PII
-                if ( $type == 'communication_channel' ) {
-                    continue;
-                }
-
-                $field_value = self::get_field_value( $result, $field_key, $type, $flatten, $locations );
-
-                $field_value = apply_filters( 'dt_data_reporting_field_output', $field_value, $type, $field_key, $flatten );
-                $group[$field_key] = $field_value;
-            }
-            $group['site'] = $base_url;
-
-            $items[] = $group;
-        }
-        $columns = self::build_columns( $fields, 'groups' );
-        return array( $columns, $items, $groups['total'] );
-    }
-
-    /**
-     * Fetch group activity
-     * @param bool $flatten
-     * @param null $filter
-     * @return array Columns, rows, and total count
-     */
-    public static function get_group_activity( $flatten = false, $filter = null ) {
-        $filter = $filter ? array_intersect_key( $filter, self::$supported_filters ) : array();
-
-        $activities = self::get_post_activity( 'groups', $filter );
-        dt_write_log( sizeof( $activities['activity'] ) . ' of ' . $activities['total'] );
-        $items = array();
-
-        $base_url = self::get_current_site_base_url();
-
-        foreach ($activities['activity'] as $index => $result) {
-            $activity = $result;
-            $activity['site'] = $base_url;
-
-            $items[] = $activity;
-        }
-
-        $columns = array(
-            array(
-                'key' => "id",
-                'name' => "ID",
-                'type' => 'string',
-                'bq_type' => 'STRING',
-                'bq_mode' => 'NULLABLE',
-            ),
-            array(
-                'key' => "meta_id",
-                'name' => 'Meta ID',
-                'type' => 'number',
-                'bq_type' => 'INTEGER',
-                'bq_mode' => 'NULLABLE',
-            ),
-            array(
-                'key' => "post_id",
-                'name' => 'Group ID',
-                'type' => 'number',
-                'bq_type' => 'INTEGER',
-                'bq_mode' => 'NULLABLE',
-            ),
-            array(
-                'key' => "user_id",
-                'name' => 'User ID',
-                'type' => 'number',
-                'bq_type' => 'INTEGER',
-                'bq_mode' => 'NULLABLE',
-            ),
-            array(
-                'key' => "user_name",
-                'name' => 'User',
-                'type' => 'string',
-                'bq_type' => 'STRING',
-                'bq_mode' => 'NULLABLE',
-            ),
-            array(
-                'key' => "action_type",
-                'name' => 'Action Type',
-                'type' => 'string',
-                'bq_type' => 'STRING',
-                'bq_mode' => 'NULLABLE',
-            ),
-            array(
-                'key' => "action_field",
-                'name' => 'Action Field',
-                'type' => 'string',
-                'bq_type' => 'STRING',
-                'bq_mode' => 'NULLABLE',
-            ),
-            array(
-                'key' => "action_value",
-                'name' => 'Action Value',
-                'type' => 'string',
-                'bq_type' => 'STRING',
-                'bq_mode' => 'NULLABLE',
-            ),
-            array(
-                'key' => "action_value_friendly",
-                'name' => 'Action Value (Friendly)',
-                'type' => 'string',
-                'bq_type' => 'STRING',
-                'bq_mode' => 'NULLABLE',
-            ),
-            array(
-                'key' => "action_value_order",
-                'name' => 'Action Value Order',
-                'type' => 'number',
-                'bq_type' => 'INTEGER',
-                'bq_mode' => 'NULLABLE',
-            ),
-            array(
-                'key' => "action_old_value",
-                'name' => 'Action Old Value',
-                'type' => 'string',
-                'bq_type' => 'STRING',
-                'bq_mode' => 'NULLABLE',
-            ),
-            array(
-                'key' => "note",
-                'name' => 'Note',
-                'type' => 'string',
-                'bq_type' => 'STRING',
-                'bq_mode' => 'NULLABLE',
-            ),
-            array(
-                'key' => "date",
-                'name' => 'Date',
-                'type' => 'date',
-                'bq_type' => 'TIMESTAMP',
-                'bq_mode' => 'NULLABLE',
-            ),
-            array(
-                'key' => 'site',
-                'name' => 'Site',
-                'type' => 'string',
-                'bq_type' => 'STRING',
-                'bq_mode' => 'NULLABLE',
-            ),
-        );
-
-        return array( $columns, $items, $activities['total'] );
+        $columns = self::build_columns( $fields, $post_type );
+        return array( $columns, $items, $posts['total'] );
     }
 
     /**
@@ -533,7 +323,7 @@ class DT_Data_Reporting_Tools
      * @return array|WP_Error
      * @throws Exception If DT_Posts::list_posts throws an error.
      */
-    private static function get_posts( $post_type, $filter = null ) {
+    private static function query_posts( $post_type, $filter = null ) {
         // limit filtering to only those that are manually implemented for activity
         $filter = $filter ? array_intersect_key( $filter, self::$supported_filters ) : array();
 
@@ -565,7 +355,7 @@ class DT_Data_Reporting_Tools
         return $posts;
     }
 
-    private static function get_post_activity( $post_type, $filter ) {
+    private static function query_post_activity( $post_type, $filter ) {
         global $wpdb;
 
         // By default, sort by last updated date
@@ -575,12 +365,15 @@ class DT_Data_Reporting_Tools
 
         $post_settings = apply_filters( "dt_get_post_type_settings", array(), $post_type );
         $fields = $post_settings["fields"];
-        $hidden_fields = array_merge( array( 'duplicate_of' ), self::$excluded_fields[$post_type] );
+        $excluded_fields = array_key_exists( $post_type, self::$excluded_fields )
+          ? self::$excluded_fields[$post_type]
+          : self::$excluded_fields['default'];
+        $hidden_fields = array_merge( array( 'duplicate_of' ), $excluded_fields );
 
         foreach ( $fields as $field_key => $field ){
             if ( isset( $field["hidden"] ) && $field["hidden"] === true ){
                 // if field is marked as exception to hidden fields, don't exclude it here
-                if ( in_array( $field_key, self::$included_hidden_fields[$post_type] ) ) {
+                if ( self::is_included_hidden_field( $post_type, $field_key ) ) {
                     continue;
                 }
                 $hidden_fields[] = $field_key;
@@ -1107,9 +900,9 @@ class DT_Data_Reporting_Tools
 
     /**
      * Run export to fetch data, send to provider, and log results
-     * @param $config_key
-     * @param $config
-     * @param $type
+     * @param $config_key - ID of the saved configuration
+     * @param $config - Saved configuration
+     * @param $type - Data type to be exported
      * @param $provider_details
      * @return array|void|WP_Error
      */
@@ -1170,6 +963,7 @@ class DT_Data_Reporting_Tools
             $type_configs = isset( $config['data_types'] ) ? $config['data_types'] : [];
 
             // loop over each data type in each config
+          //todo: loop over all post types instead of this hard-coded list
             foreach (array_keys( self::$data_types ) as $data_type) {
 
                 $schedule = isset( $type_configs[$data_type] ) && isset( $type_configs[$data_type]['schedule'] ) ? $type_configs[$data_type]['schedule'] : '';
@@ -1204,11 +998,11 @@ class DT_Data_Reporting_Tools
 
         foreach ($fields as $field_key => $field) {
             // skip if field is hidden
-            if (isset( $field['hidden'] ) && $field['hidden'] == true && !in_array( $field_key, self::$included_hidden_fields[$type] )) {
+            if (isset( $field['hidden'] ) && $field['hidden'] == true && !self::is_included_hidden_field( $type, $field_key ) ) {
                 continue;
             }
             // skip if in list of excluded fields
-            if (in_array( $field_key, self::$excluded_fields[$type] )) {
+            if (self::is_excluded_field( $type, $field_key ) ) {
                 continue;
             }
 

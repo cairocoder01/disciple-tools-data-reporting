@@ -25,21 +25,18 @@ require( $_SERVER[ 'DOCUMENT_ROOT' ] . '/wp-load.php' ); // loads the wp framewo
 require_once( plugin_dir_path( __FILE__ ) . '../includes/data-tools.php' );
 
 $data_type = isset( $_GET['type'] ) ? sanitize_key( wp_unslash( $_GET['type'] ) ) : '';
+$root_type = str_replace( '_activity', 's', $data_type );
+$is_activity = $root_type !== $data_type;
 $data_filename = strcmp( $data_type, '' ) !== 0 ? $data_type : 'data';
-switch ( $data_type ) {
-    case 'contacts':
-    default:
-        [ $columns, $items ] = DT_Data_Reporting_Tools::get_contacts();
-        break;
-    case 'contact_activity':
-        [ $columns, $items ] = DT_Data_Reporting_Tools::get_contact_activity();
-        break;
-    case 'groups':
-        [ $columns, $items ] = DT_Data_Reporting_Tools::get_groups();
-        break;
-    case 'group_activity':
-        [ $columns, $items ] = DT_Data_Reporting_Tools::get_group_activity();
-        break;
+
+if ( $is_activity ) {
+    [ $columns, $items ] = DT_Data_Reporting_Tools::get_post_activity( $root_type );
+    $columns = array_map( function ( $column ) { return $column['name'];
+    }, $columns );
+} else {
+    [ $columns, $items ] = DT_Data_Reporting_Tools::get_posts( $root_type );
+    $columns = array_map( function ( $column ) { return $column['name'];
+    }, $columns );
 }
 
 

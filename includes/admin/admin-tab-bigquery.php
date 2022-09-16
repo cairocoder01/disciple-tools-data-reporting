@@ -167,17 +167,14 @@ class DT_Data_Reporting_Tab_BigQuery
     }
 
     public function print_schema( $type ) {
-        switch ($type) {
-            case 'contact_activity':
-                // We're not using the actual data, so only get 1 record
-                [$columns, ] = DT_Data_Reporting_Tools::get_contact_activity( false, array( 'limit' => 1 ) );
+        $root_type = str_replace( '_activity', 's', $type );
+        $is_activity = $root_type !== $type;
 
-                break;
-            case 'contacts':
-            default:
-                // We're not using the actual data, so only get 1 record
-                [ $columns, ] = DT_Data_Reporting_Tools::get_contacts( false, array( 'limit' => 1 ) );
-                break;
+        if ( $is_activity ) {
+            [$columns, ] = DT_Data_Reporting_Tools::get_post_activity( $root_type, array( 'limit' => 1 ) );
+        } else {
+            [ $columns, ] = DT_Data_Reporting_Tools::get_posts( $type, false, array( 'limit' => 1 ) );
+
         }
         echo "<pre><code style='display:block;'>";
         $bq_columns = array_map(function ( $col) {
