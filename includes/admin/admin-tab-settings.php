@@ -91,52 +91,52 @@ class DT_Data_Reporting_Tab_Settings
     public function styles() {
         ?>
         <style>
-            /** switch **/
-            .switch [type="checkbox"] {
-                position: absolute;
-                left: -9999px;
-            }
+          /** switch **/
+          .switch [type="checkbox"] {
+              position: absolute;
+              left: -9999px;
+          }
 
-            .switch {
-                position: relative;
-            }
-            .switch label {
-                display: flex;
-                align-items: center;
-                justify-content: flex-start;
-            }
-            .switch label span:last-child {
-                position: relative;
-                width: 50px;
-                height: 26px;
-                border-radius: 15px;
-                box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.4);
-                background: #eee;
-                transition: all 0.3s;
-            }
-            .switch label span:last-child::before,
-            .switch label span:last-child::after {
-                content: "";
-                position: absolute;
-            }
-            .switch label span:last-child::before {
-                left: 1px;
-                top: 1px;
-                width: 24px;
-                height: 24px;
-                background: #fff;
-                border-radius: 50%;
-                z-index: 1;
-                transition: transform 0.3s;
-            }
-            .switch [type="checkbox"]:checked + label span:last-child {
-                background: #46b450;
-            }
-            .switch [type="checkbox"]:checked + label span:last-child::before {
-                transform: translateX(24px);
-            }
+          .switch {
+              position: relative;
+          }
+          .switch label {
+              display: flex;
+              align-items: center;
+              justify-content: flex-start;
+          }
+          .switch label span:last-child {
+              position: relative;
+              width: 50px;
+              height: 26px;
+              border-radius: 15px;
+              box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.4);
+              background: #eee;
+              transition: all 0.3s;
+          }
+          .switch label span:last-child::before,
+          .switch label span:last-child::after {
+              content: "";
+              position: absolute;
+          }
+          .switch label span:last-child::before {
+              left: 1px;
+              top: 1px;
+              width: 24px;
+              height: 24px;
+              background: #fff;
+              border-radius: 50%;
+              z-index: 1;
+              transition: transform 0.3s;
+          }
+          .switch [type="checkbox"]:checked + label span:last-child {
+              background: #46b450;
+          }
+          .switch [type="checkbox"]:checked + label span:last-child::before {
+              transform: translateX(24px);
+          }
 
-            .table-config td { max-width: 50vw; }
+          .table-config td { max-width: 50vw; }
 
           /** Tabs **/
           table.accordion { border-collapse: collapse; }
@@ -808,7 +808,6 @@ class DT_Data_Reporting_Tab_Settings
               <a href="#dlg-tab-general-<?php echo esc_attr( $key )?>" class="nav-tab">General</a>
               <a href="#dlg-tab-provider-<?php echo esc_attr( $key )?>" class="nav-tab">Provider</a>
               <a href="#dlg-tab-data-types-<?php echo esc_attr( $key )?>" class="nav-tab">Data Types</a>
-              <a href="#dlg-tab-logs-<?php echo esc_attr( $key )?>" class="nav-tab">Logs</a>
             </h2>
             <div class="wrap">
               <!-- General Tab -->
@@ -938,9 +937,12 @@ class DT_Data_Reporting_Tab_Settings
                 <?php foreach( $post_types as $post_type ): ?>
                   <?php
                     $post_type_settings = DT_Posts::get_post_settings( $post_type );
-                    $post_type_label = $post_type_settings['label_plural']
+                    $post_type_label = $post_type_settings['label_plural'];
+                    $activity_type = rtrim( $post_type, 's' ) . '_activity';
+                    $post_schedule_enabled = isset( $config['data_types'][$post_type] ) && isset( $config['data_types'][$post_type]['schedule']) && $config['data_types'][$post_type]['schedule'] == 'daily';
+                    $activity_schedule_enabled = isset( $config['data_types'][$activity_type] ) && isset( $config['data_types'][$activity_type]['schedule']) && $config['data_types'][$activity_type]['schedule'] == 'daily';
                   ?>
-                  <table class="widefat striped accordion collapsed data-type-config-table">
+                  <table class="widefat striped table-config accordion data-type-config-table <?php echo  $post_schedule_enabled ? '' : 'collapsed' ?>">
                     <thead>
                     <tr>
                       <td><a href="javascript:;" class="toggle">
@@ -952,7 +954,7 @@ class DT_Data_Reporting_Tab_Settings
                       <?php $this->post_type_config_settings( $config, $post_type ) ?>
                     </tbody>
                   </table>
-                  <table class="widefat striped accordion collapsed data-type-config-table">
+                  <table class="widefat striped table-config accordion data-type-config-table <?php echo  $activity_schedule_enabled ? '' : 'collapsed' ?>">
                     <thead>
                     <tr>
                       <td><a href="javascript:;" class="toggle">
@@ -961,14 +963,10 @@ class DT_Data_Reporting_Tab_Settings
                     </tr>
                     </thead>
                     <tbody>
-                      <?php $this->post_type_config_settings( $config, rtrim( $post_type, 's' ) . '_activity' ) ?>
+                      <?php $this->post_type_config_settings( $config, $activity_type ) ?>
                     </tbody>
                   </table>
                 <?php endforeach; ?>
-              </div>
-              <!-- Logs Tab -->
-              <div id="dlg-tab-logs-<?php echo esc_attr( $key ) ?>" class="dlg-tab-content" style="display: none;">
-                <h3>Logs</h3>
               </div>
             </div>
 
@@ -981,13 +979,25 @@ class DT_Data_Reporting_Tab_Settings
     }
 
     public function post_type_config_settings( $config, $data_type ) {
+      $key = $config['key'];
       $type_configs = isset( $config['data_types'] ) ? $config['data_types'] : [];
       $default_type_config = [
         'all_data' => 0,
         'limit' => 500
       ];
       $type_config =isset( $type_configs[$data_type] ) ? $type_configs[$data_type] : $default_type_config;
-      //foreach ( DT_Data_Reporting_Tools::$data_types as $data_type => $type_name ) {
+
+      $config_progress = json_decode( get_option( "dt_data_reporting_configurations_progress" ), true );
+
+      $export_logs_str = get_option( "dt_data_reporting_export_logs" );
+      $export_logs = json_decode( $export_logs_str, true );
+
+      $allowed_html = array(
+        'a' => array(
+          'href' => array(),
+          'title' => array()
+        ),
+      );
           ?>
         <tr>
           <td>
@@ -1012,6 +1022,16 @@ class DT_Data_Reporting_Tab_Settings
               Last Updated
               <div class="muted">Only sends the data that has changed since the last export with a maximum number of records configured below.</div>
             </label>
+
+
+            <?php if ( isset( $config_progress[$key] ) && isset( $config_progress[$key][$data_type] )): ?>
+              <div class="last-exported-value">
+                Exported Until: <?php echo esc_html( $config_progress[$key][$data_type] ) ?>
+                <button type="button"
+                        data-config-key="<?php echo esc_attr( $key ) ?>"
+                        data-data-type="<?php echo esc_attr( $data_type ) ?>">Reset</button>
+              </div>
+            <?php endif;  ?>
           </td>
         </tr>
         <tr>
@@ -1027,14 +1047,6 @@ class DT_Data_Reporting_Tab_Settings
 
           </td>
         </tr>
-            <?php /*if ( isset( $config_progress[$key] ) && isset( $config_progress[$key][$data_type] )): ?>
-              <div class="last-exported-value">
-                Exported Until: <?php echo esc_html( $config_progress[$key][$data_type] ) ?>
-                <button type="button"
-                        data-config-key="<?php echo esc_attr( $key ) ?>"
-                        data-data-type="<?php echo esc_attr( $data_type ) ?>">Reset</button>
-              </div>
-            <?php endif; */ ?>
 
         <tr>
           <td>
@@ -1042,12 +1054,12 @@ class DT_Data_Reporting_Tab_Settings
             <span class="switch">
               <input type="checkbox"
                      class="config-enable-checkbox"
-                     id="dlg_data_types_<?php echo esc_attr( $data_type ) ?>_schedule_<?php echo esc_attr( $config['key'] ) ?>"
+                     id="dlg_data_types_<?php echo esc_attr( $data_type ) ?>_schedule_<?php echo esc_attr( $key ) ?>"
                      name="data_types[<?php echo esc_attr( $data_type ) ?>][schedule]"
                      value="daily"
                      <?php echo isset( $type_config['schedule'] ) && $type_config['schedule'] == 'daily' ? 'checked' : '' ?>
               />
-              <label for="dlg_data_types_<?php echo esc_attr( $data_type ) ?>_schedule_<?php echo esc_attr( $config['key'] ) ?>">
+              <label for="dlg_data_types_<?php echo esc_attr( $data_type ) ?>_schedule_<?php echo esc_attr( $key ) ?>">
                 <span></span>
               </label>
             </span>
@@ -1056,23 +1068,25 @@ class DT_Data_Reporting_Tab_Settings
           </td>
         </tr>
 
-              <?php /*if ( isset( $export_logs[$key] ) && isset( $export_logs[$key][$data_type] ) ): ?>
-              <div class="export-logs">
-                  <button type="button">View Last Export Logs</button>
-                  <div class="log-messages" style="display: none;">
-                      <div class="result">Result: <?php echo $export_logs[$key][$data_type]['success'] ? 'Success' : 'Fail' ?></div>
-                      <ul class="api-log">
-                          <?php foreach ( $export_logs[$key][$data_type]['messages'] as $message ) {
-                              $message_type = isset( $message['type'] ) ? $message['type'] : '';
-                              $content = isset( $message['message'] ) ? $message['message'] : '';
-                              echo "<li class='" . esc_attr( $message_type ) . "'>" . wp_kses( $content, $allowed_html ) . "</li>";
-                          } ?>
-                      </ul>
-                  </div>
+        <?php if ( isset( $export_logs[$key] ) && isset( $export_logs[$key][$data_type] ) ): ?>
+        <tr>
+          <td>
+            <div class="export-logs">
+              <button type="button">View Last Export Logs</button>
+              <div class="log-messages" style="display: none;">
+                <div class="result">Result: <?php echo $export_logs[$key][$data_type]['success'] ? 'Success' : 'Fail' ?></div>
+                <ul class="api-log">
+                  <?php foreach ( $export_logs[$key][$data_type]['messages'] as $message ) {
+                    $message_type = isset( $message['type'] ) ? $message['type'] : '';
+                    $content = isset( $message['message'] ) ? $message['message'] : '';
+                    echo "<li class='" . esc_attr( $message_type ) . "'>" . wp_kses( $content, $allowed_html ) . "</li>";
+                  } ?>
+                </ul>
               </div>
-              <?php endif;*/ ?>
+            </div>
           </td>
         </tr>
+        <?php endif; ?>
       <?php
     }
 

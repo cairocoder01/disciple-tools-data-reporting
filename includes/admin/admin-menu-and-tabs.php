@@ -126,6 +126,7 @@ class DT_Data_Reporting_Menu {
               background-color: lightgray;
               font-family: monospace;
               padding: 1rem;
+              margin-top: 0;
             }
             ul.api-log li {
               list-style-type: \'>\';
