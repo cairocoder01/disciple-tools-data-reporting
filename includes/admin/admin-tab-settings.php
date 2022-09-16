@@ -223,7 +223,7 @@ class DT_Data_Reporting_Tab_Settings
                   // if successful, update the main table
                   const row = $('#config-list-row-' + key);
                   row.find('.name').text(formdata.get('name'));
-                  // row.find('.provider').text(formdata.get('provider'));
+                  row.find('.provider').text(formdata.get('provider'));
                   row.find('.enabled input').prop('checked', formdata.get('enabled') === 'on');
 
                   // close the dialog
@@ -237,11 +237,13 @@ class DT_Data_Reporting_Tab_Settings
               });
           });
 
-          // todo: remove this code for old UI
-          $('.table-config').on('change', '.provider', function (evt) {
+          // Toggle appropriate fields for each provider
+          $('.table-config').on('change', '.provider', function () {
             $('tr[class^=provider-]').hide();
             $('tr.provider-' + $(this).val()).show();
           });
+
+          // todo: remove this code for old UI
           $('.table-config').on('change', '.data-type-all-data', function (evt) {
             var val = $(this).val();
             var textInput = $(this).closest('td').find('.data-type-limit');
@@ -749,6 +751,8 @@ class DT_Data_Reporting_Tab_Settings
     }
 
     public function edit_dialogs( $configurations ) {
+      $providers = apply_filters( 'dt_data_reporting_providers', array() );
+
       echo "<div style='display:none;'>";
       foreach ( $configurations as $key => $config ):
         $config_provider = isset( $config['provider'] ) ? $config['provider'] : 'api'; ?>
@@ -765,7 +769,7 @@ class DT_Data_Reporting_Tab_Settings
             </h2>
             <div class="wrap">
               <div id="dlg-tab-general-<?php echo esc_attr( $key ) ?>" class="dlg-tab-content">
-                <table class="form-table table-config" id="config_<?php echo esc_attr( $key ) ?>">
+                <table class="form-table table-config">
                   <tr>
                     <th>
                       <label for="dlg_name_<?php echo esc_attr( $key ) ?>">Name</label>
@@ -801,8 +805,88 @@ class DT_Data_Reporting_Tab_Settings
                 </table>
               </div>
               <div id="dlg-tab-provider-<?php echo esc_attr( $key ) ?>" class="dlg-tab-content" style="display: none;">
-                <h3>Provider</h3>
+                <table class="form-table table-config">
+                  <tr>
+                    <th>
+                      <label for="dlg_provider_<?php echo esc_attr( $key ) ?>">Provider</label>
+                    </th>
+                    <td>
+                      <select name="provider"
+                              id="dlg_provider_<?php echo esc_attr( $key ) ?>"
+                              class="provider">
+                        <option value="api" <?php echo $config_provider == 'api' ? 'selected' : '' ?>>API</option>
 
+                        <?php if ( !empty( $providers ) ): ?>
+                          <?php foreach ( $providers as $provider_key => $provider ): ?>
+                            <option
+                              value="<?php echo esc_attr( $provider_key ) ?>"
+                              <?php echo $config_provider == $provider_key ? 'selected' : '' ?>
+                            >
+                              <?php echo esc_html( $provider['name'] ) ?>
+                            </option>
+                          <?php endforeach; ?>
+                        <?php endif; ?>
+                      </select>
+                    </td>
+                  </tr>
+                  <tr class="provider-api <?php echo $config_provider == 'api' ? '' : 'hide' ?>">
+                    <th>
+                      <label for="dlg_endpoint_url_<?php echo esc_attr( $key ) ?>">Endpoint URL</label>
+                    </th>
+                    <td>
+                      <input type="text"
+                             name="url"
+                             id="dlg_endpoint_url_<?php echo esc_attr( $key ) ?>"
+                             value="<?php echo esc_attr( isset( $config['url'] ) ? $config['url'] : "" ) ?>"
+                             style="width: 100%;" />
+                      <div class="muted">API endpoint that should receive your data in JSON format. With a Google Cloud setup, this would be the URL for an HTTP Cloud Function.</div>
+                    </td>
+                  </tr>
+                  <tr class="provider-api <?php echo $config_provider == 'api' ? '' : 'hide' ?>">
+                    <th>
+                      <label for="dlg_token_<?php echo esc_attr( $key ) ?>">Token</label>
+                    </th>
+                    <td>
+                      <input type="text"
+                             name="token"
+                             id="dlg_token_<?php echo esc_attr( $key ) ?>"
+                             value="<?php echo esc_attr( isset( $config['token'] ) ? $config['token'] : "" ) ?>"
+                             style="width: 100%;" />
+                      <div class="muted">Optional, depending on required authentication for your endpoint. Token will be sent as an Authorization header to prevent public/anonymous access.</div>
+                    </td>
+                  </tr>
+
+                  <!-- Provider Fields -->
+                  <?php
+                  if ( !empty( $providers ) ) {
+                    foreach ( $providers as $provider_key => $provider ) {
+                      if ( isset( $provider['fields'] ) && !empty( $provider['fields'] ) ) {
+                        foreach ( $provider['fields'] as $field_key => $field ) {
+                          ?>
+                          <tr class="provider-<?php echo esc_attr( $provider_key ) ?>  <?php echo $provider_key == $config_provider ? '' : 'hide' ?>">
+                            <th>
+                              <label for="dlg_<?php echo esc_attr( $field_key ) ?>_<?php echo esc_attr( $key ) ?>"><?php echo esc_html( $field['label'] ) ?></label>
+                            </th>
+                            <td>
+                              <?php if ( $field['type'] == 'text' ): ?>
+                                <input type="text"
+                                       name="<?php echo esc_attr( $field_key ) ?>"
+                                       id="dlg_<?php echo esc_attr( $field_key ) ?>_<?php echo esc_attr( $key ) ?>"
+                                       value="<?php echo esc_attr( isset( $config[$field_key] ) ? $config[$field_key] : "" ) ?>"
+                              <?php endif; ?>
+
+                              <?php if ( isset( $field['helpText'] ) ): ?>
+                                <div class="muted"><?php echo esc_html( $field['helpText'] ) ?></div>
+                              <?php endif; ?>
+                            </td>
+                          </tr>
+                          <?php
+                        }
+                      }
+                    }
+                  }
+                  ?>
+                </table>
               </div>
               <div id="dlg-tab-data-types-<?php echo esc_attr( $key ) ?>" class="dlg-tab-content" style="display: none;">
                 <h3>Data Types</h3>
