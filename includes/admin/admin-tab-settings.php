@@ -43,6 +43,51 @@ class DT_Data_Reporting_Tab_Settings
       wp_die(); // this is required to terminate immediately and return a proper response
     }
 
+    public static function ajax_save_config() {
+      $key = $_POST['key'];
+
+      $excluded_fields = ['key', 'action', '_wp_http_referer', 'security_headers_nonce', 'enabled'];
+      $response_code = 400;
+      $response = [
+        'success' => false,
+        'message' => '',
+      ];
+
+      if ( empty($key) ) {
+        $response['message'] = 'Missing config key';
+      } else {
+
+        $configurations_str = get_option("dt_data_reporting_configurations");
+        $configurations = json_decode($configurations_str, true);
+        if (isset($configurations[$key])) {
+          $enabled = filter_var( $_POST['enabled'], FILTER_VALIDATE_BOOLEAN );
+          $configurations[$key]['active'] = $enabled ? 1 : 0;
+
+
+          foreach ( $_POST as $field => $value ) {
+            // skip system fields so they don't get saved
+            if ( array_key_exists( $field, $excluded_fields ) ) {
+              continue;
+            }
+
+            $configurations[$key][$field] = $value;
+          }
+
+          update_option("dt_data_reporting_configurations", json_encode($configurations));
+
+          $response_code = 200;
+          $response['success'] = true;
+          $response['message'] = 'Config updated';
+        } else {
+          $response['message'] = 'Config key does not exist';
+        }
+      }
+
+      wp_send_json( $response, $response_code );
+
+      wp_die(); // this is required to terminate immediately and return a proper response
+    }
+
     public function styles() {
         ?>
         <style>
@@ -115,6 +160,7 @@ class DT_Data_Reporting_Tab_Settings
             },
           });
 
+          // Dialog tabs
           $('.dialog').on('click', '.nav-tab', function (evt) {
             if (evt) {
               evt.preventDefault();
@@ -124,12 +170,13 @@ class DT_Data_Reporting_Tab_Settings
             $(selector).show();
           });
 
+          // Open config dialog
           $('.edit-trigger').on('click', function () {
             var key = $(this).data('key');
             $('#dialog-' + key).dialog('open');
           });
 
-          $('.config-enable-checkbox').change(function () {
+          $('.config-list-table').on('change', '.config-enable-checkbox', function () {
             var self = this;
             var data = {
               'action': 'dtdr_enable_config',
@@ -145,35 +192,43 @@ class DT_Data_Reporting_Tab_Settings
                 self.checked = !self.checked;
               }
             });
-          })
-        });
-      </script>
-      <?php
-    }
+          });
 
-    public function content() {
-        $this->save_settings();
+          $('.dialog form').on('submit', function (evt) {
+            if (evt) {
+              evt.preventDefault();
+            }
+            const form = evt.target;
+            const formdata = new FormData(form);
 
-        wp_enqueue_script( 'jquery-ui-dialog' );
-        wp_enqueue_style( 'wp-jquery-ui-dialog' );
+            const key = formdata.get('key');
 
-        $this->styles();
-        ?>
-        <div class="wrap">
-            <div id="poststuff">
-                <div id="post-body" class="metabox-holder columns-1">
-                    <div id="post-body-content">
-                        <!-- Main Column -->
+            // since 2.8 ajaxurl is always defined in the admin header and points to admin-ajax.php
+            fetch(ajaxurl, {
+              method: 'POST',
+              body: formdata,
+            })
+              .then((response) => response.json())
+              .then((data) => {
+                if (data.success) {
+                  // if successful, update the main table
+                  const row = $('#config-list-row-' + key);
+                  row.find('.name').text(formdata.get('name'));
+                  // row.find('.provider').text(formdata.get('provider'));
+                  row.find('.enabled input').prop('checked', formdata.get('enabled') === 'on');
 
-                        <?php $this->main_column() ?>
+                  // close the dialog
+                  $('#dialog-' + key).dialog('close');
+                } else {
+                  console.error('Error saving state of config:', data.message);
+                }
+              })
+              .catch((error) => {
+                console.error('Error saving state of config:', error);
+              });
+          });
 
-                        <!-- End Main Column -->
-                    </div><!-- end post-body-content -->
-                </div><!-- post-body meta box container -->
-            </div><!--poststuff end -->
-        </div><!-- wrap end -->
-      <script>
-        jQuery(function($) {
+          // todo: remove this code for old UI
           $('.table-config').on('change', '.provider', function (evt) {
             $('tr[class^=provider-]').hide();
             $('tr.provider-' + $(this).val()).show();
@@ -208,6 +263,30 @@ class DT_Data_Reporting_Tab_Settings
           });
         });
       </script>
+      <?php
+    }
+
+    public function content() {
+        $this->save_settings();
+
+        wp_enqueue_script( 'jquery-ui-dialog' );
+        wp_enqueue_style( 'wp-jquery-ui-dialog' );
+
+        $this->styles();
+        ?>
+        <div class="wrap">
+            <div id="poststuff">
+                <div id="post-body" class="metabox-holder columns-1">
+                    <div id="post-body-content">
+                        <!-- Main Column -->
+
+                        <?php $this->main_column() ?>
+
+                        <!-- End Main Column -->
+                    </div><!-- end post-body-content -->
+                </div><!-- post-body meta box container -->
+            </div><!--poststuff end -->
+        </div><!-- wrap end -->
         <?php
     }
 
@@ -260,7 +339,7 @@ class DT_Data_Reporting_Tab_Settings
           </tbody>
         </table>
         <br>-->
-        <table class="wp-list-table widefat striped itsec-log-entries itsec-logs-color">
+        <table class="wp-list-table widefat striped config-list-table">
             <thead>
             <tr>
                 <th scope="col" class="column-enabled">Enabled</th>
@@ -273,8 +352,8 @@ class DT_Data_Reporting_Tab_Settings
             <tbody>
             <?php foreach ( $configurations as $key => $config ): ?>
               <?php $config_provider = isset( $config['provider'] ) ? $config['provider'] : 'api'; ?>
-              <tr>
-                  <td>
+              <tr id="config-list-row-<?php echo esc_attr( $key ) ?>">
+                  <td class="enabled">
                     <span class="switch">
                       <input type="checkbox"
                              class="config-enable-checkbox"
@@ -288,8 +367,8 @@ class DT_Data_Reporting_Tab_Settings
                       </label>
                     </span>
                   </td>
-                  <td><?php echo esc_html( $config['name'] ) ?></td>
-                  <td><?php echo esc_html( $config_provider ) ?></td>
+                  <td class="name"><?php echo esc_html( isset( $config['name'] ) ? $config['name'] : '(new config)' ) ?></td>
+                  <td class="provider"><?php echo esc_html( $config_provider ) ?></td>
                   <td></td>
                   <td><a href="javascript:;" class="edit-trigger" data-key="<?php echo esc_attr( $key ) ?>">Edit</a></td>
               </tr>
@@ -535,7 +614,6 @@ class DT_Data_Reporting_Tab_Settings
           </tr>
           </tbody>
         </table>
-        <?php $this->edit_dialogs( $configurations ); ?>
 
         <br>
         <button type="submit" class="button right">Save Settings</button>
@@ -656,6 +734,8 @@ class DT_Data_Reporting_Tab_Settings
           </tbody>
         </table>
       </form>
+
+      <?php $this->edit_dialogs( $configurations ); ?>
         <?php
     }
 
@@ -665,70 +745,107 @@ class DT_Data_Reporting_Tab_Settings
         $config_provider = isset( $config['provider'] ) ? $config['provider'] : 'api'; ?>
 
         <div class="dialog" id="dialog-<?php echo esc_attr( $key ) ?>">
-          <h2 class="nav-tab-wrapper">
-            <a href="#dlg-tab-general-<?php echo esc_attr( $key )?>" class="nav-tab">General</a>
-            <a href="#dlg-tab-provider-<?php echo esc_attr( $key )?>" class="nav-tab">Provider</a>
-            <a href="#dlg-tab-data-types-<?php echo esc_attr( $key )?>" class="nav-tab">Data Types</a>
-          </h2>
-          <div class="wrap">
-            <div id="dlg-tab-general-<?php echo esc_attr( $key ) ?>" class="dlg-tab-content">
-              <table class="form-table table-config" id="config_<?php echo esc_attr( $key ) ?>">
-                <tr>
-                  <th>
-                    <label for="dlg_name_<?php echo esc_attr( $key ) ?>">Name</label>
-                  </th>
-                  <td>
-                    <input type="text"
-                           name="configurations[<?php echo esc_attr( $key ) ?>][name]"
-                           id="dlg_name_<?php echo esc_attr( $key ) ?>"
-                           value="<?php echo esc_attr( isset( $config['name'] ) ? $config['name'] : "" ) ?>"
-                           style="width: 100%;" />
-                    <div class="muted">Label to identify this configuration. This can be anything that helps you understand or remember this configuration.</div>
-                  </td>
-                </tr>
-              </table>
+          <form method="POST" action="">
+            <?php wp_nonce_field( 'security_headers', 'security_headers_nonce' ); ?>
+            <input type="hidden" name="action" value="save_config" />
+            <input type="hidden" name="key" value="<?php echo esc_attr( $key ) ?>" />
+            <h2 class="nav-tab-wrapper">
+              <a href="#dlg-tab-general-<?php echo esc_attr( $key )?>" class="nav-tab">General</a>
+              <a href="#dlg-tab-provider-<?php echo esc_attr( $key )?>" class="nav-tab">Provider</a>
+              <a href="#dlg-tab-data-types-<?php echo esc_attr( $key )?>" class="nav-tab">Data Types</a>
+            </h2>
+            <div class="wrap">
+              <div id="dlg-tab-general-<?php echo esc_attr( $key ) ?>" class="dlg-tab-content">
+                <table class="form-table table-config" id="config_<?php echo esc_attr( $key ) ?>">
+                  <tr>
+                    <th>
+                      <label for="dlg_name_<?php echo esc_attr( $key ) ?>">Name</label>
+                    </th>
+                    <td>
+                      <input type="text"
+                             name="name"
+                             id="dlg_name_<?php echo esc_attr( $key ) ?>"
+                             value="<?php echo esc_attr( isset( $config['name'] ) ? $config['name'] : "" ) ?>"
+                             style="width: 100%;" />
+                      <div class="muted">Label to identify this configuration. This can be anything that helps you understand or remember this configuration.</div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th>
+                      <label for="dlg_enabled_<?php echo esc_attr( $key ) ?>">Enabled</label>
+                    </th>
+                    <td>
+                      <span class="switch">
+                        <input type="checkbox"
+                               class="config-enable-checkbox"
+                               id="dlg_enabled_<?php echo esc_attr( $key ) ?>"
+                               name="enabled"
+                               <?php echo isset( $config['active'] ) && $config['active'] == 1 ? 'checked' : "" ?>
+                        />
+                        <label for="dlg_enabled_<?php echo esc_attr( $key ) ?>">
+                          <span></span>
+                        </label>
+                      </span>
+                      <div class="muted">When checked, this configuration is active and will be exported.</div>
+                    </td>
+                  </tr>
+                </table>
+              </div>
+              <div id="dlg-tab-provider-<?php echo esc_attr( $key ) ?>" class="dlg-tab-content" style="display: none;">
+                <h3>Provider</h3>
+
+              </div>
+              <div id="dlg-tab-data-types-<?php echo esc_attr( $key ) ?>" class="dlg-tab-content" style="display: none;">
+                <h3>Data Types</h3>
+              </div>
             </div>
-            <div id="dlg-tab-provider-<?php echo esc_attr( $key ) ?>" class="dlg-tab-content" style="display: none;">
-              <h3>Provider</h3>
-            </div>
-            <div id="dlg-tab-data-types-<?php echo esc_attr( $key ) ?>" class="dlg-tab-content" style="display: none;">
-              <h3>Data Types</h3>
-            </div>
-          </div>
+
+            <br>
+            <button type="submit" class="button right">Save Settings</button>
+          </form>
         </div>
       <?php endforeach;
       echo "</div>";
     }
 
     public function save_settings() {
-        if ( !empty( $_POST ) ){
-            if ( isset( $_POST['security_headers_nonce'] ) && wp_verify_nonce( sanitize_key( $_POST['security_headers_nonce'] ), 'security_headers' ) ) {
-                $action = isset( $_POST['action'] ) ? sanitize_key( wp_unslash( $_POST['action'] ) ) : null;
-                if ( $action == 'resetprogress') {
-                    if ( isset( $_POST['configKey'] ) && isset( $_POST['dataType'] ) ) {
-                        $config_progress = json_decode( get_option( "dt_data_reporting_configurations_progress" ), true );
-                        $config_key = sanitize_key( wp_unslash( $_POST['configKey'] ) );
-                        $data_type = sanitize_key( wp_unslash( $_POST['dataType'] ) );
-                        if ( isset( $config_progress[$config_key] ) ) {
-                            unset( $config_progress[$config_key][$data_type] );
-                            update_option( "dt_data_reporting_configurations_progress", json_encode( $config_progress ) );
-                        }
-                    }
-                } else {
-                    //configurations
-                    if (isset( $_POST['configurations'] )) {
-                        // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
-                        update_option( "dt_data_reporting_configurations", json_encode( $this->sanitize_text_or_array_field( wp_unslash( $_POST['configurations'] ) ) ) );
-                    }
+      if ( empty( $_POST ) ) {
+        return;
+      }
+      if ( !isset( $_POST['security_headers_nonce'] ) || !wp_verify_nonce( sanitize_key( $_POST['security_headers_nonce'] ), 'security_headers' ) ) {
+        return;
+      }
 
-                    //share_global
-                    update_option("dt_data_reporting_share_global",
-                    isset( $_POST['share_global'] ) && $_POST['share_global'] === "1" ? "1" : "0");
+      $is_dialog = isset( $_POST['dialog'] );
 
-                    echo '<div class="notice notice-success notice-dt-data-reporting is-dismissible" data-notice="dt-data-reporting"><p>Settings Saved</p></div>';
-                }
+      if ( $is_dialog ) {
+        // new saving workflow
+      } else {
+        $action = isset($_POST['action']) ? sanitize_key(wp_unslash($_POST['action'])) : null;
+        if ($action == 'resetprogress') {
+          if (isset($_POST['configKey']) && isset($_POST['dataType'])) {
+            $config_progress = json_decode(get_option("dt_data_reporting_configurations_progress"), true);
+            $config_key = sanitize_key(wp_unslash($_POST['configKey']));
+            $data_type = sanitize_key(wp_unslash($_POST['dataType']));
+            if (isset($config_progress[$config_key])) {
+              unset($config_progress[$config_key][$data_type]);
+              update_option("dt_data_reporting_configurations_progress", json_encode($config_progress));
             }
+          }
+        } else {
+          //configurations
+          if (isset($_POST['configurations'])) {
+            // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
+            update_option("dt_data_reporting_configurations", json_encode($this->sanitize_text_or_array_field(wp_unslash($_POST['configurations']))));
+          }
+
+          //share_global
+          update_option("dt_data_reporting_share_global",
+            isset($_POST['share_global']) && $_POST['share_global'] === "1" ? "1" : "0");
+
+          echo '<div class="notice notice-success notice-dt-data-reporting is-dismissible" data-notice="dt-data-reporting"><p>Settings Saved</p></div>';
         }
+      }
     }
 
     private function sanitize_text_or_array_field( $array_or_string) {
