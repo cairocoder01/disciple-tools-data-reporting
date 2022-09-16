@@ -60,7 +60,7 @@ class DT_Data_Reporting_Menu {
 
         // init settings to setup ajax hooks
         add_action( 'wp_ajax_dtdr_enable_config', [ $this, 'ajax_enable_config' ] );
-        add_action( 'wp_ajax_save_config', [ $this, 'ajax_save_config' ] );
+        add_action( 'wp_ajax_dtdr_save_config', [ $this, 'ajax_save_config' ] );
     } // End __construct()
 
     public function ajax_enable_config() {

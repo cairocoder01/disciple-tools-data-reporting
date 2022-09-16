@@ -185,13 +185,22 @@ class DT_Data_Reporting_Tab_Settings
             };
 
             // since 2.8 ajaxurl is always defined in the admin header and points to admin-ajax.php
-            jQuery.post(ajaxurl, data).fail(function(xhr) {
-              var response = xhr.responseJSON;
-              if (!response || !response.success) {
-                console.error('Error saving active state of config.', response);
-                self.checked = !self.checked;
-              }
-            });
+            fetch(ajaxurl, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify(data),
+            }).then((response) => response.json())
+              .then((data) => {
+                if (!data || !data.success) {
+                  console.error('Error saving active state of config.', data);
+                  self.checked = !self.checked;
+                }
+              })
+              .catch((error) => {
+                console.error('Error saving active state of config.', error);
+              });
           });
 
           $('.dialog form').on('submit', function (evt) {
@@ -747,7 +756,7 @@ class DT_Data_Reporting_Tab_Settings
         <div class="dialog" id="dialog-<?php echo esc_attr( $key ) ?>">
           <form method="POST" action="">
             <?php wp_nonce_field( 'security_headers', 'security_headers_nonce' ); ?>
-            <input type="hidden" name="action" value="save_config" />
+            <input type="hidden" name="action" value="dtdr_save_config" />
             <input type="hidden" name="key" value="<?php echo esc_attr( $key ) ?>" />
             <h2 class="nav-tab-wrapper">
               <a href="#dlg-tab-general-<?php echo esc_attr( $key )?>" class="nav-tab">General</a>
