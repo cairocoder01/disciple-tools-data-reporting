@@ -284,7 +284,7 @@ add_action( 'plugins_loaded', function (){
         if ( class_exists( 'Puc_v4_Factory' ) ){
 
             Puc_v4_Factory::buildUpdateChecker(
-                'https://raw.githubusercontent.com/cairocoder01/disciple-tools-data-reporting/master/disciple-tools-data-reporting-version-control.json',
+                'https://raw.githubusercontent.com/cairocoder01/disciple-tools-data-reporting/master/version-control.json',
                 __FILE__,
                 'disciple-tools-data-reporting'
             );
