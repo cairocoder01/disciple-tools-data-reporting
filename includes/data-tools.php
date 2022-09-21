@@ -744,9 +744,9 @@ class DT_Data_Reporting_Tools
 
         // Which field do we use to determine last exported for each type
         if ( $is_activity ) {
-          $value = $item['date'];
+            $value = $item['date'];
         } else {
-          $value = $item['last_modified'];
+            $value = $item['last_modified'];
         }
 
         // If value is not empty, save it
