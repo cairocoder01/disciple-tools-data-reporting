@@ -405,6 +405,7 @@ class DT_Data_Reporting_Tools
                 meta_key $collate as meta_key,
                 meta_value $collate as meta_value,
                 old_value $collate as old_value,
+                object_type $collate as object_type,
                 object_subtype $collate as object_subtype,
                 field_type $collate as field_type,
                 object_note $collate as object_note,
@@ -425,6 +426,7 @@ class DT_Data_Reporting_Tools
                 NULL as meta_key,
                 NULL as meta_value,
                 NULL as old_value,
+                post_type as object_type,
                 NULL as object_subtype,
                 NULL as field_type,
                 comment_content as object_note,
@@ -737,24 +739,17 @@ class DT_Data_Reporting_Tools
     public static function set_last_exported_value( $data_type, $config_key, $item ) {
         $value = null;
 
-      // Which field do we use to determine last exported for each type
-        switch ($data_type) {
-            case 'group_activity':
-                $value = $item['date'];
-                break;
-            case 'groups':
-                $value = $item['last_modified'];
-            break;
-            case 'contact_activity':
-                $value = $item['date'];
-                break;
-            case 'contacts':
-            default:
-                $value = $item['last_modified'];
-            break;
+        $root_type = str_replace( '_activity', 's', $data_type );
+        $is_activity = $root_type !== $data_type;
+
+        // Which field do we use to determine last exported for each type
+        if ( $is_activity ) {
+          $value = $item['date'];
+        } else {
+          $value = $item['last_modified'];
         }
 
-      // If value is not empty, save it
+        // If value is not empty, save it
         if ( !empty( $value ) ) {
             $config_progress = self::get_config_progress_by_key( $config_key );
             $config_progress[$data_type] = $value;
@@ -916,7 +911,8 @@ class DT_Data_Reporting_Tools
         // Run export based on the type of data requested
         $log_messages[] = [ 'message' => 'Fetching data...' ];
         [ $columns, $rows, $total ] = self::get_data( $type, $config_key, $flatten );
-        $log_messages[] = [ 'message' => 'Exporting ' . count( $rows ) . ' items from a total of ' . $total . '.' ];
+        $row_count = isset( $row ) ? count( $rows ) : 0;
+        $log_messages[] = [ 'message' => 'Exporting ' . $row_count . ' items from a total of ' . $total . '.' ];
         $log_messages[] = [ 'message' => 'Sending data to provider...' ];
 
         // Send data to provider
