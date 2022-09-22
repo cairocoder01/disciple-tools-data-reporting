@@ -325,7 +325,7 @@ class DT_Data_Reporting_Tools
             $filter['sort'] = 'last_modified';
         }
 
-        $posts = DT_Posts::list_posts( $post_type, $filter );
+        $posts = DT_Posts::list_posts( $post_type, $filter, false );
         if ( is_wp_error( $posts ) ) {
             $error_message = $posts->get_error_message() ?? '';
             throw new Exception( $error_message );
