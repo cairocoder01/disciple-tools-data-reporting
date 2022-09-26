@@ -63,14 +63,15 @@ class DT_Data_Reporting_Tools
         $root_type = str_replace( '_activity', 's', $data_type );
         $is_activity = $root_type !== $data_type;
         $filter_key = $root_type . '_filter';
-        $filter = $config && isset( $config[$filter_key] ) ? $config[$filter_key] : null;
+        $filter = $config && isset( $config[$filter_key] ) ? $config[$filter_key] : [];
 
         if ( $limit ) {
             $filter['limit'] = $limit;
         }
         // If not exporting everything, add limit and filter for last value
         if ( !$all_data && !empty( $last_exported_value ) ) {
-            $filter['last_modified'] = [
+            $date_field = $is_activity ? 'date' : 'last_modified';
+            $filter[$date_field] = [
                 'start' => $last_exported_value,
             ];
         }
@@ -447,8 +448,13 @@ class DT_Data_Reporting_Tools
             $query_comments_where .= "AND comment_date_gmt >= '" . esc_sql( $start ) . "' ";
         }
 
+        // Set UTC as time zone for subsequent queries
+        $wpdb->query(
+            $wpdb->prepare("SET time_zone='+00:00';")
+        );
         // Join 2 queries in a union
-        $query = "$query_activity_select
+        $query = "
+            $query_activity_select
             $query_activity_from
             $query_activity_where
             UNION
@@ -911,7 +917,7 @@ class DT_Data_Reporting_Tools
         // Run export based on the type of data requested
         $log_messages[] = [ 'message' => 'Fetching data...' ];
         [ $columns, $rows, $total ] = self::get_data( $type, $config_key, $flatten );
-        $row_count = isset( $row ) ? count( $rows ) : 0;
+        $row_count = isset( $rows ) ? count( $rows ) : 0;
         $log_messages[] = [ 'message' => 'Exporting ' . $row_count . ' items from a total of ' . $total . '.' ];
         $log_messages[] = [ 'message' => 'Sending data to provider...' ];
 
