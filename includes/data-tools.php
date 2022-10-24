@@ -63,14 +63,15 @@ class DT_Data_Reporting_Tools
         $root_type = str_replace( '_activity', 's', $data_type );
         $is_activity = $root_type !== $data_type;
         $filter_key = $root_type . '_filter';
-        $filter = $config && isset( $config[$filter_key] ) ? $config[$filter_key] : null;
+        $filter = $config && isset( $config[$filter_key] ) ? $config[$filter_key] : [];
 
         if ( $limit ) {
             $filter['limit'] = $limit;
         }
         // If not exporting everything, add limit and filter for last value
         if ( !$all_data && !empty( $last_exported_value ) ) {
-            $filter['last_modified'] = [
+            $date_field = $is_activity ? 'date' : 'last_modified';
+            $filter[$date_field] = [
                 'start' => $last_exported_value,
             ];
         }
@@ -325,7 +326,7 @@ class DT_Data_Reporting_Tools
             $filter['sort'] = 'last_modified';
         }
 
-        $posts = DT_Posts::list_posts( $post_type, $filter );
+        $posts = DT_Posts::list_posts( $post_type, $filter, false );
         if ( is_wp_error( $posts ) ) {
             $error_message = $posts->get_error_message() ?? '';
             throw new Exception( $error_message );
@@ -405,6 +406,7 @@ class DT_Data_Reporting_Tools
                 meta_key $collate as meta_key,
                 meta_value $collate as meta_value,
                 old_value $collate as old_value,
+                object_type $collate as object_type,
                 object_subtype $collate as object_subtype,
                 field_type $collate as field_type,
                 object_note $collate as object_note,
@@ -425,6 +427,7 @@ class DT_Data_Reporting_Tools
                 NULL as meta_key,
                 NULL as meta_value,
                 NULL as old_value,
+                post_type as object_type,
                 NULL as object_subtype,
                 NULL as field_type,
                 comment_content as object_note,
@@ -445,8 +448,13 @@ class DT_Data_Reporting_Tools
             $query_comments_where .= "AND comment_date_gmt >= '" . esc_sql( $start ) . "' ";
         }
 
+        // Set UTC as time zone for subsequent queries
+        $wpdb->query(
+            $wpdb->prepare("SET time_zone='+00:00';")
+        );
         // Join 2 queries in a union
-        $query = "$query_activity_select
+        $query = "
+            $query_activity_select
             $query_activity_from
             $query_activity_where
             UNION
@@ -737,24 +745,17 @@ class DT_Data_Reporting_Tools
     public static function set_last_exported_value( $data_type, $config_key, $item ) {
         $value = null;
 
-      // Which field do we use to determine last exported for each type
-        switch ($data_type) {
-            case 'group_activity':
-                $value = $item['date'];
-                break;
-            case 'groups':
-                $value = $item['last_modified'];
-            break;
-            case 'contact_activity':
-                $value = $item['date'];
-                break;
-            case 'contacts':
-            default:
-                $value = $item['last_modified'];
-            break;
+        $root_type = str_replace( '_activity', 's', $data_type );
+        $is_activity = $root_type !== $data_type;
+
+        // Which field do we use to determine last exported for each type
+        if ( $is_activity ) {
+            $value = $item['date'];
+        } else {
+            $value = $item['last_modified'];
         }
 
-      // If value is not empty, save it
+        // If value is not empty, save it
         if ( !empty( $value ) ) {
             $config_progress = self::get_config_progress_by_key( $config_key );
             $config_progress[$data_type] = $value;
@@ -916,7 +917,8 @@ class DT_Data_Reporting_Tools
         // Run export based on the type of data requested
         $log_messages[] = [ 'message' => 'Fetching data...' ];
         [ $columns, $rows, $total ] = self::get_data( $type, $config_key, $flatten );
-        $log_messages[] = [ 'message' => 'Exporting ' . count( $rows ) . ' items from a total of ' . $total . '.' ];
+        $row_count = isset( $rows ) ? count( $rows ) : 0;
+        $log_messages[] = [ 'message' => 'Exporting ' . $row_count . ' items from a total of ' . $total . '.' ];
         $log_messages[] = [ 'message' => 'Sending data to provider...' ];
 
         // Send data to provider
