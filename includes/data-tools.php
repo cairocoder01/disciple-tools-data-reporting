@@ -553,7 +553,7 @@ class DT_Data_Reporting_Tools
 
         // Query to get country_code and admin1 name for each location
         $locations = $wpdb->get_results( $wpdb->prepare("
-            select orig.grid_id, orig.country_code, a1.name
+            select orig.grid_id, orig.country_code, orig.name, a1.name as admin1_name
             from $wpdb->dt_location_grid orig
             left join $wpdb->dt_location_grid a1 on orig.admin1_grid_id=a1.grid_id
             where orig.grid_id in (" .
@@ -600,8 +600,8 @@ class DT_Data_Reporting_Tools
                         if ( isset( $locations[$location['id']] ) ) {
                             $grid_loc = $locations[$location['id']];
                             // Try to return "{2-letter-country-code}-{admin1-name}"
-                            if ( !empty( $grid_loc['name'] ) ) {
-                                return $grid_loc['country_code'] . "-" . $grid_loc['name'];
+                            if ( !empty( $grid_loc['admin1_name'] ) ) {
+                                return $grid_loc['country_code'] . "-" . $grid_loc['admin1_name'];
                             }
                             // fall back to just country code
                             return $grid_loc['country_code'];

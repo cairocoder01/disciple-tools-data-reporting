@@ -47,7 +47,7 @@ class DT_Data_Reporting_Tab_Settings
     }
 
     public static function ajax_save_config() {
-        $key = isset( $_POST['key'] ) ? sanitize_key( wp_unslash( $_POST['key'] ) ) : null;
+        $key = isset( $_POST['key'] ) ? sanitize_key( wp_unslash( $_POST['key'] ) ) : 'default';
         $excluded_fields = [ 'key', 'action', '_wp_http_referer', 'security_headers_nonce', 'enabled' ];
         $response_code = 400;
         $response = [
@@ -64,29 +64,29 @@ class DT_Data_Reporting_Tab_Settings
 
             $configurations_str = get_option( "dt_data_reporting_configurations" );
             $configurations = json_decode( $configurations_str, true );
-            if (isset( $configurations[$key] )) {
-                $enabled = isset( $_POST['enabled'] ) ? sanitize_key( wp_unslash( $_POST['enabled'] ) ) : null;
-                $enabled = filter_var( $enabled, FILTER_VALIDATE_BOOLEAN );
-                $configurations[$key]['active'] = $enabled ? 1 : 0;
+
+            if ( !isset( $configurations[$key] ) ) {
+                $configurations[$key] = [];
+            }
+            $enabled = isset( $_POST['enabled'] ) ? sanitize_key( wp_unslash( $_POST['enabled'] ) ) : null;
+            $enabled = filter_var( $enabled, FILTER_VALIDATE_BOOLEAN );
+            $configurations[$key]['active'] = $enabled ? 1 : 0;
 
 
-                foreach ( $_POST as $field => $value ) {
-                    // skip system fields so they don't get saved
-                    if ( array_key_exists( $field, $excluded_fields ) ) {
-                        continue;
-                    }
-
-                    $configurations[$key][$field] = $value;
+            foreach ( $_POST as $field => $value ) {
+                // skip system fields so they don't get saved
+                if ( array_key_exists( $field, $excluded_fields ) ) {
+                    continue;
                 }
 
-                update_option( "dt_data_reporting_configurations", json_encode( $configurations ) );
-
-                $response_code = 200;
-                $response['success'] = true;
-                $response['message'] = 'Config updated';
-            } else {
-                $response['message'] = 'Config key does not exist';
+                $configurations[$key][$field] = $value;
             }
+
+            update_option( "dt_data_reporting_configurations", json_encode( $configurations ) );
+
+            $response_code = 200;
+            $response['success'] = true;
+            $response['message'] = 'Config updated';
         }
 
         wp_send_json( $response, $response_code );

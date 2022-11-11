@@ -5,7 +5,7 @@
  * Description: Disciple Tools - Data Reporting is intended to assist in exporting data to an external data reporting source, such as Google BigQuery.
  * of the Disciple Tools system.
  * Text Domain: disciple-tools-data-reporting
- * Version:  1.5.3
+ * Version:  1.5.4
  * Author URI: https://github.com/cairocoder01
  * GitHub Plugin URI: https://github.com/cairocoder01/disciple-tools-data-reporting
  * Requires at least: 4.7.0
