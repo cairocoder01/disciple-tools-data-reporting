@@ -20,8 +20,8 @@ if ( ! function_exists( 'dt_write_log' ) ) {
         }
     }
 }
-// @codingStandardsIgnoreLine
-require( $_SERVER[ 'DOCUMENT_ROOT' ] . '/wp-load.php' ); // loads the wp framework when called
+$wordpress_root_path = preg_replace( '/wp-content(?!.*wp-content).*/', '', __DIR__ );
+require_once( $wordpress_root_path . 'wp-load.php' );
 require_once( plugin_dir_path( __FILE__ ) . '../includes/data-tools.php' );
 
 function get_post_activity( $post_type ) {
