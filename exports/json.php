@@ -20,8 +20,8 @@ if ( ! function_exists( 'dt_write_log' ) ) {
         }
     }
 }
-// @codingStandardsIgnoreLine
-require( $_SERVER[ 'DOCUMENT_ROOT' ] . '/wp-load.php' ); // loads the wp framework when called
+$wordpress_root_path = preg_replace( '/wp-content(?!.*wp-content).*/', '', __DIR__ );
+require_once( $wordpress_root_path . 'wp-load.php' );
 require_once( plugin_dir_path( __FILE__ ) . '../includes/data-tools.php' );
 
 $data_type = isset( $_GET['type'] ) ? sanitize_key( wp_unslash( $_GET['type'] ) ) : '';
@@ -48,7 +48,7 @@ header( 'Content-Disposition: attachment; filename='.$data_filename.'.json' );
 $output = fopen( 'php://output', 'w' );
 
 // loop over the rows, outputting them
-foreach ($items as $row ) {
+foreach ( $items as $row ) {
     fwrite( $output, json_encode( $row ).PHP_EOL );
 }
 fclose( $output );
