@@ -340,8 +340,8 @@ class DT_Data_Reporting_Tools
                 $filter['offset'] = sizeof( $posts['posts'] );
                 $next_posts = DT_Posts::list_posts( $post_type, $filter );
                 if ( is_wp_error( $next_posts ) ) {
-                  $error_message = $posts->get_error_message() ?? '';
-                  throw new Exception( $error_message );
+                    $error_message = $posts->get_error_message() ?? '';
+                    throw new Exception( $error_message );
                 }
                 $posts['posts'] = array_merge( $posts['posts'], $next_posts['posts'] );
                 dt_write_log( 'adding ' . sizeof( $next_posts['posts'] ) );
