@@ -80,11 +80,11 @@ $is_activity = $root_type !== $data_type;
 $data_filename = strcmp( $data_type, '' ) !== 0 ? $data_type : 'data';
 
 $filter = [];
-if ( isset($limit) && $limit > 0 ) {
-  $filter['limit'] = $limit;
+if ( isset( $limit ) && $limit > 0 ) {
+    $filter['limit'] = $limit;
 }
-if ( isset($offset) && $offset > 0 ) {
-  $filter['offset'] = $offset;
+if ( isset( $offset ) && $offset > 0 ) {
+    $filter['offset'] = $offset;
 }
 
 if ( $is_activity ) {

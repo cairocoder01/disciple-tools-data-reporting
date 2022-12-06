@@ -38,10 +38,10 @@ class DT_Data_Reporting_Tab_Preview
         $limit = 100;
         $offset = 0;
         if ( isset( $_GET["limit"] ) ) {
-          $limit = sanitize_key(wp_unslash($_GET["limit"]));
+            $limit = sanitize_key( wp_unslash( $_GET["limit"] ) );
         }
         if ( isset( $_GET["offset"] ) ) {
-          $offset = sanitize_key(wp_unslash($_GET["offset"]));
+            $offset = sanitize_key( wp_unslash( $_GET["offset"] ) );
         }
         [ $columns, $rows, $total ] = DT_Data_Reporting_Tools::get_data( $this->type, $this->config_key, false, $limit, $offset );
         $this->main_column_table( $columns, $rows, $total );
