@@ -8,6 +8,7 @@ class DT_Data_Reporting_Tools
     private static $supported_filters = [
         'sort' => true,
         'limit' => true,
+        'offset' => true,
         'tags' => true,
         'sources' => true,
         'type' => true,
@@ -46,7 +47,7 @@ class DT_Data_Reporting_Tools
      * @param null $limit
      * @return array Columns, rows, and total count
      */
-    public static function get_data( $data_type, $config_key, $flatten = false, $limit = null ) {
+    public static function get_data( $data_type, $config_key, $flatten = false, $limit = null, $offset = null ) {
         $config = self::get_config_by_key( $config_key );
         $config_progress = self::get_config_progress_by_key( $config_key );
 
@@ -67,6 +68,9 @@ class DT_Data_Reporting_Tools
 
         if ( $limit ) {
             $filter['limit'] = $limit;
+        }
+        if ( $offset ) {
+            $filter['offset'] = $offset;
         }
         // If not exporting everything, add limit and filter for last value
         if ( !$all_data && !empty( $last_exported_value ) ) {
@@ -387,7 +391,7 @@ class DT_Data_Reporting_Tools
             FROM `$wpdb->postmeta`
             WHERE 1=1 ";
         foreach( self::$filter_fields as $filter_key ) {
-            if ( in_array($filter_key, ['sort', 'limit']) ) {
+            if ( in_array($filter_key, ['sort', 'limit', 'offset']) ) {
                 continue;
             }
             if (isset($filter[$filter_key])) {
@@ -475,6 +479,10 @@ class DT_Data_Reporting_Tools
         if (isset($filter['limit'])) {
             $query .= "LIMIT %d ";
             $params[] = $filter['limit'];
+        }
+        if (isset($filter['offset'])) {
+          $query .= "OFFSET %d ";
+          $params[] = $filter['offset'];
         }
         $prepared_sql = $wpdb->prepare(
             $query,
