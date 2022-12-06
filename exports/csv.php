@@ -72,17 +72,27 @@ function get_post_activity( $post_type ) {
         "total" => sizeof( $activity_simple )
     );
 }
+$limit = isset( $_GET['limit'] ) ? sanitize_key( wp_unslash( $_GET['limit'] ) ) : null;
+$offset = isset( $_GET['offset'] ) ? sanitize_key( wp_unslash( $_GET['offset'] ) ) : null;
 $data_type = isset( $_GET['type'] ) ? sanitize_key( wp_unslash( $_GET['type'] ) ) : '';
 $root_type = str_replace( '_activity', 's', $data_type );
 $is_activity = $root_type !== $data_type;
 $data_filename = strcmp( $data_type, '' ) !== 0 ? $data_type : 'data';
 
+$filter = [];
+if ( isset($limit) && $limit > 0 ) {
+  $filter['limit'] = $limit;
+}
+if ( isset($offset) && $offset > 0 ) {
+  $filter['offset'] = $offset;
+}
+
 if ( $is_activity ) {
-    [ $columns, $items ] = DT_Data_Reporting_Tools::get_post_activity( $root_type );
+    [ $columns, $items ] = DT_Data_Reporting_Tools::get_post_activity( $root_type, $filter );
     $columns = array_map( function ( $column ) { return $column['name'];
     }, $columns );
 } else {
-    [ $columns, $items ] = DT_Data_Reporting_Tools::get_posts( $root_type, true );
+    [ $columns, $items ] = DT_Data_Reporting_Tools::get_posts( $root_type, true, $filter );
     $columns = array_map( function ( $column ) { return $column['name'];
     }, $columns );
 }

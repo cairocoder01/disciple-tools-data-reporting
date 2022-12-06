@@ -100,6 +100,26 @@ class DT_Data_Reporting_Menu {
             .table-export th, .table-export-config .config-name {
               font-weight: bold;
             }
+            .table-export thead th {
+              display: flex;
+              justify-content: space-between;
+            }
+            .table-export .limit-offset {
+              font-size: 0.75rem;
+              font-weight: normal;
+              display: flex;
+              align-items: center;
+            }
+            .table-export .limit-offset label {
+              font-weight: 700;
+            }
+            .table-export .limit-offset input {
+              width: 4rem;
+              height: 1.5rem;
+              min-height: 10px;
+              margin-right: 1rem;
+              padding-left: 5px;
+            }
 
             .table-config {
               border-left: solid 1px #a9a9a9;

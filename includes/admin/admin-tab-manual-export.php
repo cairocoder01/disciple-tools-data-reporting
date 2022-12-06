@@ -35,10 +35,34 @@ class DT_Data_Reporting_Tab_Manual_Export
 
         $post_types = DT_Posts::get_post_types();
         ?>
+        <script type="text/javascript">
+          function setLimitOffset(evt) {
+            evt.preventDefault();
+
+            let url = evt.target.href;
+            const limit = document.querySelector('#limit').value;
+            const offset = document.querySelector('#offset').value;
+            if (limit) {
+              url += '&limit=' + limit;
+            }
+            if (offset) {
+              url += '&offset=' + offset;
+            }
+            window.location = url;
+          }
+        </script>
         <!-- Box -->
         <table class="widefat striped table-export">
             <thead>
-            <th>Default Data Export</th>
+            <th>
+              Default Data Export
+              <span class="limit-offset">
+                <label for="limit">Limit</label>
+                <input id="limit" type="number" name="limit" />
+                <label for="offset">Offset/Skip</label>
+                <input id="offset" type="number" name="offset" />
+              </span>
+            </th>
             </thead>
             <tbody>
             <?php foreach ( $post_types as $post_type ):
@@ -51,8 +75,8 @@ class DT_Data_Reporting_Tab_Manual_Export
 
                         <div class="alignright">
                             <a href="<?php echo esc_attr( $preview_link . $post_type ) ?>">Preview <span class="dashicons dashicons-admin-site-alt3"></span></a> |
-                            <a href="<?php echo esc_attr( plugins_url( '../../exports/csv.php?type=' . $post_type, __FILE__ ) ) ?>">CSV <span class="dashicons dashicons-download"></span></a> |
-                            <a href="<?php echo esc_attr( plugins_url( '../../exports/json.php?type=' . $post_type, __FILE__ ) ) ?>">JSON <span class="dashicons dashicons-download"></span></a>
+                            <a href="<?php echo esc_attr( plugins_url( '../../exports/csv.php?type=' . $post_type, __FILE__ ) ) ?>" onclick="setLimitOffset(event)">CSV <span class="dashicons dashicons-download"></span></a> |
+                            <a href="<?php echo esc_attr( plugins_url( '../../exports/json.php?type=' . $post_type, __FILE__ ) ) ?>" onclick="setLimitOffset(event)">JSON <span class="dashicons dashicons-download"></span></a>
                         </div>
                     </td>
                 </tr>
@@ -61,8 +85,8 @@ class DT_Data_Reporting_Tab_Manual_Export
                         Export <?php esc_html_e( $post_type_settings['label_singular'] ) ?> Activity
                         <div class="alignright">
                             <a href="<?php echo esc_attr( $preview_link . $activity_type ) ?>">Preview <span class="dashicons dashicons-admin-site-alt3"></span></a> |
-                            <a href="<?php echo esc_attr( plugins_url( '../../exports/csv.php?type=' . $activity_type, __FILE__ ) ) ?>">CSV <span class="dashicons dashicons-download"></a> |
-                            <a href="<?php echo esc_attr( plugins_url( '../../exports/json.php?type=' . $activity_type, __FILE__ ) ) ?>">JSON <span class="dashicons dashicons-download"></a>
+                            <a href="<?php echo esc_attr( plugins_url( '../../exports/csv.php?type=' . $activity_type, __FILE__ ) ) ?>" onclick="setLimitOffset(event)">CSV <span class="dashicons dashicons-download"></a> |
+                            <a href="<?php echo esc_attr( plugins_url( '../../exports/json.php?type=' . $activity_type, __FILE__ ) ) ?>" onclick="setLimitOffset(event)">JSON <span class="dashicons dashicons-download"></a>
                         </div>
                     </td>
                 </tr>
