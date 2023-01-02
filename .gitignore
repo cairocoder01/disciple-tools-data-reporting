@@ -1,3 +1,8 @@
 .idea
 vendor/*
 wp-cli.phar
+.DS_Store
+
+documentation/video-overview/audio.txt
+documentation/video-overview/*.mp3
+documentation/video-overview/*.mp4

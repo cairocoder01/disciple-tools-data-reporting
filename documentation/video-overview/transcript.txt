@@ -1,0 +1,7 @@
+The Data Reporting plugin was created to automate the export of Disciple Tools data to cloud-based data storage for more advanced reporting features than are available in the in-app metrics. It is different from other metrics plugins in that it exports all individual posts and post activity so that you can report on non-aggregated data. All personally-identifiable information is stripped from contact records to protect the data while in transit. Exports include all custom fields that have been configured and also include a site column with the URL of your site so that you can store the data for multiple sites in a single database table.
+
+To get started, you can manually download the data for any post type from the Manual Export tab. Both CSV and JSON formats are available depending on your needs.
+
+To automate your exports, create a configuration from the Settings tab. Just name your config, choose which provider to use to send the data to your cloud provider, and choose which post types should be exported. A generic API provider is available by default, or extra providers can be installed with the provider plugins for Google and Amazon cloud platforms.
+
+For plugin developers, you can create an export configuration via WordPress hooks so that your users only have to install a plugin in order to export data to your cloud data storage. Data can be filtered down to just the subset that is required for your reporting.

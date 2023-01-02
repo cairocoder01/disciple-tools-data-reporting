@@ -8,6 +8,8 @@ The plugin allows exporting of both contacts and contact activity data as well a
 
 Multiple exports can be created on a single site so you can export to multiple data stores if you partner with others who would like reporting data available to them.
 
+[![Video Overview](http://img.youtube.com/vi/k4LM-azeS-0/0.jpg)](http://www.youtube.com/watch?v=k4LM-azeS-0)
+
 **Features:**
 * Contact / Contact Activity export
 * Group / Group Activity export
