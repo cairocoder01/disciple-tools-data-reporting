@@ -1,0 +1,2 @@
+
+exports.uploadFile = jest.fn();

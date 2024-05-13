@@ -1,0 +1,10 @@
+.idea
+node_modules
+.env.yaml
+.env.*.yaml
+.env-*.yaml
+!.env-default.yaml
+.DS_Store
+*.cache
+
+firebase/*.log

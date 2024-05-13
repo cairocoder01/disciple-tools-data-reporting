@@ -1,0 +1,17 @@
+{
+  "name": "load-file-to-bigquery",
+  "version": "1.0.1",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "deploy": "gcloud functions deploy load-file-to-bigquery --entry-point loadFileToBigQuery --runtime nodejs16 --trigger-resource reporting-data-transfer --trigger-event google.storage.object.finalize --env-vars-file .env.prod.yaml --region europe-west2",
+    "test": "jest"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@google-cloud/bigquery": "^5.1.0",
+    "@google-cloud/storage": "^5.1.2",
+    "byline": "^5.0.0"
+  }
+}
