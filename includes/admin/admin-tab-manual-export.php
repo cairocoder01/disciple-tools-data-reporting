@@ -39,7 +39,7 @@ class DT_Data_Reporting_Tab_Manual_Export
           function setLimitOffset(evt) {
             evt.preventDefault();
 
-            let url = evt.target.href;
+            let url = evt.currentTarget.href;
             const limit = document.querySelector('#limit').value;
             const offset = document.querySelector('#offset').value;
             if (limit) {
