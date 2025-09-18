@@ -58,6 +58,7 @@ class DT_Data_Reporting_Menu {
         require_once( plugin_dir_path( __FILE__ ) . './admin-tab-preview.php' );
         require_once( plugin_dir_path( __FILE__ ) . './admin-tab-api.php' );
         require_once( plugin_dir_path( __FILE__ ) . './admin-tab-settings.php' );
+        require_once( plugin_dir_path( __FILE__ ) . './admin-tab-snapshots.php' );
 
         // init settings to setup ajax hooks
         add_action( 'wp_ajax_dtdr_enable_config', [ $this, 'ajax_enable_config' ] );
@@ -165,7 +166,7 @@ class DT_Data_Reporting_Menu {
               color: #28a745;
               font-weight: bold;
             }
-            
+
             /** Accordion **/
             table.accordion { border-collapse: collapse; }
             table.accordion thead td, table.accordion thead th { padding: 0; }
@@ -181,7 +182,7 @@ class DT_Data_Reporting_Menu {
             table.accordion.collapsed tbody { visibility: collapse; }
             table.accordion.collapsed thead .icon.open { display: none; }
             table.accordion:not(.collapsed) thead .icon.closed { display: none; }
-            
+
             table.accordion.schema tbody td { padding: 0; }
             table.schema pre { margin: 0; }
             table.schema code {
@@ -267,6 +268,9 @@ class DT_Data_Reporting_Menu {
                 <?php if ($tab === 'preview' ): ?>
                     <a href="<?php echo esc_attr( $link ) . 'preview' ?>" class="nav-tab <?php ( $tab == 'preview' ) ? esc_attr_e( 'nav-tab-active', 'disciple-tools-data-reporting' ) : print ''; ?>"><?php esc_attr_e( 'Preview', 'disciple-tools-data-reporting' ) ?></a>
                 <?php endif; ?>
+                <?php if ($tab === 'snapshots' ): ?>
+                    <a href="<?php echo esc_attr( $link ) . 'snapshots' ?>" class="nav-tab <?php ( $tab == 'snapshots' ) ? esc_attr_e( 'nav-tab-active', 'disciple-tools-data-reporting' ) : print ''; ?>"><?php esc_attr_e( 'Snapshots', 'disciple-tools-data-reporting' ) ?></a>
+                <?php endif; ?>
                 <?php if ($tab === 'api-send' ): ?>
                     <a href="<?php echo esc_attr( $link ) . 'api-send' ?>" class="nav-tab <?php ( $tab == 'api-send' ) ? esc_attr_e( 'nav-tab-active', 'disciple-tools-data-reporting' ) : print ''; ?>"><?php esc_attr_e( 'Export Log', 'disciple-tools-data-reporting' ) ?></a>
                 <?php endif; ?>
@@ -296,6 +300,10 @@ class DT_Data_Reporting_Menu {
                     break;
                 case "settings":
                     $object = new DT_Data_Reporting_Tab_Settings();
+                    $object->content();
+                    break;
+                case "snapshots":
+                    $object = new DT_Data_Reporting_Tab_Snapshots();
                     $object->content();
                     break;
                 default:
