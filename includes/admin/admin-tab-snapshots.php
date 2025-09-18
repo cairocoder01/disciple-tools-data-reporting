@@ -47,10 +47,15 @@ class DT_Data_Reporting_Tab_Snapshots
         $this->settings_selection();
 
         if ( isset( $_GET["type"] ) && isset( $_GET["period"] ) ) {
+          $type = sanitize_key( wp_unslash( $_GET["type"] ) );
+          $period = sanitize_key( wp_unslash( $_GET["period"] ) );
+          $post_id = isset($_GET["post_id"]) ? (int)sanitize_key(wp_unslash($_GET["post_id"])) : null;
+//          $snapshots = DT_Data_Reporting_Tools::get_snapshots( $type, $post_id, $period );
+          [$columns, $rows, $total] = DT_Data_Reporting_Tools::get_snapshots( $type, $post_id, $period );
 //          [$columns, $rows, $total] = DT_Data_Reporting_Tools::get_data($this->type, $this->config_key, false, $limit, $offset);
-          $columns = [];
-          $rows = [];
-          $total = 0;
+
+//          $columns = ['ID', 'group_status', 'members', 'member_count', 'post_date'];
+//          $total = 0;
           $this->main_column_table( $columns, $rows, $total );
         }
     }
@@ -116,6 +121,8 @@ class DT_Data_Reporting_Tab_Snapshots
         <?php if ( count( $rows ) != $total ): ?>
           <em>Showing only the first <?php echo count( $rows ) ?> records as a preview. When exporting, all records will be included.</em>
         <?php endif; ?>
+
+      <pre style="display:none;"><code style="display:block;"><?php print_r( $rows ); ?></code></pre>
 
         <!-- Box -->
         <table class="widefat striped">
