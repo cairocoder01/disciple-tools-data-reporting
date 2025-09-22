@@ -550,8 +550,11 @@ class DT_Data_Reporting_Tools
         // get all of the location IDs from each post's location_grid field
         $grid_ids = array_reduce( $posts, function ( $ids, $post ) {
             if ( isset( $post['location_grid'] ) ) {
-                $location_ids = array_map(function ( $location) {
-                    return $location['id'];
+                $location_ids = array_map(function ( $location ) {
+                    if ( isset( $location['id'] ) ) {
+                      return $location['id'];
+                    }
+                    return $location;
                 }, $post['location_grid']);
                 $ids = array_merge( $ids, $location_ids );
             }
@@ -1077,6 +1080,21 @@ class DT_Data_Reporting_Tools
       if (!$post) {
         throw new \Exception("Post not found");
       }
+      $field_settings = DT_Posts::get_post_field_settings( $post_type );
+
+      // Get all activity records for this post
+      $all_activity = [];
+      $total = 1000;
+      while ( $total === 1000 ) {
+        $results = DT_Posts::get_post_activity( $post_type, $post_id );
+        $total = $results['total'];
+        $all_activity = array_merge( $all_activity, $results['activity'] );
+      }
+
+      // Sort activity by hist_time ascending
+      usort($all_activity, function ($a, $b) {
+        return $a['hist_time'] - $b['hist_time'];
+      });
 
       $created_date = new DateTime($post['post_date']['formatted']);
       $current_date = new DateTime();
@@ -1120,9 +1138,13 @@ class DT_Data_Reporting_Tools
       while ($period_end >= $created_date) {
         // Get snapshot for period end date
         dt_write_log( "Creating snapshot for " . $period_end->format('Y-m-d H:i:s') );
-        $snapshot = self::get_snapshot( $post_type, $post_id, [
-          'ts_start' => $period_end->getTimestamp(),
-        ]);
+
+        // Filter activity records up to period end date
+        $period_activity = array_filter($all_activity, function ($activity) use ($period_end) {
+          return $activity['hist_time'] <= $period_end->getTimestamp();
+        });
+
+        $snapshot = self::build_post_snapshot( $post_type, $post_id, $period_activity, $field_settings );
 
         // Add to snapshots array with proper period format
         $key = $period_end->format($date_format);
@@ -1130,8 +1152,8 @@ class DT_Data_Reporting_Tools
           $quarter = ceil($period_end->format('n') / 3);
           $key = $period_end->format('Y') . '-Q' . $quarter;
         }
-//        $snapshots[$key] = $snapshot;
         $snapshot['period'] = $key;
+        //todo: add start/end dates to snapshot
         $snapshots[] = $snapshot;
 
         // Move to previous period
@@ -1174,8 +1196,8 @@ class DT_Data_Reporting_Tools
             continue;
           }
 
-          $field_value = self::get_field_value( $result, $field_key, $type, $flatten, $locations );
-
+//          $field_value = self::get_field_value( $result, $field_key, $type, $flatten, $locations );
+          $field_value = self::format_snapshot_value( $result, $field_key, $type, $flatten, $locations );
 
           if ( $post_type === 'contacts' ) {
             // if we calculated the baptism generation, set it here
@@ -1203,518 +1225,233 @@ class DT_Data_Reporting_Tools
         'name' => 'Period',
       ];
       return array( $columns, $items, count( $items ) );
-//      return $snapshots;
     }
 
-    private static function apply_revert_updates( $post, $updates ) {
 
-      foreach ($updates as $field => $update) {
-        if ( is_array( $update ) ) {
-          if ( isset( $update['values'] ) ) {
-            // Initialize array if doesn't exist
-            if (!isset($post[$field]) || !is_array($post[$field])) {
-              $post[$field] = [];
-            }
+  /**
+   * Builds a snapshot of a post's state at a point in time by processing activity history
+   * @param string $post_type The type of post (contacts, groups, etc)
+   * @param int $post_id ID of the post to build snapshot for
+   * @param array $all_activity Array of activity records ordered by date descending
+   * @param array $field_settings Field settings configuration for the post type
+   * @return array Post data representing state at specified point in time
+   */
+  public static function build_post_snapshot( $post_type, $post_id, $all_activity, $field_settings ) {
 
-            foreach ($update['values'] as $value) {
-              if (isset($value['delete']) && $value['delete']) {
-                // Remove value from array
-                $post[$field] = array_filter($post[$field], function ($existing) use ($value) {
-                  return !isset($existing['value']) || $existing['value'] !== $value['value'];
-                });
-              } else {
-                // Add value to array
-                $post[$field][] = $value;
-              }
-            }
+      $post = [
+        'ID' => $post_id,
+        'post_type' => $post_type,
+      ];
+
+      foreach ( $all_activity as $activity ) {
+        $action = $activity['action'];
+        $field_type = $activity['field_type'];
+        $meta_key = $activity['meta_key'];
+        $meta_value = $activity['meta_value'];
+
+        $actions = [ 'field_update', 'connected to', 'disconnected from ' ];
+        if ( in_array( $action, $actions ) ) {
+          if ( !isset( $post['post_date'] ) ) {
+            $post['post_date'] = [
+              'timestamp' => $activity['hist_time'],
+              'formatted' => dt_format_date( $activity['hist_time'] ),
+            ];
           }
-        } else {
-          $post[$field] = $update;
+          switch ( $field_type ) {
+            case 'connection':
+              $field_setting = DT_Posts::get_post_field_settings_by_p2p($field_settings, $meta_key, ($action == 'disconnected from') ? ['from', 'to', 'any'] : ['to', 'from', 'any']);
+              if (!empty($field_setting)) {
+                $meta_key = $field_setting['key'];
+              }
+            case 'link':
+            case 'communication_channel':
+            case 'tags':
+            case 'location':
+            case 'location_meta':
+            case 'multi_select':
+              if ( !isset( $post[$meta_key] ) ) {
+                $post[$meta_key] = [];
+              }
+
+              if ( $meta_value === 'value_deleted' ) {
+                $old_value = $activity['old_value'];
+                $post[$meta_key] = array_values(array_filter($post[$meta_key], function ($value) use ($old_value) {
+                  return $value !== $old_value;
+                }));
+              } else {
+                $post[$meta_key][] = $meta_value;
+              }
+              break;
+            case 'user_select':
+              if ( $meta_value === 'value_deleted') {
+                $post[$meta_key] = null;
+              } else {
+                $meta_array = explode( '-', $meta_value ); // Separate the type and id
+                $type = $meta_array[0]; // Build variables
+                if ( isset( $meta_array[1] ) ) {
+                  $id = $meta_array[1];
+                  if ($type == 'user' && $id) {
+//                    $user = get_user_by('id', $id);
+                    $post[$meta_key] = $id;
+                    /*$post[$meta_key] = [
+                      'id' => $id,
+                      'type' => $type,
+                      'display' => wp_specialchars_decode( $user && is_user_member_of_blog( $id ) ? $user->display_name : __( 'Removed User', 'disciple_tools' ) ),
+                      'assigned-to' => $meta_value,
+                    ];*/
+                  }
+                }
+              }
+              break;
+            case 'key_select':
+              /*if ( $meta_value === 'value_deleted') {
+                $post[$meta_key] = null;
+              } else {
+                $value_options = $field_settings[$meta_key]['default'][$meta_value] ?? $meta_value;
+                if ( isset( $value_options['label'] ) ) {
+                  $label = $value_options['label'];
+                } elseif ( is_string( $value_options ) ) {
+                  $label = $value_options;
+                } else {
+                  $label = $meta_value;
+                }
+                $post[$meta_key] = [
+                  'key' => $meta_value,
+                  'label' => $label,
+                ];
+              }
+              break;*/
+            case 'date':
+              /*if ( $meta_value === 'value_deleted') {
+                $post[$meta_key] = null;
+              } else {
+                $post[$meta_key] = [
+                  'timestamp' => (int)$meta_value,
+                  'formatted' => dt_format_date( $meta_value ),
+                ];
+              }
+              break;*/
+            case 'datetime':
+              /*if ( $meta_value === 'value_deleted') {
+                $post[$meta_key] = null;
+              } else {
+                $post[$meta_key] = [
+                  'timestamp' => (int)$meta_value,
+                  'formatted' => dt_format_date( $meta_value, 'Y-m-d H:i:s' ),
+                ];
+              }
+              break;*/
+            case 'number':
+              /*if ( $meta_value === 'value_deleted') {
+                $post[$meta_key] = null;
+              } else {
+                $post[$meta_key] = (int)$meta_value;
+              }
+              break;*/
+            case 'boolean':
+              /*if ( $meta_value === 'value_deleted') {
+                $post[$meta_key] = null;
+              } else {
+                $post[$meta_key] = $meta_value === '1';
+              }
+              break;*/
+            case 'text':
+            case 'textarea':
+              /*if ( $meta_value === 'value_deleted') {
+                $post[$meta_key] = [];
+              } else if ( isset( $post[$meta_key] ) && is_array( $post[$meta_key] ) ) {
+                $post[$meta_key][] = [ 'value' => $meta_value ];
+              } else {
+                $post[$meta_key] = [
+                  [ 'value' => $meta_value ],
+                ];
+              }
+              break;*/
+            default:
+              if ( $meta_value === 'value_deleted') {
+                $post[$meta_key] = null;
+              } else {
+                $post[$meta_key] = $meta_value;
+              }
+              break;
+          }
         }
       }
+
+//      dt_write_log( json_encode( $post ) );
 
       return $post;
     }
-  public static function get_snapshot( string $post_type, int $post_id, array $args = [] )
-  {
-//    $post_type = $post['post_type'];
-//    $post_id = $post['ID'];
 
-    // duplicate of DT_Posts::revert_post_activity_history without final code to save the updates
-    // but just the first half that builds the reverted post, not the $post_updates to save the updates.
-    // Some additions in second loop to directly update $post object are marked by comment: update post directly
+    private static function format_snapshot_value( $result, $field_key, $type, $flatten, $locations ) {
+      if (key_exists( $field_key, $result )) {
 
-    // BEGIN COPIED CODE (self replaced with DT_Posts)
-    /**
-     * Fetch all associated activities from current time to specified revert
-     * date. Ensure most recent activities are first in line.
-     */
-
-    $args['result_order'] = 'DESC';
-    $activities = self::list_revert_post_activity_history($post_type, $post_id, $args);
-
-    /**
-     * March back in time to revert date, adjusting fields accordingly.
-     */
-
-    $reverted_start_ts_id = $args['ts_start_id'] ?? 0;
-    $reverted_start_ts_found = false;
-
-    $reverted_updates = [];
-    $post_type_fields = DT_Posts::get_post_field_settings($post_type, false);
-    foreach ($activities ?? [] as &$activity) {
-      dt_write_log(json_encode($activity));
-      $activity_id = $activity->histid;
-      $field_action = $activity->action;
-      $field_type = $activity->field_type;
-      $field_key = $activity->meta_key;
-      $field_value = $activity->meta_value;
-      $field_old_value = $activity->old_value;
-      $field_note_raw = $activity->object_note_raw;
-      $is_deleted = strtolower(trim($field_value)) == 'value_deleted';
-
-      // Ensure to accommodate special case field types.
-      if (in_array($field_action, ['connected to', 'disconnected from'])) {
-
-        // Determine actual field key to be used.
-        $field_setting = DT_Posts::get_post_field_settings_by_p2p($post_type_fields, $field_key, ($field_action == 'disconnected from') ? ['from', 'to', 'any'] : ['to', 'from', 'any']);
-        if (!empty($field_setting)) {
-          $field_key = $field_setting['key'];
-          $field_type = $field_action;
-
-        } else {
-          $field_key = null;
-          $field_type = null;
-        }
-      } elseif ((empty($field_type) || $field_type === 'communication_channel') && substr($field_key, 0, strlen('contact_')) == 'contact_') {
-        $field_type = 'communication_channel';
-
-        // Determine actual field key.
-        $determined_field_key = null;
-        foreach (DT_Posts::get_field_settings_by_type($post_type, $field_type) ?? [] as $potential_field_key) {
-          if (strpos($field_key, $potential_field_key) !== false) {
-            $determined_field_key = $potential_field_key;
-          }
-        }
-        $field_key = $determined_field_key ?? substr($field_key, 0, strpos($field_key, '_', strlen('contact_')));
-
-        // Void if key is empty.
-        if (empty($field_key)) {
-          $field_key = null;
-          $field_type = null;
-        }
-      } elseif ($field_type === 'link') {
-        foreach (DT_Posts::get_field_settings_by_type($post_type, $field_type) ?? [] as $link_field) {
-          if (strpos($field_key, $link_field) !== false) {
-            $field_key = $link_field;
-          }
-        }
-      }
-
-      /**
-       * Ensure processing is halted once target start activity id has
-       * been found.
-       */
-
-      if ($reverted_start_ts_id === $activity_id) {
-        $reverted_start_ts_found = true;
-      }
-
-      if (!$reverted_start_ts_found) {
-
-        // If needed, prepare reverted updates array element.
-        if (!empty($field_key) && !empty($field_type) && !isset($reverted_updates[$field_key])) {
-          $reverted_updates[$field_key] = [
-            'field_type' => $field_type,
-            'values' => []
-          ];
-        }
-
-        /**
-         * As we walk back in time, need to operate in the inverse; so, delete is
-         * actually an add and add, is actually, delete!
-         * Also, ensure inverse logic is not carried out once we've reached our
-         * specified revert start point.
-         */
-
-        switch ($field_type) {
-          case 'connected to':
-          case 'disconnected from':
-            $is_deleted = strtolower(trim($field_action)) == 'disconnected from';
-
-            $reverted_updates[$field_key]['values'][$field_value] = [
-              'value' => $field_value,
-              'keep' => $is_deleted
-            ];
-            break;
+        switch ( $type ) {
+          case 'connection':
+          case 'multi_select':
           case 'tags':
+            $field_value = $flatten ? implode( ",", $result[$field_key] ) : $result[$field_key];
+            break;
+          case 'location':
+            // Map country and admin1 data from location_grid table to restrict
+            // location to only admin level 1 (first level within a country, like states/provinces)
+            $location_names = array_map( function ( $location ) use ( $locations ) {
+              if ( isset( $locations[$location] ) ) {
+                $grid_loc = $locations[$location];
+                // Try to return "{2-letter-country-code}-{admin1-name}"
+                if ( !empty( $grid_loc['admin1_name'] ) ) {
+                  return $grid_loc['country_code'] . "-" . $grid_loc['admin1_name'];
+                }
+                // fall back to just country code
+                return $grid_loc['country_code'];
+              }
+              // if no grid data, return null for safety of not exposing PII
+              return null;
+            }, $result[$field_key] );
+
+            // Remove null and duplicates
+            $location_names = array_unique( array_filter( $location_names ) );
+
+            $field_value = $flatten ? implode( ",", $location_names ) : $location_names;
+            break;
           case 'date':
           case 'datetime':
-          case 'link':
-          case 'location':
-          case 'multi_select':
-          case 'location_meta':
-          case 'communication_channel':
-
-            // Capture any additional metadata, by field type.
-            $meta = [];
-            if ($field_type === 'communication_channel') {
-              $meta = [
-                'meta_key' => $activity->meta_key,
-                'value_key_prefix' => $activity->meta_key . '-'
-              ];
-            } elseif ($field_type === 'link') {
-              $meta = [
-                'meta_id' => $activity->meta_id,
-                'value_key_prefix' => $activity->meta_id . '-'
-              ];
-            } elseif ($field_type === 'location') {
-              $meta = [
-                'meta_id' => $activity->meta_id,
-                'value_key_prefix' => $activity->meta_id . '-'
-              ];
-            }
-
-            // Proceed with capturing reverted updates.
-            $value = $is_deleted ? $field_old_value : $field_value;
-            $reverted_updates[$field_key]['values'][($meta['value_key_prefix'] ?? '') . $value] = [
-              'value' => $value,
-              'keep' => $is_deleted,
-              'note' => $field_note_raw,
-              'meta' => $meta
-            ];
-
-            // Ensure any detected old values are reinstated!
-            if (!$is_deleted && !empty($field_old_value)) {
-              unset($reverted_updates[$field_key]['values'][($meta['value_key_prefix'] ?? '') . $field_value]);
-
-              $reverted_updates[$field_key]['values'][($meta['value_key_prefix'] ?? '') . $field_old_value] = [
-                'value' => $field_old_value,
-                'keep' => true,
-                'note' => $field_note_raw,
-                'meta' => $meta
-              ];
-            }
-            break;
-          case 'text':
           case 'number':
+            $field_value = intval($result[$field_key]);
+            break;
           case 'boolean':
-          case 'textarea':
+            $field_value = $result[$field_key] === '1';
+            break;
+          default:
+            $field_value =  $result[$field_key];
+            break;
+        }
+      } else {
+        // Set default/blank value
+        switch ($type) {
+          case 'number':
+            $field_value = $field['default'] ?? 0;
+            break;
           case 'key_select':
-          case 'user_select':
-            $reverted_updates[$field_key]['values'][0] = $field_old_value;
+            $field_value = null;
+            break;
+          case 'multi_select':
+          case 'tags':
+            $field_value = $flatten ? null : array();
+            break;
+          case 'array':
+          case 'boolean':
+          case 'date':
+          case 'text':
+          case 'location':
+          default:
+            $field_value = $field['default'] ?? null;
             break;
         }
       }
+
+      return $field_value;
     }
-
-    /**
-     * Package revert findings ahead of final post update; ensuring to remove any
-     * field values not present within reverted updates.
-     */
-
-    $post_updates = [];
-    $post = DT_Posts::get_post($post_type, $post_id, false);
-    foreach ($reverted_updates as $field_key => $reverted) {
-      switch ($reverted['field_type']) {
-        case 'connected to':
-        case 'disconnected from':
-          $values = [];
-          foreach ($reverted['values'] as $revert_key => $revert_obj) {
-
-            // Keep existing values or add if needed.
-            if ($revert_obj['keep']) {
-              $found_existing_option = false;
-              if (isset($post[$field_key]) && is_array($post[$field_key])) {
-                foreach ($post[$field_key] as $option) {
-                  if ($revert_key == $option['ID']) {
-                    $found_existing_option = true;
-                  }
-                }
-              }
-
-              if (!$found_existing_option) {
-                $values[] = [
-                  'value' => $revert_obj['value']
-                ];
-                // update post directly
-                $post[$field_key][] = [
-                  'ID' => $revert_obj['value']
-                ];
-              }
-            } elseif (isset($post[$field_key]) && is_array($post[$field_key])) {
-
-              // Remove any flagged existing values.
-              foreach ($post[$field_key] as $option) {
-                dt_write_log(json_encode($option));
-                $id = $option['ID'];
-                if ($revert_key == $id) {
-                  $values[] = [
-                    'value' => $id,
-                    'delete' => true
-                  ];
-                }
-              }
-              // update post directly
-              $post[$field_key] = array_filter( $post[$field_key], function ($option) use ($revert_key) {
-                return $option['ID'] !== $revert_key;
-              });
-            }
-          }
-
-          // Package any available values to be updated.
-          if (!empty($values)) {
-            $post_updates[$field_key] = [
-              'values' => $values
-            ];
-          }
-          break;
-        case 'tags':
-        case 'link':
-        case 'location':
-        case 'multi_select':
-        case 'location_meta':
-        case 'communication_channel':
-          $values = [];
-          foreach ($reverted['values'] as $revert_key => $revert_obj) {
-
-            // Remove any detected revert value key prefixes.
-            if (isset($revert_obj['meta'], $revert_obj['meta']['value_key_prefix']) && strpos($revert_key, $revert_obj['meta']['value_key_prefix']) !== false) {
-              $revert_key = substr($revert_key, strlen($revert_obj['meta']['value_key_prefix']));
-            }
-
-            // Keep existing values or add if needed.
-            if ($revert_obj['keep']) {
-              $found_existing_option = false;
-              if (isset($post[$field_key]) && is_array($post[$field_key])) {
-                foreach ($post[$field_key] as $option) {
-
-                  // Determine id to be used, based on field type
-                  if ($reverted['field_type'] == 'location') {
-                    $id = $option['id'];
-
-                  } elseif ($reverted['field_type'] == 'location_meta') {
-                    $id = $option['grid_meta_id'];
-
-                  } elseif ($reverted['field_type'] == 'communication_channel') {
-                    $id = $option['value'];
-
-                  } elseif ($reverted['field_type'] == 'link') {
-                    $id = $option['value'];
-
-                  } else {
-                    $id = $option;
-                  }
-
-                  if ($revert_key == $id) {
-                    $found_existing_option = true;
-                  }
-                }
-              }
-
-              if (!$found_existing_option) {
-
-                // Structure value accordingly based on field type.
-                if ($reverted['field_type'] == 'location_meta') {
-
-                  /**
-                   * Assuming suitable mapping APIs are available, execute a lookup query, based on
-                   * specified location. Construct update value package based on returned hits.
-                   */
-
-                  if (!empty($revert_obj['note'])) {
-                    $note = $revert_obj['note'];
-
-                    if (class_exists('Disciple_Tools_Google_Geocode_API') && !empty(Disciple_Tools_Google_Geocode_API::get_key()) && Disciple_Tools_Google_Geocode_API::get_key()) {
-                      $location = Disciple_Tools_Google_Geocode_API::query_google_api($note, 'coordinates_only');
-                      if (!empty($location)) {
-                        $values[] = [
-                          'lng' => $location['lng'],
-                          'lat' => $location['lat'],
-                          'label' => $note
-                        ];
-                        // update post directly
-                        $post[$field_key][] = [
-                          'lng' => $location['lng'],
-                          'lat' => $location['lat'],
-                          'label' => $note
-                        ];
-                      }
-                    } elseif (class_exists('DT_Mapbox_API') && !empty(DT_Mapbox_API::get_key()) && DT_Mapbox_API::get_key()) {
-                      $location = DT_Mapbox_API::lookup($note);
-                      if (!empty($location)) {
-                        $values[] = [
-                          'lng' => DT_Mapbox_API::parse_raw_result($location, 'lng', true),
-                          'lat' => DT_Mapbox_API::parse_raw_result($location, 'lat', true),
-                          'label' => DT_Mapbox_API::parse_raw_result($location, 'place_name', true)
-                        ];
-                        // update post directly
-                        $post[$field_key][] = [
-                          'lng' => DT_Mapbox_API::parse_raw_result($location, 'lng', true),
-                          'lat' => DT_Mapbox_API::parse_raw_result($location, 'lat', true),
-                          'label' => DT_Mapbox_API::parse_raw_result($location, 'place_name', true)
-                        ];
-                      }
-                    }
-                  }
-                } elseif ($reverted['field_type'] == 'communication_channel') {
-                  $values[] = [
-                    'key' => $revert_obj['meta']['meta_key'] ?? null,
-                    'value' => $revert_obj['value']
-                  ];
-                  // update post directly
-                  $post[$field_key][] = [
-                    'key' => $revert_obj['meta']['meta_key'] ?? null,
-                    'value' => $revert_obj['value']
-                  ];
-                } elseif ($reverted['field_type'] == 'link') {
-                  $values[] = [
-                    'type' => 'default',
-                    'value' => $revert_obj['value']
-                  ];
-                  // update post directly
-                  $post[$field_key][] = [
-                    'type' => 'default',
-                    'value' => $revert_obj['value']
-                  ];
-                } else {
-                  $values[] = [
-                    'value' => $revert_obj['value']
-                  ];
-                  // update post directly
-                  $post[$field_key][] = [
-                    'value' => $revert_obj['value']
-                  ];
-                }
-              }
-            } elseif (isset($post[$field_key]) && is_array($post[$field_key])) {
-
-              // Remove any flagged existing values.
-              foreach ($post[$field_key] as $arr_key => $option) {
-
-                // Determine id to be used, based on field type
-                if ($reverted['field_type'] == 'location') {
-                  $id = $option['id'];
-
-                } elseif ($reverted['field_type'] == 'location_meta') {
-                  $id = $option['grid_meta_id'];
-
-                } elseif ($reverted['field_type'] == 'communication_channel') {
-
-                  // Force a match if key is found.
-                  if ($option['key'] === ($revert_obj['meta']['meta_key'] ?? '')) {
-                    $id = $revert_key;
-                  } else {
-                    $id = '';
-                  }
-                } elseif ($reverted['field_type'] == 'link') {
-
-                  // Force a match if key is found.
-                  if ($option['meta_id'] === ($revert_obj['meta']['meta_id'] ?? '')) {
-                    $id = $revert_key;
-                  } else {
-                    $id = '';
-                  }
-                } else {
-                  $id = $option;
-                }
-
-                if ($revert_key == $id) {
-
-                  // Determine correct value label to be used.
-                  if ($reverted['field_type'] == 'location_meta') {
-                    $key = 'grid_meta_id';
-
-                  } elseif ($reverted['field_type'] == 'communication_channel') {
-                    $key = 'key';
-                    $id = $revert_obj['meta']['meta_key'] ?? $revert_key;
-                  } elseif ($reverted['field_type'] == 'link') {
-                    $key = 'meta_id';
-                    $id = $revert_obj['meta']['meta_id'] ?? $revert_key;
-                  } else {
-                    $key = 'value';
-                  }
-
-                  // Package....
-                  $values[] = [
-                    $key => $id,
-                    'delete' => true
-                  ];
-                  // update post directly
-                  unset($post[$field_key][$arr_key]);
-                }
-              }
-              // update post directly
-              $post[$field_key] = array_filter( $post[$field_key], function ($option) use ($revert_key) {
-                return isset( $option );
-              });
-            }
-          }
-
-          // Package any available values to be updated, accordingly; by field type.
-          if (!empty($values)) {
-            if ($reverted['field_type'] == 'communication_channel') {
-              $post_updates[$field_key] = $values;
-            } else {
-              $post_updates[$field_key] = [
-                'values' => $values
-              ];
-            }
-          }
-          break;
-        case 'date':
-        case 'datetime':
-          $revert_obj = array_values($reverted['values'])[0] ?? null;
-          $post_updates[$field_key] = (!empty($revert_obj) && $revert_obj['keep']) ? $revert_obj['value'] : '';
-          // update post directly
-          $post[$field_key] = (!empty($revert_obj) && $revert_obj['keep']) ? $revert_obj['value'] : '';
-          break;
-        case 'number':
-          $number_update_allowed = true;
-
-          // Ensure to adhere with any min/max bounds, to avoid exceptions!
-          $number = !empty($reverted['values'][0]) ? $reverted['values'][0] : 0;
-          if (isset($post_type_fields[$field_key], $post_type_fields[$field_key]['min_option']) && $post_type_fields[$field_key]['min_option'] > $number) {
-            $number_update_allowed = false;
-          }
-          if (isset($post_type_fields[$field_key], $post_type_fields[$field_key]['max_option']) && $post_type_fields[$field_key]['max_option'] < $number) {
-            $number_update_allowed = false;
-          }
-
-          // Only update if number format is valid.
-          if ($number_update_allowed) {
-            $post_updates[$field_key] = $number;
-            // update post directly
-            $post[$field_key] = $number;
-          }
-          break;
-        case 'user_select':
-          $user_select_value = $reverted['values'][0];
-          if ($user_select_value != 'user-') {
-            $post_updates[$field_key] = $user_select_value;
-            // update post directly
-            $post[$field_key] = $user_select_value;
-          } else {
-            $post_updates[$field_key] = '';
-            // update post directly
-            $post[$field_key] = '';
-          }
-          break;
-        case 'text':
-        case 'boolean':
-        case 'textarea':
-        case 'key_select':
-          $post_updates[$field_key] = $reverted['values'][0] ?? '';
-          // update post directly
-          $post[$field_key] = $reverted['values'][0] ?? '';
-          break;
-      }
-    }
-    // END COPIED CODE
-    return $post;
-//    return self::apply_revert_updates( $post, $post_updates );
-//    return $post_updates;
-  }
 
   /**
    * @param string $post_type
@@ -1780,7 +1517,6 @@ class DT_Data_Reporting_Tools
       $ts_start,
       $ts_end
     );
-    dt_write_log( $sql );
     $activities = $wpdb->get_results($sql);
     //@phpcs:enable
 

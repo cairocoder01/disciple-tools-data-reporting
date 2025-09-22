@@ -64,6 +64,8 @@ class DT_Data_Reporting_Menu {
         add_action( 'wp_ajax_dtdr_enable_config', [ $this, 'ajax_enable_config' ] );
         add_action( 'wp_ajax_dtdr_save_config', [ $this, 'ajax_save_config' ] );
         add_action( 'wp_ajax_dtdr_reset_progress', [ $this, 'ajax_reset_progress' ] );
+
+        add_filter( 'dt_format_post_activity', [ $this, 'format_post_activity' ], 10, 2 );
     } // End __construct()
 
     public function ajax_enable_config() {
@@ -74,6 +76,19 @@ class DT_Data_Reporting_Menu {
     }
     public function ajax_reset_progress() {
         DT_Data_Reporting_Tab_Settings::ajax_reset_progress();
+    }
+
+    public function format_post_activity( $activity, $a ) {
+      if ( isset( $a->action ) ) {
+        $activity['action'] = $a->action;
+      }
+      if ( isset( $a->meta_value ) ) {
+        $activity['meta_value'] = $a->meta_value;
+      }
+      if ( isset( $a->old_value ) ) {
+        $activity['old_value'] = $a->old_value;
+      }
+      return $activity;
     }
 
     public function add_styles() {
