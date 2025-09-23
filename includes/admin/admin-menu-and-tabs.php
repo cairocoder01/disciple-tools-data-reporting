@@ -53,6 +53,7 @@ class DT_Data_Reporting_Menu {
         add_action( "admin_footer", array( $this, "add_scripts" ) );
 
         require_once( plugin_dir_path( __FILE__ ) . '../data-tools.php' );
+        require_once( plugin_dir_path( __FILE__ ) . '../snapshot-tools.php' );
         require_once( plugin_dir_path( __FILE__ ) . './admin-tab-manual-export.php' );
         require_once( plugin_dir_path( __FILE__ ) . './admin-tab-bigquery.php' );
         require_once( plugin_dir_path( __FILE__ ) . './admin-tab-preview.php' );

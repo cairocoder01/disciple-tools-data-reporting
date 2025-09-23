@@ -46,6 +46,10 @@ class DT_Data_Reporting_Tab_Snapshots
 
         $this->settings_selection();
 
+        if ( isset( $_GET["button"] ) && $_GET["button"] === "run" ) {
+          DT_Data_Reporting_Snapshot_Tools::run_snapshot_task();
+        } else
+
         if ( isset( $_GET["type"] ) && isset( $_GET["period"] ) ) {
           $type = sanitize_key( wp_unslash( $_GET["type"] ) );
           $period = sanitize_key( wp_unslash( $_GET["period"] ) );
@@ -108,6 +112,7 @@ class DT_Data_Reporting_Tab_Snapshots
         </div>
 
         <input type="submit" value="View Snapshots" class="button">
+        <button type="submit" name="button" value="run" class="button">Run</button>
       </form>
       <?php
     }
