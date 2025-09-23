@@ -5,15 +5,27 @@ class DT_Data_Reporting_Snapshot_Tools
 {
   public static $table_name = 'dt_post_snapshots';
 
+  private const INTERVAL_YEAR = 'year';
+  private const INTERVAL_QUARTER = 'quarter';
+  private const INTERVAL_MONTH = 'month';
+
   public static function run_snapshot_task()
   {
     self::check_migrations();
-return;
+
     $period = self::get_next_period();
 
-    self::build_period_snapshots( $period );
+    dt_write_log( 'Next period: ' . json_encode( $period ) );
+
+    if ( $period !== null ) {
+      self::build_period_snapshots( $period );
+    }
   }
 
+  /**
+   * Checks if the database table exists and creates it if it doesn't.
+   * @return bool
+   */
   private static function check_migrations()
   {
     global $wpdb;
@@ -65,18 +77,65 @@ return;
     return $table_exists;
   }
 
+  /**
+   * Checks the database for the next period to be updated.
+   * @return array|null
+   * @throws DateMalformedIntervalStringException
+   * @throws DateMalformedStringException
+   */
   private static function get_next_period()
   {
-    // get next period
-    // - get max period_end by interval
-    // - try year
-    // - try quarter
-    // - try month
-    // - if none, get min from dt_activity_log
-    $interval = 'year';
+    global $wpdb;
+    $table_name = $wpdb->prefix . self::$table_name;
 
-    $date = new DateTime(); // today - interval
-    return self::get_period_by_date( $interval, $date );
+    $max_periods = $wpdb->get_results(
+      "SELECT period_interval, MAX(period_end) as max_period_end
+     FROM $table_name
+     GROUP BY period_interval",
+      ARRAY_A
+    );
+
+    $intervals = [self::INTERVAL_YEAR, self::INTERVAL_QUARTER, self::INTERVAL_MONTH];
+    $now = new DateTime();
+
+    foreach ($intervals as $interval) {
+      dt_write_log('Checking interval: ' . $interval);
+      $period_end = null;
+      foreach ($max_periods as $max_period) {
+        if ($max_period['period_interval'] === $interval) {
+          $period_end = new DateTime($max_period['max_period_end']);
+          break;
+        }
+      }
+
+      dt_write_log('Period end: ' . ($period_end ? $period_end->format('Y-m-d H:i:s') : 'null'));
+      if ($period_end === null) {
+        // No snapshots exist for this interval, start from earliest activity date
+        $min_date = $wpdb->get_var("SELECT MIN(hist_time) FROM $wpdb->dt_activity_log");
+        if ($min_date) {
+          dt_write_log( 'Min date: ' . $min_date );
+          return self::get_period_by_date($interval, DateTime::createFromFormat('U', $min_date));
+        }
+        return self::get_period_by_date($interval, $now);
+      }
+
+      // Check if the next expected period is in the past by adding the interval duration
+      $interval_duration = new DateInterval(match ($interval) {
+        self::INTERVAL_YEAR => 'P1Y',
+        self::INTERVAL_QUARTER => 'P3M',
+        self::INTERVAL_MONTH => 'P1M',
+      });
+
+      $next_expected = clone $period_end;
+      $next_expected->add($interval_duration);
+
+      if ($next_expected < $now) {
+        // Found an interval that needs updating
+        return self::get_period_by_date($interval, $period_end);
+      }
+    }
+
+    return null; // All periods are up to date
   }
 
   /**
@@ -92,11 +151,43 @@ return;
    */
   private static function get_period_by_date( string $interval, DateTime $date )
   {
+    $start = clone $date;
+    $end = clone $date;
+
+    switch ($interval) {
+      case self::INTERVAL_YEAR:
+        $start->modify('first day of January ' . $date->format('Y'));
+        $end->modify('last day of December ' . $date->format('Y'));
+        $name = $date->format('Y');
+        break;
+
+      case self::INTERVAL_QUARTER:
+        $quarter = ceil($date->format('n') / 3);
+        $start_month = ($quarter - 1) * 3 + 1;
+        $end_month = $quarter * 3;
+        $start->setDate($date->format('Y'), $start_month, 1);
+        $end->setDate($date->format('Y'), $end_month, 1)->modify('last day of this month');
+        $name = $date->format('Y') . '-Q' . $quarter;
+        break;
+
+      case self::INTERVAL_MONTH:
+        $start->modify('first day of this month');
+        $end->modify('last day of this month');
+        $name = $date->format('Y-m');
+        break;
+
+      default:
+        throw new InvalidArgumentException('Invalid interval type');
+    }
+
+    $start->setTime(0, 0, 0);
+    $end->setTime(23, 59, 59);
+
     return [
-      'name' => '',
-      'interval' => '',
-      'start' => new DateTime(),
-      'end' => new DateTime(),
+      'name' => $name,
+      'interval' => $interval,
+      'start' => $start,
+      'end' => $end,
     ];
   }
 
@@ -105,6 +196,7 @@ return;
     $field_settings_by_type = [];
 
     $activity_logs = self::get_activity_logs( $period['start'], $period['end'] );
+    dt_write_log( "Activity logs for {$period['name']}: " . sizeof( $activity_logs ) );
 
     $previous_period_date = new DateTime(); // $period['start'] - $period['interval']
     $previous_period = self::get_period_by_date( $period['interval'], $previous_period_date );
@@ -113,23 +205,40 @@ return;
 
     $snapshots = [];
     // loop over activity logs
-    foreach ($activity_logs as $activity_log) {
-      $post_type = $activity_log['object_type'];
-      $post_id = $activity_log['object_id'];
-      $snapshot = $snapshots[$post_id] ?? [ 'ID' => $post_id, 'post_type' => $post_type];
+    if ( isset( $activity_logs ) && !empty( $activity_logs) ) {
+      foreach ($activity_logs as $activity_log) {
+        $post_type = $activity_log['object_type'];
+        $post_id = $activity_log['object_id'];
+        $snapshot = $snapshots[$post_id] ?? ['ID' => $post_id, 'post_type' => $post_type];
 
-      self::update_snapshot_value( $snapshot, $field_settings_by_type[$post_type], $activity_log );
+        if ( !isset( $field_settings_by_type[$post_type] ) ) {
+          $field_settings_by_type[$post_type] = DT_Posts::get_post_field_settings( $post_type );
+        }
 
-      $snapshots[$post_id] = $snapshot;
+        self::update_snapshot_value($snapshot, $field_settings_by_type[$post_type], $activity_log);
+
+        $snapshots[$post_id] = $snapshot;
+      }
     }
 
     self::save_snapshots( $snapshots );
   }
 
-  private static function get_activity_logs(mixed $start, mixed $end)
+  private static function get_activity_logs(DateTime $start, DateTime $end)
   {
-    // query all dt_activity_log records between start and end
-    // sort by hist_time ASC
+    global $wpdb;
+
+    $sql = $wpdb->prepare(
+      "SELECT *
+     FROM $wpdb->dt_activity_log
+     WHERE hist_time BETWEEN %d AND %d
+     ORDER BY hist_time ASC",
+      $start->getTimestamp(),
+      $end->getTimestamp()
+    );
+
+
+    return $wpdb->get_results($sql, ARRAY_A);
   }
 
   private static function get_snapshots(mixed $name)
