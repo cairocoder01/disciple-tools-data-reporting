@@ -363,9 +363,13 @@ class DT_Data_Reporting_Tab_Settings
     }
 
     public function main_column() {
-    //      $share_global = get_option( "dt_data_reporting_share_global", "0" ) === "1";
-          $configurations_str = get_option( "dt_data_reporting_configurations" );
-          $configurations = json_decode( $configurations_str, true );
+      $configurations_str = get_option( "dt_data_reporting_configurations" );
+      $configurations = json_decode( $configurations_str, true );
+      $snapshots_str = get_option( "dt_data_reporting_snapshots" );
+      $snapshots = [];
+      if ( !empty( $snapshots_str ) ) {
+          $snapshots = json_decode( $snapshots_str );
+      }
 
         if ( empty( $configurations_str ) || !is_array( $configurations ) ) {
             $configurations = [
@@ -376,6 +380,40 @@ class DT_Data_Reporting_Tab_Settings
           $configurations_ext = apply_filters( 'dt_data_reporting_configurations', array() );
 
         ?>
+
+        <table class="widefat">
+          <thead>
+          <tr><th>General Settings</th></tr>
+          </thead>
+          <tbody>
+          <tr>
+            <td>
+              <form method="POST" action="">
+                <?php wp_nonce_field( 'security_headers', 'security_headers_nonce' ); ?>
+                <input type="hidden" name="action" value="dtdr_save_settings" />
+
+                <div>
+                  <h3>Enable Snapshot Generation</h3>
+                  <input type="checkbox" id="interval_month" name="interval[]" value="month"
+                    <?php checked( in_array( 'month', $snapshots ) ); ?>>
+                  <label for="interval_month">Month</label><br>
+
+                  <input type="checkbox" id="interval_quarter" name="interval[]" value="quarter"
+                    <?php checked( in_array( 'quarter', $snapshots ) ); ?>>
+                  <label for="interval_quarter">Quarter</label><br>
+
+                  <input type="checkbox" id="interval_year" name="interval[]" value="year"
+                    <?php checked( in_array( 'year', $snapshots ) ); ?>>
+                  <label for="interval_year">Year</label><br>
+                </div>
+
+                <button type="submit" class="button button-primary">Save Settings</button>
+              </form>
+            </td>
+          </tr>
+          </tbody>
+        </table>
+        <br/>
 
         <!-- Custom Configuration -->
         <table class="wp-list-table widefat striped config-list-table">
@@ -959,15 +997,18 @@ class DT_Data_Reporting_Tab_Settings
 
         $action = isset( $_POST['action'] ) ? sanitize_key( wp_unslash( $_POST['action'] ) ) : null;
         if ($action == 'resetprogress') {
-            if (isset( $_POST['configKey'] ) && isset( $_POST['dataType'] )) {
-                $config_progress = json_decode( get_option( "dt_data_reporting_configurations_progress" ), true );
-                $config_key = sanitize_key( wp_unslash( $_POST['configKey'] ) );
-                $data_type = sanitize_key( wp_unslash( $_POST['dataType'] ) );
-                if (isset( $config_progress[$config_key] )) {
-                    unset( $config_progress[$config_key][$data_type] );
-                    update_option( "dt_data_reporting_configurations_progress", json_encode( $config_progress ) );
-                }
+          if (isset($_POST['configKey']) && isset($_POST['dataType'])) {
+            $config_progress = json_decode(get_option("dt_data_reporting_configurations_progress"), true);
+            $config_key = sanitize_key(wp_unslash($_POST['configKey']));
+            $data_type = sanitize_key(wp_unslash($_POST['dataType']));
+            if (isset($config_progress[$config_key])) {
+              unset($config_progress[$config_key][$data_type]);
+              update_option("dt_data_reporting_configurations_progress", json_encode($config_progress));
             }
+          }
+        } else if ( $action === 'dtdr_save_settings' ) {
+          $intervals = isset($_POST['interval']) ? $this->sanitize_array_field(wp_unslash($_POST['interval'])) : [];
+          update_option("dt_data_reporting_snapshots", json_encode($intervals));
         } else {
           //configurations
             if (isset( $_POST['configurations'] )) {
@@ -995,4 +1036,12 @@ class DT_Data_Reporting_Tab_Settings
 
         return $array_or_string;
     }
+
+  private function sanitize_array_field($array)
+  {
+    if (!is_array($array)) {
+      return [sanitize_key($array)];
+    }
+    return array_map('sanitize_key', $array);
+  }
 }

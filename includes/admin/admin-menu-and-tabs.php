@@ -272,6 +272,7 @@ class DT_Data_Reporting_Menu {
             <h2 class="nav-tab-wrapper">
                 <a href="<?php echo esc_attr( $link ) . 'getting-started' ?>" class="nav-tab <?php ( $tab == 'getting-started' || ! isset( $tab ) ) ? esc_attr_e( 'nav-tab-active', 'disciple-tools-data-reporting' ) : print ''; ?>"><?php esc_attr_e( 'Getting Started', 'disciple-tools-data-reporting' ) ?></a>
                 <a href="<?php echo esc_attr( $link ) . 'export' ?>" class="nav-tab <?php ( $tab == 'export' ) ? esc_attr_e( 'nav-tab-active', 'disciple-tools-data-reporting' ) : print ''; ?>"><?php esc_attr_e( 'Manual Export', 'disciple-tools-data-reporting' ) ?></a>
+                <a href="<?php echo esc_attr( $link ) . 'snapshots' ?>" class="nav-tab <?php ( $tab == 'snapshots' ) ? esc_attr_e( 'nav-tab-active', 'disciple-tools-data-reporting' ) : print ''; ?>"><?php esc_attr_e( 'Snapshots', 'disciple-tools-data-reporting' ) ?></a>
                 <a href="<?php echo esc_attr( $link ) . 'bigquery' ?>" class="nav-tab <?php ( $tab == 'bigquery' ) ? esc_attr_e( 'nav-tab-active', 'disciple-tools-data-reporting' ) : print ''; ?>"><?php esc_attr_e( 'BigQuery Setup', 'disciple-tools-data-reporting' ) ?></a>
                 <a href="<?php echo esc_attr( $link ) . 'settings' ?>" class="nav-tab <?php ( $tab == 'settings' ) ? esc_attr_e( 'nav-tab-active', 'disciple-tools-data-reporting' ) : print ''; ?>"><?php esc_attr_e( 'Settings', 'disciple-tools-data-reporting' ) ?></a>
 
@@ -283,9 +284,6 @@ class DT_Data_Reporting_Menu {
 
                 <?php if ($tab === 'preview' ): ?>
                     <a href="<?php echo esc_attr( $link ) . 'preview' ?>" class="nav-tab <?php ( $tab == 'preview' ) ? esc_attr_e( 'nav-tab-active', 'disciple-tools-data-reporting' ) : print ''; ?>"><?php esc_attr_e( 'Preview', 'disciple-tools-data-reporting' ) ?></a>
-                <?php endif; ?>
-                <?php if ($tab === 'snapshots' ): ?>
-                    <a href="<?php echo esc_attr( $link ) . 'snapshots' ?>" class="nav-tab <?php ( $tab == 'snapshots' ) ? esc_attr_e( 'nav-tab-active', 'disciple-tools-data-reporting' ) : print ''; ?>"><?php esc_attr_e( 'Snapshots', 'disciple-tools-data-reporting' ) ?></a>
                 <?php endif; ?>
                 <?php if ($tab === 'api-send' ): ?>
                     <a href="<?php echo esc_attr( $link ) . 'api-send' ?>" class="nav-tab <?php ( $tab == 'api-send' ) ? esc_attr_e( 'nav-tab-active', 'disciple-tools-data-reporting' ) : print ''; ?>"><?php esc_attr_e( 'Export Log', 'disciple-tools-data-reporting' ) ?></a>
@@ -409,7 +407,7 @@ class DT_Data_Reporting_Tab_Getting_Started
             <p>To get started, go to the Settings tab and enter an Endpoint URL to receive that reporting data sent from this plugin. You can build you own endpoint, or you can look at the BigQuery tab to get sample code for setting up a process on Google Cloud Platform that should stay within their free usage using Cloud Functions, Cloud Storage, and BigQuery.</p>
             <h3 id="api-documentation">API Documentation</h3>
             <p>The data from this plugin will be sent to the Endpoint URL (configured in Settings tab) using an HTTP POST request. The body (sent with content-type of application/json; charset=utf-8) of the request will have the format:</p>
-            <pre><code>{
+            <pre><code style="display:block;">{
   column<span class="hljs-variable">s:</span> [{         // Array of <span class="hljs-keyword">all</span> fields that have been exported
     key: <span class="hljs-built_in">string</span>,      // field key <span class="hljs-keyword">as</span> defined by D.T theme/plugin
     name: <span class="hljs-built_in">string</span>,     // field name <span class="hljs-keyword">as</span> defined by D.T theme/plugin
@@ -422,22 +420,6 @@ class DT_Data_Reporting_Tab_Getting_Started
 }
 </code></pre>
             <p>No specific return value is required besides returning a 200 status code. Any response will be displayed on the page when manually running the API export.</p>
-          </td>
-        </tr>
-        </tbody>
-      </table>
-      <br>
-
-      <table class="widefat">
-        <thead>
-        <tr><th>Global Data Sharing</th></tr>
-        </thead>
-        <tbody>
-        <tr>
-          <td>
-            <p><em>Note: The following is still under development and not yet implemented.</em></p>
-            <p style="text-decoration: line-through;">The plugin also has a feature to opt-in to sending anonymized data to a global reporting system for comparing D.T usage across different sites and searching for trends that could be useful for the whole D.T community. To get started, go to the Settings tab and opt-in for global reporting by giving your email address and entering the API key that is sent to you.</p>
-            <p style="text-decoration: line-through;">Those who opt-in will then be notified about when new reports or analyses are made in order to learn from the insights and activity of the global D.T community.</p>
           </td>
         </tr>
         </tbody>

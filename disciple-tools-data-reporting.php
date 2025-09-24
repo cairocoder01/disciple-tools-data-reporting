@@ -101,6 +101,7 @@ class DT_Data_Reporting {
     }
 
     public function cron_export() {
+        require_once( plugin_dir_path( __FILE__ ) . './includes/snapshot-tools.php' );
         require_once( plugin_dir_path( __FILE__ ) . './includes/data-tools.php' );
 
         // Set current user to avoid permissions issues when fetching posts
@@ -109,6 +110,8 @@ class DT_Data_Reporting {
         $current_user->add_cap( "access_contacts" );
         $current_user->add_cap( "view_any_contacts" );
         DT_Data_Reporting_Tools::run_scheduled_exports();
+
+        DT_Data_Reporting_Snapshot_Tools::run_snapshot_task();
     }
 
     /**

@@ -73,7 +73,6 @@ class DT_Data_Reporting_Tab_Snapshots
 
       $table_name = $wpdb->prefix . "dt_post_snapshots";
       $query = "$select from $table_name $where $group_by $order_by";
-      dt_write_log($query);
       $results = $wpdb->get_results( $query, ARRAY_A );
 
       $this->main_column_table( $columns, $results, count( $results ) );

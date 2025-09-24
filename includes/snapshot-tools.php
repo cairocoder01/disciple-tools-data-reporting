@@ -95,6 +95,12 @@ class DT_Data_Reporting_Snapshot_Tools
    */
   private static function get_next_period()
   {
+    $snapshots_str = get_option( "dt_data_reporting_snapshots" );
+    $enabled_intervals = [];
+    if ( !empty( $snapshots_str ) ) {
+      $enabled_intervals = json_decode( $snapshots_str );
+    }
+
     global $wpdb;
     $table_name = $wpdb->prefix . self::$table_name;
 
@@ -109,6 +115,9 @@ class DT_Data_Reporting_Snapshot_Tools
     $now = new DateTime();
 
     foreach ($intervals as $interval) {
+      if ( !in_array( $interval, $enabled_intervals ) ) {
+        continue;
+      }
       dt_write_log('Checking interval: ' . $interval);
       $period_end = null;
       foreach ($max_periods as $max_period) {
