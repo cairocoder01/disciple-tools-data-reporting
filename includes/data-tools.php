@@ -41,13 +41,13 @@ class DT_Data_Reporting_Tools
 
     /**
      * Fetch data by type
-     * @param $data_type contacts|contact_activity|{post_type}|{post_type_singular}_activity
+     * @param $data_type contacts|contact_activity|contact_snapshots|{post_type}|{post_type_singular}_activity
      * @param $config_key
      * @param bool $flatten
      * @param null $limit
      * @return array Columns, rows, and total count
      */
-    public static function get_data( $data_type, $config_key, $flatten = false, $limit = null, $offset = null ) {
+    public static function get_data( string $data_type, $config_key, $flatten = false, $limit = null, $offset = null ) {
         $config = self::get_config_by_key( $config_key );
         $config_progress = self::get_config_progress_by_key( $config_key );
 
@@ -62,7 +62,9 @@ class DT_Data_Reporting_Tools
 
         // for activity types, convert `contact_activity` to `contacts` to get correct filter
         $root_type = str_replace( '_activity', 's', $data_type );
-        $is_activity = $root_type !== $data_type;
+        $root_type = str_replace( '_snapshots', 's', $root_type );
+        $is_activity = str_contains( $data_type, '_activity' );
+        $is_snapshots = str_contains( $data_type, '_snapshots' );
         $filter_key = $root_type . '_filter';
         $filter = $config && isset( $config[$filter_key] ) ? $config[$filter_key] : [];
 
@@ -75,6 +77,11 @@ class DT_Data_Reporting_Tools
         // If not exporting everything, add limit and filter for last value
         if ( !$all_data && !empty( $last_exported_value ) ) {
             $date_field = $is_activity ? 'date' : 'last_modified';
+            if ( $is_activity ) {
+              $date_field = 'date';
+            } else if ( $is_snapshots ) {
+              $date_field = 'snapshot_date';
+            }
             $filter[$date_field] = [
                 'start' => $last_exported_value,
             ];
@@ -83,13 +90,118 @@ class DT_Data_Reporting_Tools
         // Fetch the data
         $result = null;
         if ( $is_activity ) {
-            $result = self::get_post_activity( $root_type, $filter );
+          $result = self::get_post_activity($root_type, $filter);
+        } else if ( $is_snapshots ) {
+          $result = self::get_post_snapshots($root_type, $flatten, $filter);
         } else {
-            $result = self::get_posts( $data_type, $flatten, $filter );
+          $result = self::get_posts( $data_type, $flatten, $filter );
         }
 
         return $result;
     }
+
+  public static function get_post_snapshots( $post_type, $flatten = false, $filter = null ) {
+
+    // Fetch all post data
+    try {
+      $snapshots = self::query_post_snapshots( $post_type, $filter );
+    } catch ( Exception $ex ) {
+      dt_write_log( "Error fetching $post_type snapshots: {$ex->getMessage()}" );
+      return array( null, null, 0 );
+    }
+
+    $items = array();
+
+    $post_settings = apply_filters( "dt_get_post_type_settings", array(), $post_type );
+    $fields = $post_settings["fields"];
+    $base_url = self::get_current_site_base_url();
+    $locations = self::get_location_data( $snapshots['posts'] );
+
+    // process each post
+    foreach ($snapshots['snapshots'] as $index => $snapshot) {
+      $result = $snapshot['post_content'];
+//      dt_write_log( json_encode( $result ) );
+      $post = array(
+        'ID' => $result['ID'],
+        'Created' => null,
+      );
+
+      if ( isset( $result['post_date'] ) && !empty( $result['post_date'] ) ) {
+        $post['Created'] = gmdate( "Y-m-d H:i:s", $result['post_date'] );
+      }
+
+      // Loop over all fields to parse/format each
+      foreach ( $fields as $field_key => $field ){
+        // skip if field is hidden, unless marked as exception above
+        if ( isset( $field['hidden'] ) && $field['hidden'] == true && !self::is_included_hidden_field( $post_type, $field_key ) ) {
+          continue;
+        }
+        // skip if in list of excluded fields
+        if ( self::is_excluded_field( $post_type, $field_key ) ) {
+          continue;
+        }
+
+        $type = $field['type'];
+
+        // skip communication_channel fields since they are all PII
+        if ( $type == 'communication_channel' ) {
+          continue;
+        }
+
+        $field_value = self::get_snapshot_field_value( $result, $field_key, $type, $flatten, $fields, $locations );
+
+        /*if ( $post_type === 'contacts' ) {
+          // if we calculated the baptism generation, set it here
+          if ( $field_key == 'baptism_generation' && isset( $contact_generations[$result['ID']] ) ) {
+            if ( $fields[$field_key]['type'] === 'number' ) {
+              $generation = $contact_generations[$result['ID']];
+              $field_value = empty( $generation ) ? '' : intval( $generation );
+            } else {
+              $field_value = $contact_generations[$result['ID']];
+            }
+          }
+        }*/
+
+        $field_value = apply_filters( 'dt_data_reporting_field_output', $field_value, $type, $field_key, $flatten );
+        $post[$field_key] = $field_value;
+      }
+      $post['site'] = $base_url;
+
+      $post['period'] = $snapshot['period'];
+      $post['period_interval'] = $snapshot['period_interval'];
+      $post['period_start'] = $snapshot['period_start'];
+      $post['period_end'] = $snapshot['period_end'];
+//      dt_write_log( json_encode( $post ) );
+      $items[] = $post;
+    }
+    $columns = self::build_columns( $fields, $post_type );
+    array_push($columns, array(
+      'key' => "period",
+      'name' => "Period",
+      'type' => 'text',
+      'bq_type' => 'STRING',
+      'bq_mode' => 'NULLABLE',
+    ), array(
+      'key' => "period_interval",
+      'name' => "Interval",
+      'type' => 'text',
+      'bq_type' => 'STRING',
+      'bq_mode' => 'NULLABLE',
+    ), array(
+      'key' => "period_start",
+      'name' => "Period Start",
+      'type' => 'date',
+      'bq_type' => 'TIMESTAMP',
+      'bq_mode' => 'NULLABLE',
+    ), array(
+      'key' => "period_end",
+      'name' => "Period End",
+      'type' => 'date',
+      'bq_type' => 'TIMESTAMP',
+      'bq_mode' => 'NULLABLE',
+    ));
+    return array( $columns, $items, $snapshots['total'] );
+  }
 
     /**
      * Fetch post activity
@@ -216,7 +328,6 @@ class DT_Data_Reporting_Tools
 
         return array( $columns, $items, $activities['total'] );
     }
-
 
     /**
      * Fetch post data to return
@@ -534,6 +645,68 @@ class DT_Data_Reporting_Tools
         );
     }
 
+    private static function query_post_snapshots( $post_type, $filter ) {
+      global $wpdb;
+
+      // By default, sort by snapshot_date (date of snapshot generation)
+      if ( !isset( $filter['sort'] ) ) {
+        $filter['sort'] = 'snapshot_date';
+      }
+
+      // Set UTC as time zone for subsequent queries
+      $wpdb->query("SET time_zone='+00:00';");
+
+      $table = $wpdb->prefix . 'dt_post_snapshots';
+      $query = "SELECT s.*
+        FROM `$table` as s
+        WHERE
+          s.post_type = %s
+          AND s.snapshot_date >= %s
+        ORDER BY s.snapshot_date ASC
+        ";
+      $params = [
+        $post_type,
+        $filter['date']['start'] ?? '2000-01-01 00:00:00',
+      ];
+
+      $total = $wpdb->get_var($wpdb->prepare(
+        "SELECT count(*) from ($query) as temp",
+        $params
+      ));
+      if (isset($filter['limit'])) {
+        $query .= "LIMIT %d ";
+        $params[] = $filter['limit'];
+      }
+      if (isset($filter['offset'])) {
+        $query .= "OFFSET %d ";
+        $params[] = $filter['offset'];
+      }
+      $prepared_sql = $wpdb->prepare(
+        $query,
+        $params
+      );
+      //dt_write_log($prepared_sql);
+      $snapshots = $wpdb->get_results( $prepared_sql, ARRAY_A );
+
+      //@phpcs:enable
+
+      $posts = [];
+      foreach ( $snapshots as &$snapshot ) {
+        if ( isset( $snapshot['post_content'] ) ) {
+          $snapshot['post_content'] = json_decode( $snapshot['post_content'], true );
+          $posts[] = $snapshot['post_content'];
+        } else {
+          $snapshot['post_content'] = [];
+        }
+      }
+
+      return array(
+        "snapshots" => $snapshots,
+        "posts" => $posts,
+        "total" => $total,
+      );
+    }
+
     private static function get_label( $result, $key ) {
         return ( array_key_exists( $key, $result ) && is_array( $result[$key] ) && array_key_exists( 'label', $result[$key] ) ) ? $result[$key]['label'] : '';
     }
@@ -670,6 +843,94 @@ class DT_Data_Reporting_Tools
         }
 
         return $field_value;
+    }
+
+    /**
+     * Get field value from snapshot result, taking in to account the field type
+     * @param $result
+     * @param $field_key
+     * @param $type
+     * @param $flatten
+     * @return array|false|int|mixed|string
+     */
+    private static function get_snapshot_field_value( $result, $field_key, $type, $flatten, $field_settings, $locations )
+    {
+      $field_value = null;
+      if (key_exists($field_key, $result)) {
+        switch ($type) {
+          case 'key_select':
+            if (isset($field_settings[$field_key]['default']) && isset($field_settings[$field_key]['default'][$result[$field_key]])) {
+              $field_value = $field_settings[$field_key]['default'][$result[$field_key]]['label'];
+            }
+            break;
+          case 'multi_select':
+          case 'tags':
+          case 'connection':
+            $field_value = $flatten ? implode(",", $result[$field_key]) : $result[$field_key];
+            break;
+          case 'user_select':
+            $field_value = $result[$field_key];
+            break;
+          case 'date':
+            $field_value = !empty($result[$field_key]) ? gmdate("Y-m-d H:i:s", $result[$field_key]) : "";
+            break;
+          case 'location':
+            // Map country and admin1 data from location_grid table to restrict
+            // location to only admin level 1 (first level within a country, like states/provinces)
+            $location_names = array_map(function ($location) use ($locations) {
+              if (isset($locations[$location])) {
+                $grid_loc = $locations[$location];
+                // Try to return "{2-letter-country-code}-{admin1-name}"
+                if (!empty($grid_loc['admin1_name'])) {
+                  return $grid_loc['country_code'] . "-" . $grid_loc['admin1_name'];
+                }
+                // fall back to just country code
+                return $grid_loc['country_code'];
+              }
+              // if no grid data, return null for safety of not exposing PII
+              return null;
+            }, $result[$field_key]);
+
+            // Remove null and duplicates
+            $location_names = array_unique(array_filter($location_names));
+
+            $field_value = $flatten ? implode(",", $location_names) : $location_names;
+            break;
+          case 'number':
+            $field_value = empty($result[$field_key]) ? '' : intval($result[$field_key]);
+            break;
+          default:
+            $field_value = $result[$field_key];
+            if (is_array($field_value)) {
+              $field_value = json_encode($field_value);
+            }
+            break;
+        }
+      } else {
+        // Set default/blank value
+        switch ($type) {
+          case 'number':
+            $field_value = $field['default'] ?? 0;
+            break;
+          case 'key_select':
+            $field_value = null;
+            break;
+          case 'multi_select':
+          case 'tags':
+            $field_value = $flatten ? null : array();
+            break;
+          case 'array':
+          case 'boolean':
+          case 'date':
+          case 'text':
+          case 'location':
+          default:
+            $field_value = $field['default'] ?? null;
+            break;
+        }
+      }
+
+      return $field_value;
     }
 
     protected static function get_current_site_base_url() {
@@ -1074,472 +1335,4 @@ class DT_Data_Reporting_Tools
         return $columns;
     }
 
-    public static function get_snapshots( string $post_type, int $post_id, string $period ) {
-      // Get post creation date
-      $post = DT_Posts::get_post( $post_type, $post_id, true, false, true );
-      if (!$post) {
-        throw new \Exception("Post not found");
-      }
-      $field_settings = DT_Posts::get_post_field_settings( $post_type );
-
-      // Get all activity records for this post
-      $all_activity = [];
-      $total = 1000;
-      while ( $total === 1000 ) {
-        $results = DT_Posts::get_post_activity( $post_type, $post_id );
-        $total = $results['total'];
-        $all_activity = array_merge( $all_activity, $results['activity'] );
-      }
-
-      // Sort activity by hist_time ascending
-      usort($all_activity, function ($a, $b) {
-        return $a['hist_time'] - $b['hist_time'];
-      });
-
-      $created_date = new DateTime($post['post_date']['formatted']);
-      $current_date = new DateTime();
-      $snapshots = [];
-
-      // Validate period
-      if (!in_array($period, ['year', 'quarter', 'month'])) {
-        throw new \InvalidArgumentException('Invalid period');
-      }
-
-      // Get interval based on period
-      switch ($period) {
-        case 'year':
-          $interval = 'P1Y';
-          $date_format = 'Y';
-          // Move to end of current year
-          $current_date->modify('last day of December ' . $current_date->format('Y') . ' 23:59:59');
-          break;
-        case 'quarter':
-          $interval = 'P3M';
-          $date_format = 'Y-Q';
-          // Move to end of current quarter
-          $month = $current_date->format('n'); // month as number
-          $quarter_end_month = ceil($month / 3) * 3; // last month of quarter
-          $current_date->setDate($current_date->format('Y'), $quarter_end_month, 1);
-          $current_date->modify('last day of this month 23:59:59');
-          break;
-        case 'month':
-          $interval = 'P1M';
-          $date_format = 'Y-m';
-          // Move to end of current month
-          $current_date->modify('last day of this month 23:59:59');
-          break;
-      }
-
-      // Create interval object
-      $interval = new DateInterval($interval);
-
-      // Loop through periods from creation to current
-      $period_end = clone $current_date;
-      while ($period_end >= $created_date) {
-        // Get snapshot for period end date
-        dt_write_log( "Creating snapshot for " . $period_end->format('Y-m-d H:i:s') );
-
-        // Filter activity records up to period end date
-        $period_activity = array_filter($all_activity, function ($activity) use ($period_end) {
-          return $activity['hist_time'] <= $period_end->getTimestamp();
-        });
-
-        $snapshot = self::build_post_snapshot( $post_type, $post_id, $period_activity, $field_settings );
-
-        // Add to snapshots array with proper period format
-        $key = $period_end->format($date_format);
-        if ($period === 'quarter') {
-          $quarter = ceil($period_end->format('n') / 3);
-          $key = $period_end->format('Y') . '-Q' . $quarter;
-        }
-        $snapshot['period'] = $key;
-        //todo: add start/end dates to snapshot
-        $snapshots[] = $snapshot;
-
-        // Move to previous period
-        $period_end->sub($interval);
-      }
-
-      $flatten = false;
-      $post_settings = apply_filters( "dt_get_post_type_settings", array(), $post_type );
-      $fields = $post_settings["fields"];
-      $base_url = self::get_current_site_base_url();
-      $locations = self::get_location_data( $snapshots );
-
-      // process each post
-      foreach ($snapshots as $index => $result) {
-        $post = array(
-          'ID' => $result['ID'],
-          'Created' => $result['post_date'],
-        );
-
-        // Theme v1.0.0 changes post_date to a proper date object we need to format
-        if ( isset( $result['post_date']['timestamp'] ) ) {
-          $post['Created'] = !empty( $result['post_date']["timestamp"] ) ? gmdate( "Y-m-d H:i:s", $result['post_date']['timestamp'] ) : "";
-        }
-
-        // Loop over all fields to parse/format each
-        foreach ( $fields as $field_key => $field ){
-          // skip if field is hidden, unless marked as exception above
-          if ( isset( $field['hidden'] ) && $field['hidden'] == true && !self::is_included_hidden_field( $post_type, $field_key ) ) {
-            continue;
-          }
-          // skip if in list of excluded fields
-          if ( self::is_excluded_field( $post_type, $field_key ) ) {
-            continue;
-          }
-
-          $type = $field['type'];
-
-          // skip communication_channel fields since they are all PII
-          if ( $type == 'communication_channel' ) {
-            continue;
-          }
-
-//          $field_value = self::get_field_value( $result, $field_key, $type, $flatten, $locations );
-          $field_value = self::format_snapshot_value( $result, $field_key, $type, $flatten, $locations );
-
-          if ( $post_type === 'contacts' ) {
-            // if we calculated the baptism generation, set it here
-            if ( $field_key == 'baptism_generation' && isset( $contact_generations[$result['ID']] ) ) {
-              if ( $fields[$field_key]['type'] === 'number' ) {
-                $generation = $contact_generations[$result['ID']];
-                $field_value = empty( $generation ) ? '' : intval( $generation );
-              } else {
-                $field_value = $contact_generations[$result['ID']];
-              }
-            }
-          }
-
-          $field_value = apply_filters( 'dt_data_reporting_field_output', $field_value, $type, $field_key, $flatten );
-          $post[$field_key] = $field_value;
-        }
-        $post['site'] = $base_url;
-        $post['period'] = $result['period'];
-
-        $items[] = $post;
-      }
-      $columns = self::build_columns( $fields, $post_type );
-      $columns[] = [
-        'key' => 'period',
-        'name' => 'Period',
-      ];
-      return array( $columns, $items, count( $items ) );
-    }
-
-
-  /**
-   * Builds a snapshot of a post's state at a point in time by processing activity history
-   * @param string $post_type The type of post (contacts, groups, etc)
-   * @param int $post_id ID of the post to build snapshot for
-   * @param array $all_activity Array of activity records ordered by date descending
-   * @param array $field_settings Field settings configuration for the post type
-   * @return array Post data representing state at specified point in time
-   */
-  public static function build_post_snapshot( $post_type, $post_id, $all_activity, $field_settings ) {
-
-      $post = [
-        'ID' => $post_id,
-        'post_type' => $post_type,
-      ];
-
-      foreach ( $all_activity as $activity ) {
-        $action = $activity['action'];
-        $field_type = $activity['field_type'];
-        $meta_key = $activity['meta_key'];
-        $meta_value = $activity['meta_value'];
-
-        $actions = [ 'field_update', 'connected to', 'disconnected from ' ];
-        if ( in_array( $action, $actions ) ) {
-          if ( !isset( $post['post_date'] ) ) {
-            $post['post_date'] = [
-              'timestamp' => $activity['hist_time'],
-              'formatted' => dt_format_date( $activity['hist_time'] ),
-            ];
-          }
-          switch ( $field_type ) {
-            case 'connection':
-              $field_setting = DT_Posts::get_post_field_settings_by_p2p($field_settings, $meta_key, ($action == 'disconnected from') ? ['from', 'to', 'any'] : ['to', 'from', 'any']);
-              if (!empty($field_setting)) {
-                $meta_key = $field_setting['key'];
-              }
-            case 'link':
-            case 'communication_channel':
-            case 'tags':
-            case 'location':
-            case 'location_meta':
-            case 'multi_select':
-              if ( !isset( $post[$meta_key] ) ) {
-                $post[$meta_key] = [];
-              }
-
-              if ( $meta_value === 'value_deleted' ) {
-                $old_value = $activity['old_value'];
-                $post[$meta_key] = array_values(array_filter($post[$meta_key], function ($value) use ($old_value) {
-                  return $value !== $old_value;
-                }));
-              } else {
-                $post[$meta_key][] = $meta_value;
-              }
-              break;
-            case 'user_select':
-              if ( $meta_value === 'value_deleted') {
-                $post[$meta_key] = null;
-              } else {
-                $meta_array = explode( '-', $meta_value ); // Separate the type and id
-                $type = $meta_array[0]; // Build variables
-                if ( isset( $meta_array[1] ) ) {
-                  $id = $meta_array[1];
-                  if ($type == 'user' && $id) {
-//                    $user = get_user_by('id', $id);
-                    $post[$meta_key] = $id;
-                    /*$post[$meta_key] = [
-                      'id' => $id,
-                      'type' => $type,
-                      'display' => wp_specialchars_decode( $user && is_user_member_of_blog( $id ) ? $user->display_name : __( 'Removed User', 'disciple_tools' ) ),
-                      'assigned-to' => $meta_value,
-                    ];*/
-                  }
-                }
-              }
-              break;
-            case 'key_select':
-              /*if ( $meta_value === 'value_deleted') {
-                $post[$meta_key] = null;
-              } else {
-                $value_options = $field_settings[$meta_key]['default'][$meta_value] ?? $meta_value;
-                if ( isset( $value_options['label'] ) ) {
-                  $label = $value_options['label'];
-                } elseif ( is_string( $value_options ) ) {
-                  $label = $value_options;
-                } else {
-                  $label = $meta_value;
-                }
-                $post[$meta_key] = [
-                  'key' => $meta_value,
-                  'label' => $label,
-                ];
-              }
-              break;*/
-            case 'date':
-              /*if ( $meta_value === 'value_deleted') {
-                $post[$meta_key] = null;
-              } else {
-                $post[$meta_key] = [
-                  'timestamp' => (int)$meta_value,
-                  'formatted' => dt_format_date( $meta_value ),
-                ];
-              }
-              break;*/
-            case 'datetime':
-              /*if ( $meta_value === 'value_deleted') {
-                $post[$meta_key] = null;
-              } else {
-                $post[$meta_key] = [
-                  'timestamp' => (int)$meta_value,
-                  'formatted' => dt_format_date( $meta_value, 'Y-m-d H:i:s' ),
-                ];
-              }
-              break;*/
-            case 'number':
-              /*if ( $meta_value === 'value_deleted') {
-                $post[$meta_key] = null;
-              } else {
-                $post[$meta_key] = (int)$meta_value;
-              }
-              break;*/
-            case 'boolean':
-              /*if ( $meta_value === 'value_deleted') {
-                $post[$meta_key] = null;
-              } else {
-                $post[$meta_key] = $meta_value === '1';
-              }
-              break;*/
-            case 'text':
-            case 'textarea':
-              /*if ( $meta_value === 'value_deleted') {
-                $post[$meta_key] = [];
-              } else if ( isset( $post[$meta_key] ) && is_array( $post[$meta_key] ) ) {
-                $post[$meta_key][] = [ 'value' => $meta_value ];
-              } else {
-                $post[$meta_key] = [
-                  [ 'value' => $meta_value ],
-                ];
-              }
-              break;*/
-            default:
-              if ( $meta_value === 'value_deleted') {
-                $post[$meta_key] = null;
-              } else {
-                $post[$meta_key] = $meta_value;
-              }
-              break;
-          }
-        }
-      }
-
-//      dt_write_log( json_encode( $post ) );
-
-      return $post;
-    }
-
-    private static function format_snapshot_value( $result, $field_key, $type, $flatten, $locations ) {
-      if (key_exists( $field_key, $result )) {
-
-        switch ( $type ) {
-          case 'connection':
-          case 'multi_select':
-          case 'tags':
-            $field_value = $flatten ? implode( ",", $result[$field_key] ) : $result[$field_key];
-            break;
-          case 'location':
-            // Map country and admin1 data from location_grid table to restrict
-            // location to only admin level 1 (first level within a country, like states/provinces)
-            $location_names = array_map( function ( $location ) use ( $locations ) {
-              if ( isset( $locations[$location] ) ) {
-                $grid_loc = $locations[$location];
-                // Try to return "{2-letter-country-code}-{admin1-name}"
-                if ( !empty( $grid_loc['admin1_name'] ) ) {
-                  return $grid_loc['country_code'] . "-" . $grid_loc['admin1_name'];
-                }
-                // fall back to just country code
-                return $grid_loc['country_code'];
-              }
-              // if no grid data, return null for safety of not exposing PII
-              return null;
-            }, $result[$field_key] );
-
-            // Remove null and duplicates
-            $location_names = array_unique( array_filter( $location_names ) );
-
-            $field_value = $flatten ? implode( ",", $location_names ) : $location_names;
-            break;
-          case 'date':
-          case 'datetime':
-          case 'number':
-            $field_value = intval($result[$field_key]);
-            break;
-          case 'boolean':
-            $field_value = $result[$field_key] === '1';
-            break;
-          default:
-            $field_value =  $result[$field_key];
-            break;
-        }
-      } else {
-        // Set default/blank value
-        switch ($type) {
-          case 'number':
-            $field_value = $field['default'] ?? 0;
-            break;
-          case 'key_select':
-            $field_value = null;
-            break;
-          case 'multi_select':
-          case 'tags':
-            $field_value = $flatten ? null : array();
-            break;
-          case 'array':
-          case 'boolean':
-          case 'date':
-          case 'text':
-          case 'location':
-          default:
-            $field_value = $field['default'] ?? null;
-            break;
-        }
-      }
-
-      return $field_value;
-    }
-
-  /**
-   * @param string $post_type
-   * @param int $post_id
-   * @param array $args
-   *
-   * @return array|null|object|WP_Error
-   * @note Copied directly from DT_Posts::revert_post_activity_history since it's private, just replacing self with DT_Posts
-   */
-  private static function list_revert_post_activity_history( string $post_type, int $post_id, array $args = [] ) {
-    global $wpdb;
-
-    // Determine key query parameters
-    $supported_actions         = ( ! empty( $args['actions'] ) ) ? $args['actions'] : [
-      'field_update',
-      'connected to',
-      'disconnected from'
-    ];
-    $supported_actions_sql     = dt_array_to_sql( $supported_actions );
-    $supported_field_types     = ( ! empty( $args['field_types'] ) ) ? $args['field_types'] : [
-      'connection',
-      'user_select',
-      'multi_select',
-      'tags',
-      'link',
-      'location',
-      'location_meta',
-      'key_select',
-      'date',
-      'datetime',
-      'boolean',
-      'communication_channel',
-      'text',
-      'textarea',
-      'number',
-      'connection to',
-      'connection from',
-      ''
-    ];
-    $supported_field_types_sql = dt_array_to_sql( $supported_field_types );
-    $ts_start                  = ( ! empty( $args['ts_start'] ) ) ? $args['ts_start'] : 0;
-    $ts_end                    = ( ! empty( $args['ts_end'] ) ) ? $args['ts_end'] : time();
-    $result_order              = esc_sql( ( ! empty( $args['result_order'] ) ) ? $args['result_order'] : 'DESC' );
-    $extra_meta                = ! empty( $args['extra_meta'] ) && $args['extra_meta'];
-
-    // Fetch post activity history
-    // phpcs:disable
-    // WordPress.WP.PreparedSQL.NotPrepared
-    $sql = $wpdb->prepare(
-      "SELECT
-                *
-            FROM
-                `$wpdb->dt_activity_log`
-            WHERE
-                `object_type` = %s
-                AND `object_id` = %s
-                AND `action` IN ( $supported_actions_sql )
-                AND `field_type` IN ( $supported_field_types_sql )
-                AND `hist_time` BETWEEN %d AND %d
-            ORDER BY hist_time $result_order",
-      $post_type,
-      $post_id,
-      $ts_start,
-      $ts_end
-    );
-    $activities = $wpdb->get_results($sql);
-    //@phpcs:enable
-
-    // Format activity message
-    $post_settings = DT_Posts::get_post_settings( $post_type );
-    foreach ( $activities as &$activity ) {
-      $activity->object_note_raw = $activity->object_note;
-      $activity->object_note = sanitize_text_field( DT_Posts::format_activity_message( $activity, $post_settings ) );
-    }
-
-    // Determine if extra metadata has been requested
-    if ( $extra_meta ) {
-      foreach ( $activities as &$activity ) {
-        if ( isset( $activity->user_id ) && $activity->user_id > 0 ) {
-          $user = get_user_by( 'id', $activity->user_id );
-          if ( $user ) {
-            $activity->name     = sanitize_text_field( $user->display_name );
-            $activity->gravatar = get_avatar_url( $user->ID, [ 'size' => '16', 'scheme' => 'https' ] );
-          }
-        }
-      }
-    }
-
-    return $activities;
-  }
 }

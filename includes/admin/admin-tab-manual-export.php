@@ -68,6 +68,7 @@ class DT_Data_Reporting_Tab_Manual_Export
             <?php foreach ( $post_types as $post_type ):
                 $post_type_settings = DT_Posts::get_post_settings( $post_type );
                 $activity_type = rtrim( $post_type, 's' ) . '_activity';
+                $snapshot_type = rtrim( $post_type, 's' ) . '_snapshots';
                 ?>
                 <tr>
                     <td>
@@ -87,6 +88,16 @@ class DT_Data_Reporting_Tab_Manual_Export
                             <a href="<?php echo esc_attr( $preview_link . $activity_type ) ?>">Preview <span class="dashicons dashicons-admin-site-alt3"></span></a> |
                             <a href="<?php echo esc_attr( plugins_url( '../../exports/csv.php?type=' . $activity_type, __FILE__ ) ) ?>" onclick="setLimitOffset(event)">CSV <span class="dashicons dashicons-download"></a> |
                             <a href="<?php echo esc_attr( plugins_url( '../../exports/json.php?type=' . $activity_type, __FILE__ ) ) ?>" onclick="setLimitOffset(event)">JSON <span class="dashicons dashicons-download"></a>
+                        </div>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        Export <?php esc_html_e( $post_type_settings['label_singular'] ) ?> Snapshots
+                        <div class="alignright">
+                            <a href="<?php echo esc_attr( $preview_link . $snapshot_type ) ?>">Preview <span class="dashicons dashicons-admin-site-alt3"></span></a> |
+                            <a href="<?php echo esc_attr( plugins_url( '../../exports/csv.php?type=' . $snapshot_type, __FILE__ ) ) ?>" onclick="setLimitOffset(event)">CSV <span class="dashicons dashicons-download"></a> |
+                            <a href="<?php echo esc_attr( plugins_url( '../../exports/json.php?type=' . $snapshot_type, __FILE__ ) ) ?>" onclick="setLimitOffset(event)">JSON <span class="dashicons dashicons-download"></a>
                         </div>
                     </td>
                 </tr>
@@ -128,6 +139,15 @@ class DT_Data_Reporting_Tab_Manual_Export
                     <div class="alignright">
                       <a href="<?php echo esc_attr( $preview_link_config . $activity_type ) ?>">Preview <span class="dashicons dashicons-admin-site-alt3"></span></a> |
                       <a href="<?php echo esc_attr( $api_action_link_config . $activity_type ) ?>">Send Data <span class="dashicons dashicons-migrate"></span></a>
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <td>
+                    Export <?php esc_html_e( $post_type_settings['label_singular'] ) ?> Snapshots
+                    <div class="alignright">
+                      <a href="<?php echo esc_attr( $preview_link_config . $snapshot_type ) ?>">Preview <span class="dashicons dashicons-admin-site-alt3"></span></a> |
+                      <a href="<?php echo esc_attr( $api_action_link_config . $snapshot_type ) ?>">Send Data <span class="dashicons dashicons-migrate"></span></a>
                     </div>
                   </td>
                 </tr>

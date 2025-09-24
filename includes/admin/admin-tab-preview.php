@@ -6,6 +6,7 @@ if ( ! defined( 'ABSPATH' ) ) { exit; // Exit if accessed directly
 class DT_Data_Reporting_Tab_Preview
 {
     public $type = 'contacts';
+    public $config_key;
     public $config;
 
     public function __construct( $type, $config ) {
