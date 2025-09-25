@@ -28,11 +28,11 @@ class DT_Data_Reporting_Tab_Settings
             $response['message'] = 'Missing config key';
         } else {
 
-            $configurations_str = get_option( "dt_data_reporting_configurations" );
+            $configurations_str = get_option( 'dt_data_reporting_configurations' );
             $configurations = json_decode( $configurations_str, true );
-            if (isset( $configurations[$key] )) {
+            if ( isset( $configurations[$key] ) ) {
                 $configurations[$key]['active'] = $enabled ? 1 : 0;
-                update_option( "dt_data_reporting_configurations", json_encode( $configurations ) );
+                update_option( 'dt_data_reporting_configurations', json_encode( $configurations ) );
 
                 $response_code = 200;
                 $response['success'] = true;
@@ -62,7 +62,7 @@ class DT_Data_Reporting_Tab_Settings
             $response['message'] = 'Missing config key';
         } else {
 
-            $configurations_str = get_option( "dt_data_reporting_configurations" );
+            $configurations_str = get_option( 'dt_data_reporting_configurations' );
             $configurations = json_decode( $configurations_str, true );
 
             if ( !isset( $configurations[$key] ) ) {
@@ -82,7 +82,7 @@ class DT_Data_Reporting_Tab_Settings
                 $configurations[$key][$field] = $value;
             }
 
-            update_option( "dt_data_reporting_configurations", json_encode( $configurations ) );
+            update_option( 'dt_data_reporting_configurations', json_encode( $configurations ) );
 
             $response_code = 200;
             $response['success'] = true;
@@ -102,18 +102,18 @@ class DT_Data_Reporting_Tab_Settings
             'success' => false,
             'message' => '',
         ];
-        if ( !isset( $_POST['security_headers_nonce'] ) || !wp_verify_nonce( sanitize_key( $_POST['security_headers_nonce'] ), 'security_headers' )) {
+        if ( !isset( $_POST['security_headers_nonce'] ) || !wp_verify_nonce( sanitize_key( $_POST['security_headers_nonce'] ), 'security_headers' ) ) {
             $response['message'] = 'Insecure request';
-        } else if (empty( $key )) {
+        } else if ( empty( $key ) ) {
             $response['message'] = 'Missing config key';
         } else {
             $response['message'] = 'Error resetting progress';
-            if (isset( $_POST['dataType'] )) {
-                $config_progress = json_decode( get_option( "dt_data_reporting_configurations_progress" ), true );
+            if ( isset( $_POST['dataType'] ) ) {
+                $config_progress = json_decode( get_option( 'dt_data_reporting_configurations_progress' ), true );
                 $data_type = sanitize_key( wp_unslash( $_POST['dataType'] ) );
-                if (isset( $config_progress[$key] )) {
+                if ( isset( $config_progress[$key] ) ) {
                     unset( $config_progress[$key][$data_type] );
-                    update_option( "dt_data_reporting_configurations_progress", json_encode( $config_progress ) );
+                    update_option( 'dt_data_reporting_configurations_progress', json_encode( $config_progress ) );
                     $response_code = 200;
                     $response['success'] = true;
                     $response['message'] = 'Progress reset';
@@ -363,13 +363,13 @@ class DT_Data_Reporting_Tab_Settings
     }
 
     public function main_column() {
-      $configurations_str = get_option( "dt_data_reporting_configurations" );
-      $configurations = json_decode( $configurations_str, true );
-      $snapshots_str = get_option( "dt_data_reporting_snapshots" );
-      $snapshots = [];
-      if ( !empty( $snapshots_str ) ) {
-          $snapshots = json_decode( $snapshots_str );
-      }
+        $configurations_str = get_option( 'dt_data_reporting_configurations' );
+        $configurations = json_decode( $configurations_str, true );
+        $snapshots_str = get_option( 'dt_data_reporting_snapshots' );
+        $snapshots = [];
+        if ( !empty( $snapshots_str ) ) {
+            $snapshots = json_decode( $snapshots_str );
+        }
 
         if ( empty( $configurations_str ) || !is_array( $configurations ) ) {
             $configurations = [
@@ -437,7 +437,7 @@ class DT_Data_Reporting_Tab_Settings
                              id="config_enabled_<?php echo esc_attr( $key ) ?>"
                              name="configs[<?php echo esc_attr( $key ) ?>][enabled]"
                              value="<?php echo esc_attr( $key ) ?>"
-                             <?php echo isset( $config['active'] ) && $config['active'] == 1 ? 'checked' : "" ?>
+                             <?php echo isset( $config['active'] ) && $config['active'] == 1 ? 'checked' : '' ?>
                       />
                       <label for="config_enabled_<?php echo esc_attr( $key ) ?>">
                         <span></span>
@@ -519,7 +519,7 @@ class DT_Data_Reporting_Tab_Settings
                       <input type="text"
                              name="name"
                              id="dlg_name_<?php echo esc_attr( $key ) ?>"
-                             value="<?php echo esc_attr( isset( $config['name'] ) ? $config['name'] : "" ) ?>"
+                             value="<?php echo esc_attr( isset( $config['name'] ) ? $config['name'] : '' ) ?>"
                              style="width: 100%;" />
                       <div class="muted">Label to identify this configuration. This can be anything that helps you understand or remember this configuration.</div>
                     </td>
@@ -534,7 +534,7 @@ class DT_Data_Reporting_Tab_Settings
                                class="config-enable-checkbox"
                                id="dlg_enabled_<?php echo esc_attr( $key ) ?>"
                                name="enabled"
-                                     <?php echo isset( $config['active'] ) && $config['active'] == 1 ? 'checked' : "" ?>
+                                     <?php echo isset( $config['active'] ) && $config['active'] == 1 ? 'checked' : '' ?>
                         />
                         <label for="dlg_enabled_<?php echo esc_attr( $key ) ?>">
                           <span></span>
@@ -579,7 +579,7 @@ class DT_Data_Reporting_Tab_Settings
                       <input type="text"
                              name="url"
                              id="dlg_endpoint_url_<?php echo esc_attr( $key ) ?>"
-                             value="<?php echo esc_attr( isset( $config['url'] ) ? $config['url'] : "" ) ?>"
+                             value="<?php echo esc_attr( isset( $config['url'] ) ? $config['url'] : '' ) ?>"
                              style="width: 100%;" />
                       <div class="muted">API endpoint that should receive your data in JSON format. With a Google Cloud setup, this would be the URL for an HTTP Cloud Function.</div>
                     </td>
@@ -592,7 +592,7 @@ class DT_Data_Reporting_Tab_Settings
                       <input type="text"
                              name="token"
                              id="dlg_token_<?php echo esc_attr( $key ) ?>"
-                             value="<?php echo esc_attr( isset( $config['token'] ) ? $config['token'] : "" ) ?>"
+                             value="<?php echo esc_attr( isset( $config['token'] ) ? $config['token'] : '' ) ?>"
                              style="width: 100%;" />
                       <div class="muted">Optional, depending on required authentication for your endpoint. Token will be sent as an Authorization header to prevent public/anonymous access.</div>
                     </td>
@@ -614,7 +614,7 @@ class DT_Data_Reporting_Tab_Settings
                                 <input type="text"
                                        name="<?php echo esc_attr( $field_key ) ?>"
                                        id="dlg_<?php echo esc_attr( $field_key ) ?>_<?php echo esc_attr( $key ) ?>"
-                                       value="<?php echo esc_attr( isset( $config[$field_key] ) ? $config[$field_key] : "" ) ?>"
+                                       value="<?php echo esc_attr( isset( $config[$field_key] ) ? $config[$field_key] : '' ) ?>"
                               <?php endif; ?>
 
                                         <?php if ( isset( $field['helpText'] ) ): ?>
@@ -693,7 +693,7 @@ class DT_Data_Reporting_Tab_Settings
           </form>
         </div>
             <?php endforeach;
-          echo "</div>";
+          echo '</div>';
     }
 
     public function external_config_dialogs( $configurations ) {
@@ -733,7 +733,7 @@ class DT_Data_Reporting_Tab_Settings
                   <label>Name</label>
                 </th>
                 <td>
-                        <?php echo esc_html( isset( $config['name'] ) ? $config['name'] : "" ) ?>
+                        <?php echo esc_html( isset( $config['name'] ) ? $config['name'] : '' ) ?>
                 </td>
               </tr>
               <tr>
@@ -741,7 +741,7 @@ class DT_Data_Reporting_Tab_Settings
                   <label>Endpoint URL</label>
                 </th>
                 <td>
-                        <?php echo esc_html( isset( $config['url'] ) ? $config['url'] : "" ) ?>
+                        <?php echo esc_html( isset( $config['url'] ) ? $config['url'] : '' ) ?>
                 </td>
               </tr>
 
@@ -751,7 +751,7 @@ class DT_Data_Reporting_Tab_Settings
                     <label>Token</label>
                   </th>
                   <td>
-                        <?php echo esc_html( isset( $config['token'] ) ? $config['token'] : "" ) ?>
+                        <?php echo esc_html( isset( $config['token'] ) ? $config['token'] : '' ) ?>
                   </td>
                 </tr>
               <?php endif; ?>
@@ -806,7 +806,7 @@ class DT_Data_Reporting_Tab_Settings
       </div>
             <?php endforeach;
 
-          echo "</div>";
+          echo '</div>';
     }
 
     public function post_type_config_settings( $config, $data_type ) {
@@ -818,9 +818,9 @@ class DT_Data_Reporting_Tab_Settings
           ];
           $type_config =isset( $type_configs[$data_type] ) ? $type_configs[$data_type] : $default_type_config;
 
-          $config_progress = json_decode( get_option( "dt_data_reporting_configurations_progress" ), true );
+          $config_progress = json_decode( get_option( 'dt_data_reporting_configurations_progress' ), true );
 
-          $export_logs_str = get_option( "dt_data_reporting_export_logs" );
+          $export_logs_str = get_option( 'dt_data_reporting_export_logs' );
           $export_logs = json_decode( $export_logs_str, true );
 
           $allowed_html = array(
@@ -855,7 +855,7 @@ class DT_Data_Reporting_Tab_Settings
             </label>
 
 
-          <?php if ( isset( $config_progress[$key] ) && isset( $config_progress[$key][$data_type] )): ?>
+          <?php if ( isset( $config_progress[$key] ) && isset( $config_progress[$key][$data_type] ) ): ?>
               <div class="last-exported-value">
                 Exported Until: <?php echo esc_html( $config_progress[$key][$data_type] ) ?>
                 <button type="button"
@@ -910,7 +910,7 @@ class DT_Data_Reporting_Tab_Settings
                   <?php foreach ( $export_logs[$key][$data_type]['messages'] as $message ) {
                         $message_type = isset( $message['type'] ) ? $message['type'] : '';
                         $content = isset( $message['message'] ) ? $message['message'] : '';
-                        echo "<li class='" . esc_attr( $message_type ) . "'>" . wp_kses( $content, $allowed_html ) . "</li>";
+                        echo "<li class='" . esc_attr( $message_type ) . "'>" . wp_kses( $content, $allowed_html ) . '</li>';
                   } ?>
                 </ul>
               </div>
@@ -930,9 +930,9 @@ class DT_Data_Reporting_Tab_Settings
           ];
           $type_config =isset( $type_configs[$data_type] ) ? $type_configs[$data_type] : $default_type_config;
 
-          $config_progress = json_decode( get_option( "dt_data_reporting_configurations_progress" ), true );
+          $config_progress = json_decode( get_option( 'dt_data_reporting_configurations_progress' ), true );
 
-          $export_logs_str = get_option( "dt_data_reporting_export_logs" );
+          $export_logs_str = get_option( 'dt_data_reporting_export_logs' );
           $export_logs = json_decode( $export_logs_str, true );
 
           $allowed_html = array(
@@ -951,7 +951,7 @@ class DT_Data_Reporting_Tab_Settings
               Last Updated
               (Max records: <?php echo esc_html( isset( $type_config['limit'] ) ? $type_config['limit'] : $default_type_config['limit'] ) ?>)
 
-                <?php if ( isset( $config_progress[$key] ) && isset( $config_progress[$key][$data_type] )): ?>
+                <?php if ( isset( $config_progress[$key] ) && isset( $config_progress[$key][$data_type] ) ): ?>
                 <div class="last-exported-value">
                   Exported Until: <?php echo esc_html( $config_progress[$key][$data_type] ) ?>
                   <button type="button"
@@ -962,7 +962,7 @@ class DT_Data_Reporting_Tab_Settings
             <?php endif; ?>
 
 
-          <?php if ( isset( $config_progress[$key] ) && isset( $config_progress[$key][$data_type] )): ?>
+          <?php if ( isset( $config_progress[$key] ) && isset( $config_progress[$key][$data_type] ) ): ?>
               <div class="last-exported-value">
                 Exported Until: <?php echo esc_html( $config_progress[$key][$data_type] ) ?>
                 <button type="button"
@@ -973,7 +973,7 @@ class DT_Data_Reporting_Tab_Settings
           </td>
         </tr>
 
-        <?php if ( isset( $type_config['schedule'] ) && $type_config['schedule'] == 'daily'): ?>
+        <?php if ( isset( $type_config['schedule'] ) && $type_config['schedule'] == 'daily' ): ?>
           <tr>
             <td>
                 <p>&check; Automatic daily export</p>
@@ -992,7 +992,7 @@ class DT_Data_Reporting_Tab_Settings
                   <?php foreach ( $export_logs[$key][$data_type]['messages'] as $message ) {
                         $message_type = isset( $message['type'] ) ? $message['type'] : '';
                         $content = isset( $message['message'] ) ? $message['message'] : '';
-                        echo "<li class='" . esc_attr( $message_type ) . "'>" . wp_kses( $content, $allowed_html ) . "</li>";
+                        echo "<li class='" . esc_attr( $message_type ) . "'>" . wp_kses( $content, $allowed_html ) . '</li>';
                   } ?>
                 </ul>
               </div>
@@ -1012,24 +1012,26 @@ class DT_Data_Reporting_Tab_Settings
         }
 
         $action = isset( $_POST['action'] ) ? sanitize_key( wp_unslash( $_POST['action'] ) ) : null;
-        if ($action == 'resetprogress') {
-          if (isset($_POST['configKey']) && isset($_POST['dataType'])) {
-            $config_progress = json_decode(get_option("dt_data_reporting_configurations_progress"), true);
-            $config_key = sanitize_key(wp_unslash($_POST['configKey']));
-            $data_type = sanitize_key(wp_unslash($_POST['dataType']));
-            if (isset($config_progress[$config_key])) {
-              unset($config_progress[$config_key][$data_type]);
-              update_option("dt_data_reporting_configurations_progress", json_encode($config_progress));
+        if ( $action == 'resetprogress' ) {
+            if ( isset( $_POST['configKey'] ) && isset( $_POST['dataType'] ) ) {
+                $config_progress = json_decode( get_option( 'dt_data_reporting_configurations_progress' ), true );
+                $config_key = sanitize_key( wp_unslash( $_POST['configKey'] ) );
+                $data_type = sanitize_key( wp_unslash( $_POST['dataType'] ) );
+                if ( isset( $config_progress[$config_key] ) ) {
+                    unset( $config_progress[$config_key][$data_type] );
+                    update_option( 'dt_data_reporting_configurations_progress', json_encode( $config_progress ) );
+                }
             }
-          }
         } else if ( $action === 'dtdr_save_settings' ) {
-          $intervals = isset($_POST['interval']) ? $this->sanitize_array_field(wp_unslash($_POST['interval'])) : [];
-          update_option("dt_data_reporting_snapshots", json_encode($intervals));
+            $intervals = isset( $_POST['interval'] )
+              ? $this->sanitize_array_field( wp_unslash( $_POST['interval'] ) ) // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
+              : [];
+            update_option( 'dt_data_reporting_snapshots', json_encode( $intervals ) );
         } else {
           //configurations
-            if (isset( $_POST['configurations'] )) {
+            if ( isset( $_POST['configurations'] ) ) {
                 // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
-                update_option( "dt_data_reporting_configurations", json_encode( $this->sanitize_text_or_array_field( wp_unslash( $_POST['configurations'] ) ) ) );
+                update_option( 'dt_data_reporting_configurations', json_encode( $this->sanitize_text_or_array_field( wp_unslash( $_POST['configurations'] ) ) ) );
             }
 
 
@@ -1037,12 +1039,12 @@ class DT_Data_Reporting_Tab_Settings
         }
     }
 
-    private function sanitize_text_or_array_field( $array_or_string) {
-        if (is_string( $array_or_string )) {
+    private function sanitize_text_or_array_field( $array_or_string ) {
+        if ( is_string( $array_or_string ) ) {
             $array_or_string = sanitize_text_field( $array_or_string );
-        } elseif (is_array( $array_or_string )) {
-            foreach ($array_or_string as $key => &$value) {
-                if (is_array( $value )) {
+        } elseif ( is_array( $array_or_string ) ) {
+            foreach ( $array_or_string as $key => &$value ) {
+                if ( is_array( $value ) ) {
                     $value = $this->sanitize_text_or_array_field( $value );
                 } else {
                     $value = sanitize_text_field( $value );
@@ -1053,11 +1055,11 @@ class DT_Data_Reporting_Tab_Settings
         return $array_or_string;
     }
 
-  private function sanitize_array_field($array)
-  {
-    if (!is_array($array)) {
-      return [sanitize_key($array)];
+    private function sanitize_array_field( $array )
+    {
+        if ( !is_array( $array ) ) {
+            return [ sanitize_key( $array ) ];
+        }
+        return array_map( 'sanitize_key', $array );
     }
-    return array_map('sanitize_key', $array);
-  }
 }

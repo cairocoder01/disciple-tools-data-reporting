@@ -78,9 +78,9 @@ class DT_Data_Reporting_Tools
         if ( !$all_data && !empty( $last_exported_value ) ) {
             $date_field = $is_activity ? 'date' : 'last_modified';
             if ( $is_activity ) {
-              $date_field = 'date';
+                $date_field = 'date';
             } else if ( $is_snapshots ) {
-              $date_field = 'snapshot_date';
+                $date_field = 'snapshot_date';
             }
             $filter[$date_field] = [
                 'start' => $last_exported_value,
@@ -90,118 +90,118 @@ class DT_Data_Reporting_Tools
         // Fetch the data
         $result = null;
         if ( $is_activity ) {
-          $result = self::get_post_activity($root_type, $filter);
+            $result = self::get_post_activity( $root_type, $filter );
         } else if ( $is_snapshots ) {
-          $result = self::get_post_snapshots($root_type, $flatten, $filter);
+            $result = self::get_post_snapshots( $root_type, $flatten, $filter );
         } else {
-          $result = self::get_posts( $data_type, $flatten, $filter );
+            $result = self::get_posts( $data_type, $flatten, $filter );
         }
 
         return $result;
     }
 
-  public static function get_post_snapshots( $post_type, $flatten = false, $filter = null ) {
+    public static function get_post_snapshots( $post_type, $flatten = false, $filter = null ) {
 
-    // Fetch all post data
-    try {
-      $snapshots = self::query_post_snapshots( $post_type, $filter );
-    } catch ( Exception $ex ) {
-      dt_write_log( "Error fetching $post_type snapshots: {$ex->getMessage()}" );
-      return array( null, null, 0 );
-    }
+      // Fetch all post data
+        try {
+            $snapshots = self::query_post_snapshots( $post_type, $filter );
+        } catch ( Exception $ex ) {
+            dt_write_log( "Error fetching $post_type snapshots: {$ex->getMessage()}" );
+            return array( null, null, 0 );
+        }
 
-    $items = array();
+        $items = array();
 
-    $post_settings = apply_filters( "dt_get_post_type_settings", array(), $post_type );
-    $fields = $post_settings["fields"];
-    $base_url = self::get_current_site_base_url();
-    $locations = self::get_location_data( $snapshots['posts'] );
+        $post_settings = apply_filters( 'dt_get_post_type_settings', array(), $post_type );
+        $fields = $post_settings['fields'];
+        $base_url = self::get_current_site_base_url();
+        $locations = self::get_location_data( $snapshots['posts'] );
 
-    // process each post
-    foreach ($snapshots['snapshots'] as $index => $snapshot) {
-      $result = $snapshot['post_content'];
+      // process each post
+        foreach ( $snapshots['snapshots'] as $index => $snapshot ) {
+            $result = $snapshot['post_content'];
 //      dt_write_log( json_encode( $result ) );
-      $post = array(
-        'ID' => $result['ID'],
-        'Created' => null,
-      );
+            $post = array(
+            'ID' => $result['ID'],
+            'Created' => null,
+            );
 
-      if ( isset( $result['post_date'] ) && !empty( $result['post_date'] ) ) {
-        $post['Created'] = gmdate( "Y-m-d H:i:s", $result['post_date'] );
-      }
+            if ( isset( $result['post_date'] ) && !empty( $result['post_date'] ) ) {
+                $post['Created'] = gmdate( 'Y-m-d H:i:s', $result['post_date'] );
+            }
 
-      // Loop over all fields to parse/format each
-      foreach ( $fields as $field_key => $field ){
-        // skip if field is hidden, unless marked as exception above
-        if ( isset( $field['hidden'] ) && $field['hidden'] == true && !self::is_included_hidden_field( $post_type, $field_key ) ) {
-          continue;
-        }
-        // skip if in list of excluded fields
-        if ( self::is_excluded_field( $post_type, $field_key ) ) {
-          continue;
-        }
+          // Loop over all fields to parse/format each
+            foreach ( $fields as $field_key => $field ){
+              // skip if field is hidden, unless marked as exception above
+                if ( isset( $field['hidden'] ) && $field['hidden'] == true && !self::is_included_hidden_field( $post_type, $field_key ) ) {
+                    continue;
+                }
+              // skip if in list of excluded fields
+                if ( self::is_excluded_field( $post_type, $field_key ) ) {
+                    continue;
+                }
 
-        $type = $field['type'];
+                $type = $field['type'];
 
-        // skip communication_channel fields since they are all PII
-        if ( $type == 'communication_channel' ) {
-          continue;
-        }
+              // skip communication_channel fields since they are all PII
+                if ( $type == 'communication_channel' ) {
+                    continue;
+                }
 
-        $field_value = self::get_snapshot_field_value( $result, $field_key, $type, $flatten, $fields, $locations );
+                $field_value = self::get_snapshot_field_value( $result, $field_key, $type, $flatten, $fields, $locations );
 
-        /*if ( $post_type === 'contacts' ) {
-          // if we calculated the baptism generation, set it here
-          if ( $field_key == 'baptism_generation' && isset( $contact_generations[$result['ID']] ) ) {
-            if ( $fields[$field_key]['type'] === 'number' ) {
+              /*if ( $post_type === 'contacts' ) {
+              // if we calculated the baptism generation, set it here
+              if ( $field_key == 'baptism_generation' && isset( $contact_generations[$result['ID']] ) ) {
+              if ( $fields[$field_key]['type'] === 'number' ) {
               $generation = $contact_generations[$result['ID']];
               $field_value = empty( $generation ) ? '' : intval( $generation );
-            } else {
+              } else {
               $field_value = $contact_generations[$result['ID']];
+              }
+              }
+              }*/
+
+                $field_value = apply_filters( 'dt_data_reporting_field_output', $field_value, $type, $field_key, $flatten );
+                $post[$field_key] = $field_value;
             }
-          }
-        }*/
+            $post['site'] = $base_url;
 
-        $field_value = apply_filters( 'dt_data_reporting_field_output', $field_value, $type, $field_key, $flatten );
-        $post[$field_key] = $field_value;
-      }
-      $post['site'] = $base_url;
-
-      $post['period'] = $snapshot['period'];
-      $post['period_interval'] = $snapshot['period_interval'];
-      $post['period_start'] = $snapshot['period_start'];
-      $post['period_end'] = $snapshot['period_end'];
+            $post['period'] = $snapshot['period'];
+            $post['period_interval'] = $snapshot['period_interval'];
+            $post['period_start'] = $snapshot['period_start'];
+            $post['period_end'] = $snapshot['period_end'];
 //      dt_write_log( json_encode( $post ) );
-      $items[] = $post;
+            $items[] = $post;
+        }
+        $columns = self::build_columns( $fields, $post_type );
+        array_push($columns, array(
+            'key' => 'period',
+            'name' => 'Period',
+            'type' => 'text',
+            'bq_type' => 'STRING',
+            'bq_mode' => 'NULLABLE',
+            ), array(
+            'key' => 'period_interval',
+            'name' => 'Interval',
+            'type' => 'text',
+            'bq_type' => 'STRING',
+            'bq_mode' => 'NULLABLE',
+            ), array(
+            'key' => 'period_start',
+            'name' => 'Period Start',
+            'type' => 'date',
+            'bq_type' => 'TIMESTAMP',
+            'bq_mode' => 'NULLABLE',
+            ), array(
+            'key' => 'period_end',
+            'name' => 'Period End',
+            'type' => 'date',
+            'bq_type' => 'TIMESTAMP',
+            'bq_mode' => 'NULLABLE',
+        ));
+        return array( $columns, $items, $snapshots['total'] );
     }
-    $columns = self::build_columns( $fields, $post_type );
-    array_push($columns, array(
-      'key' => "period",
-      'name' => "Period",
-      'type' => 'text',
-      'bq_type' => 'STRING',
-      'bq_mode' => 'NULLABLE',
-    ), array(
-      'key' => "period_interval",
-      'name' => "Interval",
-      'type' => 'text',
-      'bq_type' => 'STRING',
-      'bq_mode' => 'NULLABLE',
-    ), array(
-      'key' => "period_start",
-      'name' => "Period Start",
-      'type' => 'date',
-      'bq_type' => 'TIMESTAMP',
-      'bq_mode' => 'NULLABLE',
-    ), array(
-      'key' => "period_end",
-      'name' => "Period End",
-      'type' => 'date',
-      'bq_type' => 'TIMESTAMP',
-      'bq_mode' => 'NULLABLE',
-    ));
-    return array( $columns, $items, $snapshots['total'] );
-  }
 
     /**
      * Fetch post activity
@@ -218,7 +218,7 @@ class DT_Data_Reporting_Tools
 
         $base_url = self::get_current_site_base_url();
 
-        foreach ($activities['activity'] as $index => $result) {
+        foreach ( $activities['activity'] as $index => $result ) {
             $activity = $result;
             $activity['site'] = $base_url;
 
@@ -227,91 +227,91 @@ class DT_Data_Reporting_Tools
 
         $columns = array(
             array(
-                'key' => "id",
-                'name' => "ID",
+                'key' => 'id',
+                'name' => 'ID',
                 'type' => 'string',
                 'bq_type' => 'STRING',
                 'bq_mode' => 'NULLABLE',
             ),
             array(
-                'key' => "meta_id",
+                'key' => 'meta_id',
                 'name' => 'Meta ID',
                 'type' => 'number',
                 'bq_type' => 'INTEGER',
                 'bq_mode' => 'NULLABLE',
             ),
             array(
-                'key' => "post_id",
+                'key' => 'post_id',
                 'name' => 'Post ID',
                 'type' => 'number',
                 'bq_type' => 'INTEGER',
                 'bq_mode' => 'NULLABLE',
             ),
             array(
-                'key' => "user_id",
+                'key' => 'user_id',
                 'name' => 'User ID',
                 'type' => 'number',
                 'bq_type' => 'INTEGER',
                 'bq_mode' => 'NULLABLE',
             ),
             array(
-                'key' => "user_name",
+                'key' => 'user_name',
                 'name' => 'User',
                 'type' => 'string',
                 'bq_type' => 'STRING',
                 'bq_mode' => 'NULLABLE',
             ),
             array(
-                'key' => "action_type",
+                'key' => 'action_type',
                 'name' => 'Action Type',
                 'type' => 'string',
                 'bq_type' => 'STRING',
                 'bq_mode' => 'NULLABLE',
             ),
             array(
-                'key' => "action_field",
+                'key' => 'action_field',
                 'name' => 'Action Field',
                 'type' => 'string',
                 'bq_type' => 'STRING',
                 'bq_mode' => 'NULLABLE',
             ),
             array(
-                'key' => "action_value",
+                'key' => 'action_value',
                 'name' => 'Action Value',
                 'type' => 'string',
                 'bq_type' => 'STRING',
                 'bq_mode' => 'NULLABLE',
             ),
             array(
-                'key' => "action_value_friendly",
+                'key' => 'action_value_friendly',
                 'name' => 'Action Value (Friendly)',
                 'type' => 'string',
                 'bq_type' => 'STRING',
                 'bq_mode' => 'NULLABLE',
             ),
             array(
-                'key' => "action_value_order",
+                'key' => 'action_value_order',
                 'name' => 'Action Value Order',
                 'type' => 'number',
                 'bq_type' => 'INTEGER',
                 'bq_mode' => 'NULLABLE',
             ),
             array(
-                'key' => "action_old_value",
+                'key' => 'action_old_value',
                 'name' => 'Action Old Value',
                 'type' => 'string',
                 'bq_type' => 'STRING',
                 'bq_mode' => 'NULLABLE',
             ),
             array(
-                'key' => "note",
+                'key' => 'note',
                 'name' => 'Note',
                 'type' => 'string',
                 'bq_type' => 'STRING',
                 'bq_mode' => 'NULLABLE',
             ),
             array(
-                'key' => "date",
+                'key' => 'date',
                 'name' => 'Date',
                 'type' => 'date',
                 'bq_type' => 'TIMESTAMP',
@@ -353,10 +353,10 @@ class DT_Data_Reporting_Tools
           // taken from [dt-theme]/dt-metrics/counters/counter-baptism.php::save_all_contact_generations
             $raw_baptism_generation_list = Disciple_Tools_Counter_Baptism::query_get_all_baptism_connections();
             $all_baptisms = Disciple_Tools_Counter_Baptism::build_baptism_generation_counts( $raw_baptism_generation_list );
-            foreach ($all_baptisms as $baptism_generation) {
-                $generation = $baptism_generation["generation"];
-                $baptisms = $baptism_generation["ids"];
-                foreach ($baptisms as $contact) {
+            foreach ( $all_baptisms as $baptism_generation ) {
+                $generation = $baptism_generation['generation'];
+                $baptisms = $baptism_generation['ids'];
+                foreach ( $baptisms as $contact ) {
                     $contact_generations[$contact] = $generation;
                 }
             }
@@ -364,13 +364,13 @@ class DT_Data_Reporting_Tools
 
         $items = array();
 
-        $post_settings = apply_filters( "dt_get_post_type_settings", array(), $post_type );
-        $fields = $post_settings["fields"];
+        $post_settings = apply_filters( 'dt_get_post_type_settings', array(), $post_type );
+        $fields = $post_settings['fields'];
         $base_url = self::get_current_site_base_url();
         $locations = self::get_location_data( $posts['posts'] );
 
       // process each post
-        foreach ($posts['posts'] as $index => $result) {
+        foreach ( $posts['posts'] as $index => $result ) {
             $post = array(
             'ID' => $result['ID'],
             'Created' => $result['post_date'],
@@ -378,7 +378,7 @@ class DT_Data_Reporting_Tools
 
           // Theme v1.0.0 changes post_date to a proper date object we need to format
             if ( $is_dt_1_0 && isset( $result['post_date']['timestamp'] ) ) {
-                $post['Created'] = !empty( $result['post_date']["timestamp"] ) ? gmdate( "Y-m-d H:i:s", $result['post_date']['timestamp'] ) : "";
+                $post['Created'] = !empty( $result['post_date']['timestamp'] ) ? gmdate( 'Y-m-d H:i:s', $result['post_date']['timestamp'] ) : '';
             }
 
           // Loop over all fields to parse/format each
@@ -451,7 +451,7 @@ class DT_Data_Reporting_Tools
         if ( !isset( $filter['limit'] ) ) {
             // if total is greater than length, recursively get more
             $retrieved_posts = sizeof( $posts['posts'] );
-            while ($retrieved_posts < $posts['total']) {
+            while ( $retrieved_posts < $posts['total'] ) {
                 $filter['offset'] = sizeof( $posts['posts'] );
                 $next_posts = DT_Posts::list_posts( $post_type, $filter );
                 if ( is_wp_error( $next_posts ) ) {
@@ -476,15 +476,15 @@ class DT_Data_Reporting_Tools
             $filter['sort'] = 'last_modified';
         }
 
-        $post_settings = apply_filters( "dt_get_post_type_settings", array(), $post_type );
-        $fields = $post_settings["fields"];
+        $post_settings = apply_filters( 'dt_get_post_type_settings', array(), $post_type );
+        $fields = $post_settings['fields'];
         $excluded_fields = array_key_exists( $post_type, self::$excluded_fields )
           ? self::$excluded_fields[$post_type]
           : self::$excluded_fields['default'];
         $hidden_fields = array_merge( array( 'duplicate_of' ), $excluded_fields );
 
         foreach ( $fields as $field_key => $field ){
-            if ( isset( $field["hidden"] ) && $field["hidden"] === true ){
+            if ( isset( $field['hidden'] ) && $field['hidden'] === true ){
                 // if field is marked as exception to hidden fields, don't exclude it here
                 if ( self::is_included_hidden_field( $post_type, $field_key ) ) {
                     continue;
@@ -608,13 +608,13 @@ class DT_Data_Reporting_Tools
 
             $value_friendly = $a->meta_value;
             $value_order = 0;
-            if (isset( $fields[$a->meta_key] )) {
-                switch ($fields[$a->meta_key]["type"]) {
+            if ( isset( $fields[$a->meta_key] ) ) {
+                switch ( $fields[$a->meta_key]['type'] ) {
                     case 'key_select':
                     case 'multi_select':
                     case 'tags':
-                        $keys = array_keys( $fields[$a->meta_key]["default"] );
-                        $value_friendly = $fields[$a->meta_key]["default"][$a->meta_value]["label"] ?? $a->meta_value;
+                        $keys = array_keys( $fields[$a->meta_key]['default'] );
+                        $value_friendly = $fields[$a->meta_key]['default'][$a->meta_value]['label'] ?? $a->meta_value;
                         $value_order = array_search( $a->meta_value, $keys ) + 1;
                         break;
                     default:
@@ -622,88 +622,85 @@ class DT_Data_Reporting_Tools
                 }
             }
             $activity_simple[] = array(
-                "id" => $a->id,
-                "meta_id" => $a->meta_id,
-                "post_id" => $a->object_id,
-                "user_id" => $a->user_id,
-                "user_name" => $a->user_caps,
-                "action_type" => $a->action,
-                "action_field" => $a->meta_key,
-                "action_value" => $a->meta_value,
-                "action_value_friendly" => $value_friendly,
-                "action_value_order" => $value_order,
-                "action_old_value" => $a->old_value,
-                "note" => $a->object_note,
-                "date" => $a->date,
+                'id' => $a->id,
+                'meta_id' => $a->meta_id,
+                'post_id' => $a->object_id,
+                'user_id' => $a->user_id,
+                'user_name' => $a->user_caps,
+                'action_type' => $a->action,
+                'action_field' => $a->meta_key,
+                'action_value' => $a->meta_value,
+                'action_value_friendly' => $value_friendly,
+                'action_value_order' => $value_order,
+                'action_old_value' => $a->old_value,
+                'note' => $a->object_note,
+                'date' => $a->date,
             );
         }
 
         return array(
-            "activity" => $activity_simple,
-            "total" => $total_activities
+            'activity' => $activity_simple,
+            'total' => $total_activities
         );
     }
 
     private static function query_post_snapshots( $post_type, $filter ) {
-      global $wpdb;
+        global $wpdb;
 
       // By default, sort by snapshot_date (date of snapshot generation)
-      if ( !isset( $filter['sort'] ) ) {
-        $filter['sort'] = 'snapshot_date';
-      }
+        if ( !isset( $filter['sort'] ) ) {
+            $filter['sort'] = 'snapshot_date';
+        }
 
       // Set UTC as time zone for subsequent queries
-      $wpdb->query("SET time_zone='+00:00';");
+        $wpdb->query( "SET time_zone='+00:00';" );
 
-      $table = $wpdb->prefix . 'dt_post_snapshots';
-      $query = "SELECT s.*
+        $table = $wpdb->prefix . 'dt_post_snapshots';
+        $query = "SELECT s.*
         FROM `$table` as s
         WHERE
           s.post_type = %s
           AND s.snapshot_date >= %s
         ORDER BY s.snapshot_date ASC
         ";
-      $params = [
+        $params = [
         $post_type,
         $filter['date']['start'] ?? '2000-01-01 00:00:00',
-      ];
+        ];
 
-      $total = $wpdb->get_var($wpdb->prepare(
-        "SELECT count(*) from ($query) as temp",
-        $params
-      ));
-      if (isset($filter['limit'])) {
-        $query .= "LIMIT %d ";
-        $params[] = $filter['limit'];
-      }
-      if (isset($filter['offset'])) {
-        $query .= "OFFSET %d ";
-        $params[] = $filter['offset'];
-      }
-      $prepared_sql = $wpdb->prepare(
-        $query,
-        $params
-      );
-      //dt_write_log($prepared_sql);
-      $snapshots = $wpdb->get_results( $prepared_sql, ARRAY_A );
-
-      //@phpcs:enable
-
-      $posts = [];
-      foreach ( $snapshots as &$snapshot ) {
-        if ( isset( $snapshot['post_content'] ) ) {
-          $snapshot['post_content'] = json_decode( $snapshot['post_content'], true );
-          $posts[] = $snapshot['post_content'];
-        } else {
-          $snapshot['post_content'] = [];
+        $temp_query = "SELECT count(*) from ($query) as temp";
+        $total = $wpdb->get_var($wpdb->prepare(
+            $temp_query, // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+            $params
+        ));
+        if ( isset( $filter['limit'] ) ) {
+            $query .= 'LIMIT %d ';
+            $params[] = $filter['limit'];
         }
-      }
+        if ( isset( $filter['offset'] ) ) {
+            $query .= 'OFFSET %d ';
+            $params[] = $filter['offset'];
+        }
+        $snapshots = $wpdb->get_results( $wpdb->prepare(
+            $query,  // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+            $params
+        ), ARRAY_A );
 
-      return array(
-        "snapshots" => $snapshots,
-        "posts" => $posts,
-        "total" => $total,
-      );
+        $posts = [];
+        foreach ( $snapshots as &$snapshot ) {
+            if ( isset( $snapshot['post_content'] ) ) {
+                $snapshot['post_content'] = json_decode( $snapshot['post_content'], true );
+                $posts[] = $snapshot['post_content'];
+            } else {
+                $snapshot['post_content'] = [];
+            }
+        }
+
+        return array(
+        'snapshots' => $snapshots,
+        'posts' => $posts,
+        'total' => $total,
+        );
     }
 
     private static function get_label( $result, $key ) {
@@ -724,7 +721,7 @@ class DT_Data_Reporting_Tools
             if ( isset( $post['location_grid'] ) ) {
                 $location_ids = array_map(function ( $location ) {
                     if ( isset( $location['id'] ) ) {
-                      return $location['id'];
+                        return $location['id'];
                     }
                     return $location;
                 }, $post['location_grid']);
@@ -745,7 +742,7 @@ class DT_Data_Reporting_Tools
             left join $wpdb->dt_location_grid a1 on orig.admin1_grid_id=a1.grid_id
             where orig.grid_id in (" .
             implode( ',', array_fill( 0, count( $grid_ids ), '%d' ) ) .
-            ")",
+            ')',
             $grid_ids
         ), ARRAY_A );
 
@@ -765,20 +762,20 @@ class DT_Data_Reporting_Tools
      * @return array|false|int|mixed|string
      */
     private static function get_field_value( $result, $field_key, $type, $flatten, $locations ) {
-        if (key_exists( $field_key, $result )) {
-            switch ($type) {
+        if ( key_exists( $field_key, $result ) ) {
+            switch ( $type ) {
                 case 'key_select':
                     $field_value = self::get_label( $result, $field_key );
                     break;
                 case 'multi_select':
                 case 'tags':
-                    $field_value = $flatten ? implode( ",", $result[$field_key] ) : $result[$field_key];
+                    $field_value = $flatten ? implode( ',', $result[$field_key] ) : $result[$field_key];
                     break;
                 case 'user_select':
                     $field_value = $result[$field_key]['id'];
                     break;
                 case 'date':
-                    $field_value = !empty( $result[$field_key]["timestamp"] ) ? gmdate( "Y-m-d H:i:s", $result[$field_key]['timestamp'] ) : "";
+                    $field_value = !empty( $result[$field_key]['timestamp'] ) ? gmdate( 'Y-m-d H:i:s', $result[$field_key]['timestamp'] ) : '';
                     break;
                 case 'location':
                     // Map country and admin1 data from location_grid table to restrict
@@ -788,7 +785,7 @@ class DT_Data_Reporting_Tools
                             $grid_loc = $locations[$location['id']];
                             // Try to return "{2-letter-country-code}-{admin1-name}"
                             if ( !empty( $grid_loc['admin1_name'] ) ) {
-                                return $grid_loc['country_code'] . "-" . $grid_loc['admin1_name'];
+                                return $grid_loc['country_code'] . '-' . $grid_loc['admin1_name'];
                             }
                             // fall back to just country code
                             return $grid_loc['country_code'];
@@ -800,12 +797,12 @@ class DT_Data_Reporting_Tools
                     // Remove null and duplicates
                     $location_names = array_unique( array_filter( $location_names ) );
 
-                    $field_value = $flatten ? implode( ",", $location_names ) : $location_names;
+                    $field_value = $flatten ? implode( ',', $location_names ) : $location_names;
                     break;
                 case 'connection':
                     $connection_ids = array_map( function ( $connection ) { return $connection['ID'];
                     }, $result[$field_key] );
-                    $field_value = $flatten ? implode( ",", $connection_ids ) : $connection_ids;
+                    $field_value = $flatten ? implode( ',', $connection_ids ) : $connection_ids;
                     break;
                 case 'number':
                     $field_value = empty( $result[$field_key] ) ? '' : intval( $result[$field_key] );
@@ -819,7 +816,7 @@ class DT_Data_Reporting_Tools
             }
         } else {
             // Set default/blank value
-            switch ($type) {
+            switch ( $type ) {
                 case 'number':
                     $field_value = $field['default'] ?? 0;
                     break;
@@ -854,82 +851,82 @@ class DT_Data_Reporting_Tools
      */
     private static function get_snapshot_field_value( $result, $field_key, $type, $flatten, $field_settings, $locations )
     {
-      $field_value = null;
-      if (key_exists($field_key, $result)) {
-        switch ($type) {
-          case 'key_select':
-            if (isset($field_settings[$field_key]['default']) && isset($field_settings[$field_key]['default'][$result[$field_key]])) {
-              $field_value = $field_settings[$field_key]['default'][$result[$field_key]]['label'];
+        $field_value = null;
+        if ( key_exists( $field_key, $result ) ) {
+            switch ( $type ) {
+                case 'key_select':
+                    if ( isset( $field_settings[$field_key]['default'] ) && isset( $field_settings[$field_key]['default'][$result[$field_key]] ) ) {
+                        $field_value = $field_settings[$field_key]['default'][$result[$field_key]]['label'];
+                    }
+                break;
+                case 'multi_select':
+                case 'tags':
+                case 'connection':
+                    $field_value = $flatten ? implode( ',', $result[$field_key] ) : $result[$field_key];
+                break;
+                case 'user_select':
+                    $field_value = $result[$field_key];
+                break;
+                case 'date':
+                    $field_value = !empty( $result[$field_key] ) ? gmdate( 'Y-m-d H:i:s', $result[$field_key] ) : '';
+                break;
+                case 'location':
+                  // Map country and admin1 data from location_grid table to restrict
+                  // location to only admin level 1 (first level within a country, like states/provinces)
+                    $location_names = array_map(function ( $location ) use ( $locations ) {
+                        if ( isset( $locations[$location] ) ) {
+                            $grid_loc = $locations[$location];
+                          // Try to return "{2-letter-country-code}-{admin1-name}"
+                            if ( !empty( $grid_loc['admin1_name'] ) ) {
+                                return $grid_loc['country_code'] . '-' . $grid_loc['admin1_name'];
+                            }
+                          // fall back to just country code
+                            return $grid_loc['country_code'];
+                        }
+                        // if no grid data, return null for safety of not exposing PII
+                        return null;
+                    }, $result[$field_key]);
+
+                  // Remove null and duplicates
+                    $location_names = array_unique( array_filter( $location_names ) );
+
+                    $field_value = $flatten ? implode( ',', $location_names ) : $location_names;
+                break;
+                case 'number':
+                    $field_value = empty( $result[$field_key] ) ? '' : intval( $result[$field_key] );
+                break;
+                default:
+                    $field_value = $result[$field_key];
+                    if ( is_array( $field_value ) ) {
+                        $field_value = json_encode( $field_value );
+                    }
+                break;
             }
-            break;
-          case 'multi_select':
-          case 'tags':
-          case 'connection':
-            $field_value = $flatten ? implode(",", $result[$field_key]) : $result[$field_key];
-            break;
-          case 'user_select':
-            $field_value = $result[$field_key];
-            break;
-          case 'date':
-            $field_value = !empty($result[$field_key]) ? gmdate("Y-m-d H:i:s", $result[$field_key]) : "";
-            break;
-          case 'location':
-            // Map country and admin1 data from location_grid table to restrict
-            // location to only admin level 1 (first level within a country, like states/provinces)
-            $location_names = array_map(function ($location) use ($locations) {
-              if (isset($locations[$location])) {
-                $grid_loc = $locations[$location];
-                // Try to return "{2-letter-country-code}-{admin1-name}"
-                if (!empty($grid_loc['admin1_name'])) {
-                  return $grid_loc['country_code'] . "-" . $grid_loc['admin1_name'];
-                }
-                // fall back to just country code
-                return $grid_loc['country_code'];
-              }
-              // if no grid data, return null for safety of not exposing PII
-              return null;
-            }, $result[$field_key]);
-
-            // Remove null and duplicates
-            $location_names = array_unique(array_filter($location_names));
-
-            $field_value = $flatten ? implode(",", $location_names) : $location_names;
-            break;
-          case 'number':
-            $field_value = empty($result[$field_key]) ? '' : intval($result[$field_key]);
-            break;
-          default:
-            $field_value = $result[$field_key];
-            if (is_array($field_value)) {
-              $field_value = json_encode($field_value);
+        } else {
+          // Set default/blank value
+            switch ( $type ) {
+                case 'number':
+                    $field_value = $field['default'] ?? 0;
+                break;
+                case 'key_select':
+                    $field_value = null;
+                break;
+                case 'multi_select':
+                case 'tags':
+                    $field_value = $flatten ? null : array();
+                break;
+                case 'array':
+                case 'boolean':
+                case 'date':
+                case 'text':
+                case 'location':
+                default:
+                    $field_value = $field['default'] ?? null;
+                break;
             }
-            break;
         }
-      } else {
-        // Set default/blank value
-        switch ($type) {
-          case 'number':
-            $field_value = $field['default'] ?? 0;
-            break;
-          case 'key_select':
-            $field_value = null;
-            break;
-          case 'multi_select':
-          case 'tags':
-            $field_value = $flatten ? null : array();
-            break;
-          case 'array':
-          case 'boolean':
-          case 'date':
-          case 'text':
-          case 'location':
-          default:
-            $field_value = $field['default'] ?? null;
-            break;
-        }
-      }
 
-      return $field_value;
+        return $field_value;
     }
 
     protected static function get_current_site_base_url() {
@@ -944,7 +941,7 @@ class DT_Data_Reporting_Tools
      * @return array
      */
     public static function get_configs() {
-        $configurations_str = get_option( "dt_data_reporting_configurations" );
+        $configurations_str = get_option( 'dt_data_reporting_configurations' );
         $configurations_int = json_decode( $configurations_str, true );
         $configurations_ext = apply_filters( 'dt_data_reporting_configurations', array() );
 
@@ -952,7 +949,7 @@ class DT_Data_Reporting_Tools
         $configurations = array_merge( $configurations_int ?? [], $configurations_ext );
 
       // Filter out disabled configurations
-        $configurations = array_filter($configurations, function ( $config) {
+        $configurations = array_filter($configurations, function ( $config ) {
             return isset( $config['active'] ) && $config['active'] == 1;
         });
         return $configurations;
@@ -987,7 +984,7 @@ class DT_Data_Reporting_Tools
    * @return |null
    */
     public static function get_config_progress_by_key( $config_key ) {
-        $configurations_str = get_option( "dt_data_reporting_configurations_progress" );
+        $configurations_str = get_option( 'dt_data_reporting_configurations_progress' );
         $configurations = json_decode( $configurations_str, true );
 
         if ( isset( $configurations[$config_key] ) ) {
@@ -1003,12 +1000,12 @@ class DT_Data_Reporting_Tools
    * @param $config_progress
    */
     public static function set_config_progress_by_key( $config_key, $config_progress ) {
-        $configurations_str = get_option( "dt_data_reporting_configurations_progress" );
+        $configurations_str = get_option( 'dt_data_reporting_configurations_progress' );
         $configurations = json_decode( $configurations_str, true );
 
         $configurations[$config_key] = $config_progress;
 
-        update_option( "dt_data_reporting_configurations_progress", json_encode( $configurations ) );
+        update_option( 'dt_data_reporting_configurations_progress', json_encode( $configurations ) );
     }
 
   /**
@@ -1025,11 +1022,11 @@ class DT_Data_Reporting_Tools
 
         // Which field do we use to determine last exported for each type
         if ( $is_activity ) {
-          $value = $item['date'];
+            $value = $item['date'];
         } else if ( $is_snapshots ) {
-          $value = $item['snapshot_date'];
+            $value = $item['snapshot_date'];
         } else {
-          $value = $item['last_modified'];
+            $value = $item['last_modified'];
         }
 
         // If value is not empty, save it
@@ -1047,7 +1044,7 @@ class DT_Data_Reporting_Tools
      * @param $results
      */
     public static function store_export_logs( $data_type, $config_key, $results ) {
-        $export_logs_str = get_option( "dt_data_reporting_export_logs" );
+        $export_logs_str = get_option( 'dt_data_reporting_export_logs' );
         $export_logs = json_decode( $export_logs_str, true );
 
         if ( !isset( $export_logs[$config_key] ) ) {
@@ -1058,7 +1055,7 @@ class DT_Data_Reporting_Tools
         }
         $export_logs[$config_key][$data_type] = $results;
 
-        update_option( "dt_data_reporting_export_logs", json_encode( $export_logs ) );
+        update_option( 'dt_data_reporting_export_logs', json_encode( $export_logs ) );
     }
 
     /**
@@ -1072,7 +1069,7 @@ class DT_Data_Reporting_Tools
     public static function send_data_to_provider( $columns, $rows, $type, $config ) {
         $provider = isset( $config['provider'] ) ? $config['provider'] : 'api';
 
-        if ($provider == 'api') {
+        if ( $provider == 'api' ) {
             // return list of log messages (with type: error, success)
             $export_result = [
                 'success' => false,
@@ -1098,14 +1095,14 @@ class DT_Data_Reporting_Tools
             );
 
             // Add auth token if it is part of the config
-            if (isset( $config['token'] )) {
+            if ( isset( $config['token'] ) ) {
                 $args['headers']['Authorization'] = 'Bearer ' . $config['token'];
             }
 
             // POST the data to the endpoint
             $result = wp_remote_post( $config['url'], $args );
 
-            if (is_wp_error( $result )) {
+            if ( is_wp_error( $result ) ) {
                 // Handle endpoint error
                 $error_message = $result->get_error_message() ?? '';
                 dt_write_log( $error_message );
@@ -1117,7 +1114,7 @@ class DT_Data_Reporting_Tools
                 // Success
                 $status_code = wp_remote_retrieve_response_code( $result );
                 $export_result['success'] = true;
-                if ($status_code !== 200) {
+                if ( $status_code !== 200 ) {
                     $export_result['messages'][] = [
                         'type' => 'error',
                         'message' => "Error: Status Code $status_code",
@@ -1125,7 +1122,7 @@ class DT_Data_Reporting_Tools
                 } else {
                     $export_result['messages'][] = [
                         'type' => 'success',
-                        'message' => "Success",
+                        'message' => 'Success',
                     ];
                 }
                 // $result_body = json_decode($result['body']);
@@ -1228,7 +1225,7 @@ class DT_Data_Reporting_Tools
         $providers = apply_filters( 'dt_data_reporting_providers', array() );
 
         // loop over configurations
-        foreach ($configurations as $config_key => $config) {
+        foreach ( $configurations as $config_key => $config ) {
 
             $provider = isset( $config['provider'] ) ? $config['provider'] : 'api';
             $provider_details = $provider != 'api' ? $providers[$provider] : array();
@@ -1238,7 +1235,7 @@ class DT_Data_Reporting_Tools
             foreach ( $type_configs as $type => $type_config ) {
                 $schedule = isset( $type_config ) && isset( $type_config['schedule'] ) ? $type_config['schedule'] : '';
                 // if scheduled export enabled, run export (get data, send to provider)
-                if ( $schedule == 'daily') {
+                if ( $schedule == 'daily' ) {
                     self::run_export( $config_key, $config, $type, $provider_details );
                 }
             }
@@ -1253,31 +1250,31 @@ class DT_Data_Reporting_Tools
     {
         $columns = array();
         array_push($columns, array(
-            'key' => "id",
-            'name' => "ID",
+            'key' => 'id',
+            'name' => 'ID',
             'type' => 'number',
             'bq_type' => 'INTEGER',
             'bq_mode' => 'NULLABLE',
             ), array(
-            'key' => "created",
-            'name' => "Created",
+            'key' => 'created',
+            'name' => 'Created',
             'type' => 'date',
             'bq_type' => 'TIMESTAMP',
             'bq_mode' => 'NULLABLE',
         ));
 
-        foreach ($fields as $field_key => $field) {
+        foreach ( $fields as $field_key => $field ) {
             // skip if field is hidden
-            if (isset( $field['hidden'] ) && $field['hidden'] == true && !self::is_included_hidden_field( $type, $field_key ) ) {
+            if ( isset( $field['hidden'] ) && $field['hidden'] == true && !self::is_included_hidden_field( $type, $field_key ) ) {
                 continue;
             }
             // skip if in list of excluded fields
-            if (self::is_excluded_field( $type, $field_key ) ) {
+            if ( self::is_excluded_field( $type, $field_key ) ) {
                 continue;
             }
 
             // skip communication_channel fields since they are all PII
-            if ($field['type'] == 'communication_channel') {
+            if ( $field['type'] == 'communication_channel' ) {
                 continue;
             }
 
@@ -1286,7 +1283,7 @@ class DT_Data_Reporting_Tools
                 'name' => $field['name'],
                 'type' => $field['type'],
             );
-            switch ($field['type']) {
+            switch ( $field['type'] ) {
                 case 'array':
                 case 'location':
                 case 'multi_select':
@@ -1318,7 +1315,7 @@ class DT_Data_Reporting_Tools
                     $column['bq_mode'] = 'NULLABLE';
                     break;
             }
-            if ($field_key == 'last_modified') {
+            if ( $field_key == 'last_modified' ) {
                 $column['type'] = 'date';
                 $column['bq_type'] = 'TIMESTAMP';
                 $column['bq_mode'] = 'NULLABLE';
@@ -1335,5 +1332,4 @@ class DT_Data_Reporting_Tools
         ));
         return $columns;
     }
-
 }

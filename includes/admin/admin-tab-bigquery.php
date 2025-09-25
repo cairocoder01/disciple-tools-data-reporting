@@ -1,5 +1,5 @@
 <?php
-
+// phpcs:disable WordPress.WP.I18n.NonSingularStringLiteralText
 if ( ! defined( 'ABSPATH' ) ) { exit; // Exit if accessed directly
 }
 
@@ -231,14 +231,14 @@ class DT_Data_Reporting_Tab_BigQuery
         $is_snapshots = str_contains( $type, '_snapshots' );
 
         if ( $is_activity ) {
-          [ $columns, ] = DT_Data_Reporting_Tools::get_post_activity( $root_type, array( 'limit' => 1 ) );
+            [ $columns, ] = DT_Data_Reporting_Tools::get_post_activity( $root_type, array( 'limit' => 1 ) );
         } else if ( $is_snapshots ) {
-          [ $columns, ] = DT_Data_Reporting_Tools::get_post_snapshots( $root_type, array( 'limit' => 1 ) );
+            [ $columns, ] = DT_Data_Reporting_Tools::get_post_snapshots( $root_type, array( 'limit' => 1 ) );
         } else {
-          [ $columns, ] = DT_Data_Reporting_Tools::get_posts( $type, false, array( 'limit' => 1 ) );
+            [ $columns, ] = DT_Data_Reporting_Tools::get_posts( $type, false, array( 'limit' => 1 ) );
         }
         echo "<pre><code style='display:block;'>";
-        $bq_columns = array_map(function ( $col) {
+        $bq_columns = array_map(function ( $col ) {
             return array(
                 'name' => $col['key'],
                 'type' => $col['bq_type'],

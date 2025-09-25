@@ -58,7 +58,7 @@ class DT_Data_Reporting_Tab_API
                 foreach ( $export_result['messages'] as $message ) {
                     $message_type = isset( $message['type'] ) ? $message['type'] : '';
                     $content = isset( $message['message'] ) ? $message['message'] : '';
-                    echo "<li class='" . esc_attr( $message_type ) . "'>" . wp_kses( $content, $allowed_html ) . "</li>";
+                    echo "<li class='" . esc_attr( $message_type ) . "'>" . wp_kses( $content, $allowed_html ) . '</li>';
                 }
             }
 

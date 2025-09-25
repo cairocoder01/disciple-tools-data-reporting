@@ -26,11 +26,11 @@ require_once( plugin_dir_path( __FILE__ ) . '../includes/data-tools.php' );
 
 function get_post_activity( $post_type ) {
     global $wpdb;
-    $post_settings = apply_filters( "dt_get_post_type_settings", array(), $post_type );
-    $fields = $post_settings["fields"];
+    $post_settings = apply_filters( 'dt_get_post_type_settings', array(), $post_type );
+    $fields = $post_settings['fields'];
     $hidden_fields = array();
     foreach ( $fields as $field_key => $field ){
-        if ( isset( $field["hidden"] ) && $field["hidden"] === true ){
+        if ( isset( $field['hidden'] ) && $field['hidden'] === true ){
             $hidden_fields[] = $field_key;
         }
     }
@@ -54,22 +54,22 @@ function get_post_activity( $post_type ) {
         $a->object_note = DT_Posts::format_activity_message( $a, $post_settings );
         if ( !empty( $a->object_note ) ){
             $activity_simple[] = array(
-                "meta_key" => $a->meta_key,
-                "object_id" => $a->object_id,
-                "user_id" => $a->user_id,
-                "object_note" => $a->object_note,
-                "hist_time" => $a->hist_time,
-                "meta_id" => $a->meta_id,
-                "histid" => $a->histid,
-                "action" => $a->action,
+                'meta_key' => $a->meta_key,
+                'object_id' => $a->object_id,
+                'user_id' => $a->user_id,
+                'object_note' => $a->object_note,
+                'hist_time' => $a->hist_time,
+                'meta_id' => $a->meta_id,
+                'histid' => $a->histid,
+                'action' => $a->action,
             );
         }
     }
 
 //    $paged = array_slice( $activity_simple, $args["offset"] ?? 0, $args["number"] ?? 1000 );
     return array(
-        "activity" => $activity_simple,
-        "total" => sizeof( $activity_simple )
+        'activity' => $activity_simple,
+        'total' => sizeof( $activity_simple )
     );
 }
 $limit = isset( $_GET['limit'] ) ? sanitize_key( wp_unslash( $_GET['limit'] ) ) : null;
@@ -112,7 +112,7 @@ fputcsv( $output, $columns );
 
 
 // loop over the rows, outputting them
-foreach ($items as $row ) {
+foreach ( $items as $row ) {
     fputcsv( $output, $row );
 }
 

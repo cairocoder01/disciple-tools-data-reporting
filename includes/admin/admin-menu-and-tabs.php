@@ -1,4 +1,5 @@
 <?php
+// phpcs:disable WordPress.WP.I18n.NonSingularStringLiteralText
 /**
  * DT_Data_Reporting_Menu class for the admin page
  *
@@ -48,9 +49,9 @@ class DT_Data_Reporting_Menu {
      */
     public function __construct() {
 
-        add_action( "admin_menu", array( $this, "register_menu" ) );
-        add_action( "admin_head", array( $this, "add_styles" ) );
-        add_action( "admin_footer", array( $this, "add_scripts" ) );
+        add_action( 'admin_menu', array( $this, 'register_menu' ) );
+        add_action( 'admin_head', array( $this, 'add_styles' ) );
+        add_action( 'admin_footer', array( $this, 'add_scripts' ) );
 
         require_once( plugin_dir_path( __FILE__ ) . '../data-tools.php' );
         require_once( plugin_dir_path( __FILE__ ) . '../snapshot-tools.php' );
@@ -80,16 +81,16 @@ class DT_Data_Reporting_Menu {
     }
 
     public function format_post_activity( $activity, $a ) {
-      if ( isset( $a->action ) ) {
-        $activity['action'] = $a->action;
-      }
-      if ( isset( $a->meta_value ) ) {
-        $activity['meta_value'] = $a->meta_value;
-      }
-      if ( isset( $a->old_value ) ) {
-        $activity['old_value'] = $a->old_value;
-      }
-      return $activity;
+        if ( isset( $a->action ) ) {
+            $activity['action'] = $a->action;
+        }
+        if ( isset( $a->meta_value ) ) {
+            $activity['meta_value'] = $a->meta_value;
+        }
+        if ( isset( $a->old_value ) ) {
+            $activity['old_value'] = $a->old_value;
+        }
+        return $activity;
     }
 
     public function add_styles() {
@@ -247,18 +248,18 @@ class DT_Data_Reporting_Menu {
             wp_die( esc_attr__( 'You do not have sufficient permissions to access this page.' ) );
         }
 
-        if ( isset( $_GET["tab"] ) ) {
-            $tab = sanitize_key( wp_unslash( $_GET["tab"] ) );
+        if ( isset( $_GET['tab'] ) ) {
+            $tab = sanitize_key( wp_unslash( $_GET['tab'] ) );
         } else {
             $tab = 'getting-started';
         }
-        if ( isset( $_GET["type"] ) ) {
-            $type = sanitize_key( wp_unslash( $_GET["type"] ) );
+        if ( isset( $_GET['type'] ) ) {
+            $type = sanitize_key( wp_unslash( $_GET['type'] ) );
         } else {
             $type = null;
         }
-        if ( isset( $_GET["config"] ) ) {
-            $config = sanitize_key( wp_unslash( $_GET["config"] ) );
+        if ( isset( $_GET['config'] ) ) {
+            $config = sanitize_key( wp_unslash( $_GET['config'] ) );
         } else {
             $config = null;
         }
@@ -282,41 +283,41 @@ class DT_Data_Reporting_Menu {
                 <?php endif; ?>
                 <?php endforeach; ?>
 
-                <?php if ($tab === 'preview' ): ?>
+                <?php if ( $tab === 'preview' ): ?>
                     <a href="<?php echo esc_attr( $link ) . 'preview' ?>" class="nav-tab <?php ( $tab == 'preview' ) ? esc_attr_e( 'nav-tab-active', 'disciple-tools-data-reporting' ) : print ''; ?>"><?php esc_attr_e( 'Preview', 'disciple-tools-data-reporting' ) ?></a>
                 <?php endif; ?>
-                <?php if ($tab === 'api-send' ): ?>
+                <?php if ( $tab === 'api-send' ): ?>
                     <a href="<?php echo esc_attr( $link ) . 'api-send' ?>" class="nav-tab <?php ( $tab == 'api-send' ) ? esc_attr_e( 'nav-tab-active', 'disciple-tools-data-reporting' ) : print ''; ?>"><?php esc_attr_e( 'Export Log', 'disciple-tools-data-reporting' ) ?></a>
                 <?php endif; ?>
             </h2>
 
             <?php
-            switch ($tab) {
-                case "getting-started":
+            switch ( $tab ) {
+                case 'getting-started':
                     $object = new DT_Data_Reporting_Tab_Getting_Started( $this->token );
                     $object->content();
                     break;
-                case "export":
+                case 'export':
                     $object = new DT_Data_Reporting_Tab_Manual_Export( $this->token );
                     $object->content();
                     break;
-                case "bigquery":
+                case 'bigquery':
                     $object = new DT_Data_Reporting_Tab_BigQuery( $this->token );
                     $object->content();
                     break;
-                case "preview":
+                case 'preview':
                     $object = new DT_Data_Reporting_Tab_Preview( $type, $config );
                     $object->content();
                     break;
-                case "api-send":
+                case 'api-send':
                     $object = new DT_Data_Reporting_Tab_API( $this->token, $type, $config );
                     $object->content();
                     break;
-                case "settings":
+                case 'settings':
                     $object = new DT_Data_Reporting_Tab_Settings();
                     $object->content();
                     break;
-                case "snapshots":
+                case 'snapshots':
                     $object = new DT_Data_Reporting_Tab_Snapshots();
                     $object->content();
                     break;
@@ -427,5 +428,4 @@ class DT_Data_Reporting_Tab_Getting_Started
 
         <?php
     }
-
 }

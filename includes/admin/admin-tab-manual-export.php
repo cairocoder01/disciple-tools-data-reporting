@@ -1,4 +1,5 @@
 <?php
+// phpcs:disable WordPress.WP.I18n.NonSingularStringLiteralText
 class DT_Data_Reporting_Tab_Manual_Export
 {
     public $token;
@@ -162,5 +163,4 @@ class DT_Data_Reporting_Tab_Manual_Export
         ?>
         <?php
     }
-
 }

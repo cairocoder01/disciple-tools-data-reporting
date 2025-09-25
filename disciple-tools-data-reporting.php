@@ -37,8 +37,8 @@ function dt_data_reporting_plugin() {
     /*
      * Check if the Disciple.Tools theme is loaded and is the latest required version
      */
-    $is_theme_dt = class_exists( "Disciple_Tools" );
-    if ( $is_theme_dt && version_compare( $version, $dt_data_reporting_required_dt_theme_version, "<" ) ) {
+    $is_theme_dt = class_exists( 'Disciple_Tools' );
+    if ( $is_theme_dt && version_compare( $version, $dt_data_reporting_required_dt_theme_version, '<' ) ) {
         add_action( 'admin_notices', 'dt_data_reporting_plugin_hook_admin_notice' );
         add_action( 'wp_ajax_dismissed_notice_handler', 'dt_hook_ajax_notice_handler' );
         return false;
@@ -97,7 +97,6 @@ class DT_Data_Reporting {
             wp_schedule_event( time(), 'daily', 'dt_dr_cron_hook' );
         }
             add_action( 'dt_dr_cron_hook', [ $this, 'cron_export' ] );
-
     }
 
     public function cron_export() {
@@ -107,8 +106,8 @@ class DT_Data_Reporting {
         // Set current user to avoid permissions issues when fetching posts
         wp_set_current_user( 0 );
         $current_user = wp_get_current_user();
-        $current_user->add_cap( "access_contacts" );
-        $current_user->add_cap( "view_any_contacts" );
+        $current_user->add_cap( 'access_contacts' );
+        $current_user->add_cap( 'view_any_contacts' );
         DT_Data_Reporting_Tools::run_scheduled_exports();
 
         DT_Data_Reporting_Snapshot_Tools::run_snapshot_task();
@@ -212,7 +211,7 @@ class DT_Data_Reporting {
      * @access public
      */
     public function __call( $method = '', $args = array() ) {
-        _doing_it_wrong( "dt_data_reporting_plugin::" . esc_html( $method ), 'Method does not exist.', '0.1' );
+        _doing_it_wrong( 'dt_data_reporting_plugin::' . esc_html( $method ), 'Method does not exist.', '0.1' );
         unset( $method, $args );
         return null;
     }
@@ -227,8 +226,8 @@ function dt_data_reporting_hook_admin_notice() {
     global $dt_data_reporting_required_dt_theme_version;
     $wp_theme = wp_get_theme();
     $current_version = $wp_theme->version;
-    $message = __( "'Disciple Tools - Data Reporting' plugin requires 'Disciple Tools' theme to work. Please activate 'Disciple Tools' theme or make sure it is latest version.", "dt_data_reporting" );
-    if ( $wp_theme->get_template() === "disciple-tools-theme" ){
+    $message = __( "'Disciple Tools - Data Reporting' plugin requires 'Disciple Tools' theme to work. Please activate 'Disciple Tools' theme or make sure it is latest version.", 'dt_data_reporting' );
+    if ( $wp_theme->get_template() === 'disciple-tools-theme' ){
         $message .= sprintf( esc_html__( 'Current Disciple Tools version: %1$s, required version: %2$s', 'disciple-tools-data-reporting' ), esc_html( $current_version ), esc_html( $dt_data_reporting_required_dt_theme_version ) );
     }
     // Check if it's been dismissed...
@@ -257,11 +256,11 @@ function dt_data_reporting_hook_admin_notice() {
 /**
  * AJAX handler to store the state of dismissible notices.
  */
-if ( !function_exists( "dt_hook_ajax_notice_handler" )){
+if ( !function_exists( 'dt_hook_ajax_notice_handler' ) ){
     function dt_hook_ajax_notice_handler(){
         check_ajax_referer( 'wp_rest_dismiss', 'security' );
-        if ( isset( $_POST["type"] ) ){
-            $type = sanitize_text_field( wp_unslash( $_POST["type"] ) );
+        if ( isset( $_POST['type'] ) ){
+            $type = sanitize_text_field( wp_unslash( $_POST['type'] ) );
             update_option( 'dismissed-' . $type, true );
         }
     }
@@ -277,10 +276,10 @@ if ( !function_exists( "dt_hook_ajax_notice_handler" )){
  * @see https://github.com/DiscipleTools/disciple-tools-version-control/wiki/How-to-Update-the-Starter-Plugin
  */
 add_action( 'plugins_loaded', function (){
-    if ( is_admin() && !( is_multisite() && class_exists( "DT_Multisite" ) ) || wp_doing_cron() ){
+    if ( ( is_admin() && !( is_multisite() && class_exists( 'DT_Multisite' ) ) ) || wp_doing_cron() ){
         // Check for plugin updates
         if ( ! class_exists( 'Puc_v4_Factory' ) ) {
-            if ( file_exists( get_template_directory() . '/dt-core/libraries/plugin-update-checker/plugin-update-checker.php' )){
+            if ( file_exists( get_template_directory() . '/dt-core/libraries/plugin-update-checker/plugin-update-checker.php' ) ){
                 require( get_template_directory() . '/dt-core/libraries/plugin-update-checker/plugin-update-checker.php' );
             }
         }
