@@ -153,6 +153,7 @@ class DT_Data_Reporting_Tab_BigQuery
         <?php foreach ( $post_types as $post_type ):
             $post_type_settings = DT_Posts::get_post_settings( $post_type );
             $activity_type = rtrim( $post_type, 's' ) . '_activity';
+            $snapshot_type = rtrim( $post_type, 's' ) . '_snapshots';
             ?>
           <tr>
             <td>
@@ -168,6 +169,8 @@ class DT_Data_Reporting_Tab_BigQuery
                 </thead>
                 <tbody>
                   <tr><td>
+                    Table Name: <code><?php echo esc_html( $post_type ) ?></code>
+                    <br>
                     <?php $this->print_schema( $post_type ) ?>
                     </td></tr>
                 </tbody>
@@ -186,7 +189,29 @@ class DT_Data_Reporting_Tab_BigQuery
                 </thead>
                 <tbody>
                   <tr><td>
+                    Table Name: <code><?php echo esc_html( $activity_type ) ?></code>
+                    <br>
                     <?php $this->print_schema( $activity_type ) ?>
+                    </td></tr>
+                </tbody>
+              </table>
+            </td>
+          </tr>
+          <tr>
+            <td>
+              <table class="widefat schema accordion collapsed">
+                <thead>
+                <tr><th><a href="javascript:;" class="toggle">
+                      <?php esc_html_e( $post_type_settings['label_singular'] ) ?> Snapshots
+                      <img src="<?php echo esc_html( get_template_directory_uri() . '/dt-assets/images/chevron_down.svg' ) ?>" class="icon closed"/>
+                      <img src="<?php echo esc_html( get_template_directory_uri() . '/dt-assets/images/chevron_up.svg' ) ?>" class="icon open"/>
+                    </a></th></tr>
+                </thead>
+                <tbody>
+                  <tr><td>
+                    Table Name: <code><?php echo esc_html( $snapshot_type ) ?></code>
+                    <br>
+                    <?php $this->print_schema( $snapshot_type ) ?>
                     </td></tr>
                 </tbody>
               </table>
@@ -200,13 +225,17 @@ class DT_Data_Reporting_Tab_BigQuery
 
     public function print_schema( $type ) {
         $root_type = str_replace( '_activity', 's', $type );
+        $root_type = str_replace( '_snapshots', 's', $root_type );
         $is_activity = $root_type !== $type;
+        $is_activity = str_contains( $type, '_activity' );
+        $is_snapshots = str_contains( $type, '_snapshots' );
 
         if ( $is_activity ) {
-            [$columns, ] = DT_Data_Reporting_Tools::get_post_activity( $root_type, array( 'limit' => 1 ) );
+          [ $columns, ] = DT_Data_Reporting_Tools::get_post_activity( $root_type, array( 'limit' => 1 ) );
+        } else if ( $is_snapshots ) {
+          [ $columns, ] = DT_Data_Reporting_Tools::get_post_snapshots( $root_type, array( 'limit' => 1 ) );
         } else {
-            [ $columns, ] = DT_Data_Reporting_Tools::get_posts( $type, false, array( 'limit' => 1 ) );
-
+          [ $columns, ] = DT_Data_Reporting_Tools::get_posts( $type, false, array( 'limit' => 1 ) );
         }
         echo "<pre><code style='display:block;'>";
         $bq_columns = array_map(function ( $col) {

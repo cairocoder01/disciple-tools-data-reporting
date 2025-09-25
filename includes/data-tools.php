@@ -568,9 +568,8 @@ class DT_Data_Reporting_Tools
         }
 
         // Set UTC as time zone for subsequent queries
-        $wpdb->query(
-            $wpdb->prepare("SET time_zone='+00:00';")
-        );
+        $wpdb->query("SET time_zone='+00:00';");
+
         // Join 2 queries in a union
         $query = "
             $query_activity_select
@@ -1021,14 +1020,16 @@ class DT_Data_Reporting_Tools
     public static function set_last_exported_value( $data_type, $config_key, $item ) {
         $value = null;
 
-        $root_type = str_replace( '_activity', 's', $data_type );
-        $is_activity = $root_type !== $data_type;
+        $is_activity = str_contains( $data_type, '_activity' );
+        $is_snapshots = str_contains( $data_type, '_snapshots' );
 
         // Which field do we use to determine last exported for each type
         if ( $is_activity ) {
-            $value = $item['date'];
+          $value = $item['date'];
+        } else if ( $is_snapshots ) {
+          $value = $item['snapshot_date'];
         } else {
-            $value = $item['last_modified'];
+          $value = $item['last_modified'];
         }
 
         // If value is not empty, save it

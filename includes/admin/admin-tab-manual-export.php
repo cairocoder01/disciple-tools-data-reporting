@@ -122,6 +122,7 @@ class DT_Data_Reporting_Tab_Manual_Export
                 <?php foreach ( $post_types as $post_type ):
                     $post_type_settings = DT_Posts::get_post_settings( $post_type );
                     $activity_type = rtrim( $post_type, 's' ) . '_activity';
+                    $snapshot_type = rtrim( $post_type, 's' ) . '_snapshots';
                     ?>
                 <tr>
                   <td>

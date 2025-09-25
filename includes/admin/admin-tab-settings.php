@@ -637,8 +637,10 @@ class DT_Data_Reporting_Tab_Settings
                             $post_type_settings = DT_Posts::get_post_settings( $post_type );
                             $post_type_label = $post_type_settings['label_plural'];
                             $activity_type = rtrim( $post_type, 's' ) . '_activity';
+                            $snapshot_type = rtrim( $post_type, 's' ) . '_snapshots';
                             $post_schedule_enabled = isset( $config['data_types'][$post_type] ) && isset( $config['data_types'][$post_type]['schedule'] ) && $config['data_types'][$post_type]['schedule'] == 'daily';
                             $activity_schedule_enabled = isset( $config['data_types'][$activity_type] ) && isset( $config['data_types'][$activity_type]['schedule'] ) && $config['data_types'][$activity_type]['schedule'] == 'daily';
+                            $snapshot_schedule_enabled = isset( $config['data_types'][$snapshot_type] ) && isset( $config['data_types'][$snapshot_type]['schedule'] ) && $config['data_types'][$snapshot_type]['schedule'] == 'daily';
                             ?>
                   <table class="widefat striped table-config accordion data-type-config-table <?php echo $post_schedule_enabled ? '' : 'collapsed' ?>">
                     <thead>
@@ -666,6 +668,20 @@ class DT_Data_Reporting_Tab_Settings
                     </thead>
                     <tbody>
                             <?php $this->post_type_config_settings( $config, $activity_type ) ?>
+                    </tbody>
+                  </table>
+                  <table class="widefat striped table-config accordion data-type-config-table <?php echo $snapshot_schedule_enabled ? '' : 'collapsed' ?>">
+                    <thead>
+                    <tr>
+                      <td><a href="javascript:;" class="toggle">
+                            <?php echo esc_html( $post_type_label ) ?> Snapshots
+                          <img src="<?php echo esc_html( get_template_directory_uri() . '/dt-assets/images/chevron_down.svg' ) ?>" class="icon closed"/>
+                          <img src="<?php echo esc_html( get_template_directory_uri() . '/dt-assets/images/chevron_up.svg' ) ?>" class="icon open"/>
+                        </a></td>
+                    </tr>
+                    </thead>
+                    <tbody>
+                            <?php $this->post_type_config_settings( $config, $snapshot_type ) ?>
                     </tbody>
                   </table>
                 <?php endforeach; ?>
