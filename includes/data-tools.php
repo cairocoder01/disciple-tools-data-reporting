@@ -14,8 +14,8 @@ class DT_Data_Reporting_Tools
         'type' => true,
         'last_modified' => true,
         'date' => true,
+        'snapshot_date' => true,
     ];
-
 
     private static $excluded_fields = array(
         'contacts' => array( 'name', 'nickname', 'tasks', 'facebook_data' ),
@@ -86,7 +86,7 @@ class DT_Data_Reporting_Tools
                 'start' => $last_exported_value,
             ];
         }
-
+        // dt_write_log( 'Filters: ' . json_encode( $filter ) );
         // Fetch the data
         $result = null;
         if ( $is_activity ) {
@@ -101,8 +101,9 @@ class DT_Data_Reporting_Tools
     }
 
     public static function get_post_snapshots( $post_type, $flatten = false, $filter = null ) {
+        $filter = $filter ? array_intersect_key( $filter, self::$supported_filters ) : array();
 
-      // Fetch all post data
+        // Fetch all post data
         try {
             $snapshots = self::query_post_snapshots( $post_type, $filter );
             dt_write_log( sizeof( $snapshots['snapshots'] ) . ' of ' . $snapshots['total'] . " - $post_type snapshots" );
@@ -118,7 +119,7 @@ class DT_Data_Reporting_Tools
         $base_url = self::get_current_site_base_url();
         $locations = self::get_location_data( $snapshots['posts'] );
 
-      // process each post
+        // process each post
         foreach ( $snapshots['snapshots'] as $index => $snapshot ) {
             $result = $snapshot['post_content'];
 //      dt_write_log( json_encode( $result ) );
@@ -664,17 +665,20 @@ class DT_Data_Reporting_Tools
         $wpdb->query( "SET time_zone='+00:00';" );
 
         $table = $wpdb->prefix . 'dt_post_snapshots';
+        $where = 'WHERE s.post_type=%s';
+        $params = [ $post_type ];
+        if ( isset( $filter['snapshot_date'] ) && isset( $filter['snapshot_date']['start'] ) ) {
+            $start = $filter['snapshot_date']['start'];
+            $since = strtotime( $start );
+
+            $where .= ' AND s.snapshot_date >= %s';
+            $params[] = $filter['snapshot_date']['start'] ?? '2000-01-01 00:00:00';
+        }
         $query = "SELECT s.*
         FROM `$table` as s
-        WHERE
-          s.post_type = %s
-          AND s.snapshot_date >= %s
+        $where
         ORDER BY s.snapshot_date ASC
         ";
-        $params = [
-        $post_type,
-        $filter['date']['start'] ?? '2000-01-01 00:00:00',
-        ];
 
         $temp_query = "SELECT count(*) from ($query) as temp";
         $total = $wpdb->get_var($wpdb->prepare(

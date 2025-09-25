@@ -7,6 +7,8 @@ class DT_Data_Reporting_Tab_API
 {
     public $type = 'contacts';
     public $config;
+    public $token;
+    public $config_key;
 
     public function __construct( $token, $type, $config ) {
         $this->token = $token;
