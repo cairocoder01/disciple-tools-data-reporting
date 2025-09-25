@@ -94,7 +94,7 @@ if ( $is_activity ) {
     $columns = array_map( function ( $column ) {
         return $column['name'];
     }, $columns );
-} else if ( $is_snapshots) {
+} else if ( $is_snapshots ) {
     [ $columns, $items ] = DT_Data_Reporting_Tools::get_post_snapshots( $root_type, true, $filter );
     $columns = array_map( function ( $column ) {
         return $column['name'];
