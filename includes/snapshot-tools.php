@@ -351,7 +351,7 @@ class DT_Data_Reporting_Snapshot_Tools
      * @param mixed $name
      * @return array
      */
-    private static function get_snapshots( mixed $name )
+    private static function get_snapshots( $name )
     {
         global $wpdb;
         $table_name = $wpdb->prefix . self::$table_name;
@@ -395,7 +395,7 @@ class DT_Data_Reporting_Snapshot_Tools
      * @param $activity
      * @return void
      */
-    private static function update_snapshot_value( &$post, mixed $field_settings, $activity )
+    private static function update_snapshot_value( &$post, $field_settings, $activity )
     {
         $action = $activity['action'];
         $field_type = $activity['field_type'];
