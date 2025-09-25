@@ -76,7 +76,9 @@ $limit = isset( $_GET['limit'] ) ? sanitize_key( wp_unslash( $_GET['limit'] ) ) 
 $offset = isset( $_GET['offset'] ) ? sanitize_key( wp_unslash( $_GET['offset'] ) ) : null;
 $data_type = isset( $_GET['type'] ) ? sanitize_key( wp_unslash( $_GET['type'] ) ) : '';
 $root_type = str_replace( '_activity', 's', $data_type );
-$is_activity = $root_type !== $data_type;
+$root_type = str_replace( '_snapshots', 's', $root_type );
+$is_activity = str_contains( $data_type, '_activity' );
+$is_snapshots = str_contains( $data_type, '_snapshots' );
 $data_filename = strcmp( $data_type, '' ) !== 0 ? $data_type : 'data';
 
 $filter = [];
@@ -89,7 +91,13 @@ if ( isset( $offset ) && $offset > 0 ) {
 
 if ( $is_activity ) {
     [ $columns, $items ] = DT_Data_Reporting_Tools::get_post_activity( $root_type, $filter );
-    $columns = array_map( function ( $column ) { return $column['name'];
+    $columns = array_map( function ( $column ) {
+        return $column['name'];
+    }, $columns );
+} else if ( $is_snapshots) {
+    [ $columns, $items ] = DT_Data_Reporting_Tools::get_post_snapshots( $root_type, true, $filter );
+    $columns = array_map( function ( $column ) {
+        return $column['name'];
     }, $columns );
 } else {
     [ $columns, $items ] = DT_Data_Reporting_Tools::get_posts( $root_type, true, $filter );

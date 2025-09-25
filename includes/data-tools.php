@@ -105,6 +105,7 @@ class DT_Data_Reporting_Tools
       // Fetch all post data
         try {
             $snapshots = self::query_post_snapshots( $post_type, $filter );
+            dt_write_log( sizeof( $snapshots['snapshots'] ) . ' of ' . $snapshots['total'] . " - $post_type snapshots" );
         } catch ( Exception $ex ) {
             dt_write_log( "Error fetching $post_type snapshots: {$ex->getMessage()}" );
             return array( null, null, 0 );
@@ -171,6 +172,7 @@ class DT_Data_Reporting_Tools
             $post['period_interval'] = $snapshot['period_interval'];
             $post['period_start'] = $snapshot['period_start'];
             $post['period_end'] = $snapshot['period_end'];
+            $post['snapshot_date'] = $snapshot['snapshot_date'];
 //      dt_write_log( json_encode( $post ) );
             $items[] = $post;
         }
@@ -199,6 +201,12 @@ class DT_Data_Reporting_Tools
             'type' => 'date',
             'bq_type' => 'TIMESTAMP',
             'bq_mode' => 'NULLABLE',
+            ), array(
+            'key' => 'snapshot_date',
+            'name' => 'Snapshot Date',
+            'type' => 'date',
+            'bq_type' => 'TIMESTAMP',
+            'bq_mode' => 'NULLABLE',
         ));
         return array( $columns, $items, $snapshots['total'] );
     }
@@ -213,7 +221,7 @@ class DT_Data_Reporting_Tools
         $filter = $filter ? array_intersect_key( $filter, self::$supported_filters ) : array();
 
         $activities = self::query_post_activity( $post_type, $filter );
-        dt_write_log( sizeof( $activities['activity'] ) . ' of ' . $activities['total'] );
+        dt_write_log( sizeof( $activities['activity'] ) . ' of ' . $activities['total'] . " - $post_type activity" );
         $items = array();
 
         $base_url = self::get_current_site_base_url();
@@ -342,6 +350,7 @@ class DT_Data_Reporting_Tools
       // Fetch all post data
         try {
             $posts = self::query_posts( $post_type, $filter );
+            dt_write_log( sizeof( $posts['posts'] ) . ' of ' . $posts['total'] . " - $post_type" );
         } catch ( Exception $ex ) {
             dt_write_log( "Error fetching $post_type: {$ex->getMessage()}" );
             return array( null, null, 0 );
@@ -447,7 +456,6 @@ class DT_Data_Reporting_Tools
             throw new Exception( $error_message );
         }
 
-        dt_write_log( sizeof( $posts['posts'] ) . ' of ' . $posts['total'] );
         if ( !isset( $filter['limit'] ) ) {
             // if total is greater than length, recursively get more
             $retrieved_posts = sizeof( $posts['posts'] );
