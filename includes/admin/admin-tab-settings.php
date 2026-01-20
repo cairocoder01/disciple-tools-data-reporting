@@ -905,8 +905,8 @@ class DT_Data_Reporting_Tab_Settings
             <div class="export-logs">
               <button type="button">View Last Export Logs</button>
               <div class="log-messages" style="display: none;">
-                <div class="result">Result: <?php echo $export_logs[$key][$data_type]['success'] ? 'Success' : 'Fail' ?></div>
-                <div class="date">Date: <?php echo isset( $export_logs[$key][$data_type]['date'] ) ? $export_logs[$key][$data_type]['date'] : 'Unknown' ?></div>
+                <div class="result">Result: <?php echo esc_html( $export_logs[$key][$data_type]['success'] ? 'Success' : 'Fail' ) ?></div>
+                <div class="date">Date: <?php echo esc_html( isset( $export_logs[$key][$data_type]['date'] ) ? $export_logs[$key][$data_type]['date'] : 'Unknown' ) ?></div>
                 <ul class="api-log">
                   <?php foreach ( $export_logs[$key][$data_type]['messages'] as $message ) {
                         $message_type = isset( $message['type'] ) ? $message['type'] : '';
@@ -988,7 +988,8 @@ class DT_Data_Reporting_Tab_Settings
             <div class="export-logs">
               <button type="button">View Last Export Logs</button>
               <div class="log-messages" style="display: none;">
-                <div class="result">Result: <?php echo $export_logs[$key][$data_type]['success'] ? 'Success' : 'Fail' ?></div>
+                <div class="result">Result: <?php echo esc_html( $export_logs[$key][$data_type]['success'] ? 'Success' : 'Fail' ) ?></div>
+                <div class="date">Date: <?php echo esc_html( isset( $export_logs[$key][$data_type]['date'] ) ? $export_logs[$key][$data_type]['date'] : 'Unknown' ) ?></div>
                 <ul class="api-log">
                   <?php foreach ( $export_logs[$key][$data_type]['messages'] as $message ) {
                         $message_type = isset( $message['type'] ) ? $message['type'] : '';

@@ -1071,7 +1071,7 @@ class DT_Data_Reporting_Tools
 
         // add date to results
         if ( !isset( $results['date'] ) ) {
-            $results['date'] = date('Y-m-d H:i:s');
+            $results['date'] = gmdate( 'Y-m-d H:i:s' );
         }
         $export_logs[$config_key][$data_type] = $results;
 
