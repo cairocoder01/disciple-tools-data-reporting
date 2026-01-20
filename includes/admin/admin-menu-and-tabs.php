@@ -160,7 +160,8 @@ class DT_Data_Reporting_Menu {
             .export-logs {
               padding: .5rem 0;
             }
-            .export-logs .result {
+            .export-logs .result,
+            .export-logs .date {
               font-weight: bold;
               background-color: lightgray;
               padding: 0.5rem 1rem 0rem;

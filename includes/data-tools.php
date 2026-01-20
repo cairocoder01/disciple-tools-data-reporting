@@ -1065,6 +1065,11 @@ class DT_Data_Reporting_Tools
         if ( !isset( $export_logs[$config_key][$data_type] ) ) {
             $export_logs[$config_key][$data_type] = array();
         }
+
+        // add date to results
+        if ( !isset( $results['date'] ) ) {
+            $results['date'] = date('Y-m-d H:i:s');
+        }
         $export_logs[$config_key][$data_type] = $results;
 
         update_option( 'dt_data_reporting_export_logs', json_encode( $export_logs ) );
