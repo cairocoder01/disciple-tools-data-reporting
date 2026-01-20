@@ -68,12 +68,15 @@ class DT_Data_Reporting_Tools
         $filter_key = $root_type . '_filter';
         $filter = $config && isset( $config[$filter_key] ) ? $config[$filter_key] : [];
 
-        if ( $limit ) {
-            $filter['limit'] = $limit;
+        if ( !$all_data ) {
+            if ( $limit ) {
+                $filter['limit'] = $limit;
+            }
+            if ( $offset ) {
+                $filter['offset'] = $offset;
+            }
         }
-        if ( $offset ) {
-            $filter['offset'] = $offset;
-        }
+
         // If not exporting everything, add limit and filter for last value
         if ( !$all_data && !empty( $last_exported_value ) ) {
             $date_field = $is_activity ? 'date' : 'last_modified';
