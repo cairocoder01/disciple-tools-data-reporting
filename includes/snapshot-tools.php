@@ -530,14 +530,21 @@ class DT_Data_Reporting_Snapshot_Tools
 
             global $wpdb;
             $table_name = $wpdb->prefix . self::$table_name;
-            $now = ( new DateTime() )->format( 'Y-m-d H:i:s' );
+            $now = new DateTime();
 
             $logged_data = false;
+            $counter = 0;
             foreach ( $filtered_snapshots as $snapshot ) {
                 if ( empty( $snapshot['post_id'] ) || empty( $snapshot['post_type'] )
                     || empty( $snapshot['period'] ) || empty( $snapshot['period_start'] )
                     || empty( $snapshot['period_end'] ) || empty( $snapshot['period_interval'] ) ) {
                     continue;
+                }
+
+                $snapshot_date = clone $now;
+                if ( $counter >= 50 ) {
+                    $seconds_to_subtract = floor( $counter / 50 );
+                    $snapshot_date->modify( "-$seconds_to_subtract seconds" );
                 }
 
                 $data = [
@@ -549,8 +556,9 @@ class DT_Data_Reporting_Snapshot_Tools
                     'period_end' => $snapshot['period_end']->format( 'Y-m-d H:i:s' ),
                     'period_interval' => $snapshot['period_interval'],
                     'post_content' => wp_json_encode( $snapshot['post_content'] ?? [] ),
-                    'snapshot_date' => $now
+                    'snapshot_date' => $snapshot_date->format( 'Y-m-d H:i:s' )
                 ];
+                $counter++;
                 if ( !$logged_data ) {
 //          dt_write_log( 'Saving data: ' . json_encode( $data ) );
                     $logged_data = true;
