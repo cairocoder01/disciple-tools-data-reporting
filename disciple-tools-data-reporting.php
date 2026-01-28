@@ -57,6 +57,17 @@ function dt_data_reporting_plugin() {
 }
 add_action( 'after_setup_theme', 'dt_data_reporting_plugin', 20 );
 
+// register the D.T Plugin
+add_filter( 'dt_plugins', function ( $plugins ) {
+    $plugin_data = get_file_data( __FILE__, [ 'Version' => 'Version', 'Plugin Name' => 'Plugin Name' ], false );
+    $plugins['disciple-tools-data-reporting'] = [
+        'plugin_url' => trailingslashit( plugin_dir_url( __FILE__ ) ),
+        'version' => $plugin_data['Version'] ?? null,
+        'name' => $plugin_data['Plugin Name'] ?? null,
+    ];
+    return $plugins;
+} );
+
 /**
  * Singleton class for setting up the plugin.
  *
@@ -82,12 +93,12 @@ class DT_Data_Reporting {
      */
     private function __construct() {
 
-      // adds starter admin page and section for plugin
+        // adds starter admin page and section for plugin
         if ( is_admin() ) {
-            require_once( 'includes/admin/admin-menu-and-tabs.php' );
+            require_once( 'admin/admin-menu-and-tabs.php' );
         }
 
-            $this->i18n();
+        $this->i18n();
 
         if ( is_admin() ) { // adds links to the plugin description area in the plugin admin list.
             add_filter( 'plugin_row_meta', [ $this, 'plugin_description_links' ], 10, 4 );
@@ -96,12 +107,12 @@ class DT_Data_Reporting {
         if ( ! wp_next_scheduled( 'dt_dr_cron_hook' ) ) {
             wp_schedule_event( time(), 'daily', 'dt_dr_cron_hook' );
         }
-            add_action( 'dt_dr_cron_hook', [ $this, 'cron_export' ] );
+        add_action( 'dt_dr_cron_hook', [ $this, 'cron_export' ] );
     }
 
     public function cron_export() {
-        require_once( plugin_dir_path( __FILE__ ) . './includes/snapshot-tools.php' );
-        require_once( plugin_dir_path( __FILE__ ) . './includes/data-tools.php' );
+        require_once( plugin_dir_path( __FILE__ ) . './tools/snapshot-tools.php' );
+        require_once( plugin_dir_path( __FILE__ ) . './tools/data-tools.php' );
 
         // Set current user to avoid permissions issues when fetching posts
         wp_set_current_user( 0 );

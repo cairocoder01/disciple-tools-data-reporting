@@ -14,7 +14,7 @@ class DT_Data_Reporting_Tab_Settings
 
     public function enqueue_assets( $hook ) {
         if ( is_admin() && isset( $_GET['page'] ) && 'disciple-tools-data-reporting' === sanitize_key( wp_unslash( $_GET['page'] ) ) && isset( $_GET['tab'] ) && 'settings' === sanitize_key( wp_unslash( $_GET['tab'] ) ) ) {
-            $url = plugin_dir_url( dirname( dirname( __DIR__ ) ) . '/disciple-tools-data-reporting.php' );
+            $url = plugin_dir_url( dirname( __DIR__ ) . '/disciple-tools-data-reporting.php' );
             wp_enqueue_style( 'dtdr-admin-settings', $url . 'assets/css/admin-settings.css', [], '1.0.0' );
             wp_enqueue_script( 'dtdr-admin-settings', $url . 'assets/js/admin-settings.js', [ 'jquery' ], '1.0.0', true );
         }

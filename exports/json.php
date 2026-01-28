@@ -22,7 +22,7 @@ if ( ! function_exists( 'dt_write_log' ) ) {
 }
 $wordpress_root_path = preg_replace( '/wp-content(?!.*wp-content).*/', '', __DIR__ );
 require_once( $wordpress_root_path . 'wp-load.php' );
-require_once( plugin_dir_path( __FILE__ ) . '../includes/data-tools.php' );
+require_once( plugin_dir_path( __FILE__ ) . '../tools/data-tools.php' );
 
 $limit = isset( $_GET['limit'] ) ? sanitize_key( wp_unslash( $_GET['limit'] ) ) : null;
 $offset = isset( $_GET['offset'] ) ? sanitize_key( wp_unslash( $_GET['offset'] ) ) : null;

@@ -9,7 +9,7 @@ class DT_Data_Reporting_Tab_Snapshots
     public $config;
 
     public function __construct() {
-        require_once( plugin_dir_path( __FILE__ ) . '../data-tools.php' );
+        require_once( plugin_dir_path( __FILE__ ) . '../tools/data-tools.php' );
 
 //        $this->type = $type;
 //        $this->config_key = $config;
