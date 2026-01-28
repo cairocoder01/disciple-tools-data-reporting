@@ -1,0 +1,334 @@
+/**
+ * Switch Toggle Styles
+ */
+.switch {
+    position: relative;
+
+    & [type="checkbox"] {
+        position: absolute;
+        left: -9999px;
+
+        &:checked + label span:last-child {
+            background: #46b450;
+
+            &::before {
+                transform: translateX(24px);
+            }
+        }
+    }
+
+    & label {
+        display: flex;
+        align-items: center;
+        justify-content: flex-start;
+
+        & span:last-child {
+            position: relative;
+            width: 50px;
+            height: 26px;
+            border-radius: 15px;
+            box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.4);
+            background: #eee;
+            transition: all 0.3s;
+
+            &::before,
+            &::after {
+                content: "";
+                position: absolute;
+            }
+
+            &::before {
+                left: 1px;
+                top: 1px;
+                width: 24px;
+                height: 24px;
+                background: #fff;
+                border-radius: 50%;
+                z-index: 1;
+                transition: transform 0.3s;
+            }
+        }
+    }
+}
+
+/**
+ * Legacy Support & Utilities
+ */
+.table-config td {
+    max-width: 50vw;
+}
+
+.hide {
+    display: none;
+}
+
+.back-to-list {
+    margin: 10px 0;
+    display: none;
+    text-decoration: none;
+    font-weight: 600;
+}
+
+/**
+ * Edit View Layout
+ */
+.config-edit-view {
+    display: none;
+    margin-top: 20px;
+    background: #fff;
+    border: 1px solid #ccd0d4;
+    box-shadow: 0 1px 1px rgba(0, 0, 0, .04);
+
+    & .config-edit-view-container {
+        display: flex;
+        min-height: 400px;
+    }
+
+    & .config-edit-sidebar {
+        width: 200px;
+        background: #f6f7f7;
+        border-right: 1px solid #ccd0d4;
+        flex-shrink: 0;
+
+        & ul {
+            margin: 0;
+            padding: 0;
+            list-style: none;
+        }
+
+        & li {
+            & a {
+                display: block;
+                padding: 15px 20px;
+                text-decoration: none;
+                color: #23282d;
+                border-bottom: 1px solid #ccd0d4;
+                font-weight: 600;
+
+                &:hover {
+                    background: #fff;
+                }
+            }
+
+            &.active a {
+                background: #fff;
+                color: #0073aa;
+                border-right: 4px solid #0073aa;
+                margin-right: -1px;
+            }
+
+            &.sidebar-section-header {
+                padding: 10px 20px 5px 20px;
+                font-size: 11px;
+                text-transform: uppercase;
+                color: #646970;
+                font-weight: 600;
+                border-bottom: 1px solid #ccd0d4;
+                background: #f0f0f1;
+            }
+
+            &.sidebar-sub-item a {
+                padding: 10px 20px 10px 30px;
+                font-size: 13px;
+                font-weight: normal;
+            }
+        }
+    }
+
+    & .config-edit-content {
+        flex-grow: 1;
+        padding: 20px 30px;
+
+        & h2 {
+            margin-top: 0;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+    }
+
+    & .config-edit-footer {
+        padding: 15px 30px;
+        background: #f6f7f7;
+        border-top: 1px solid #ccd0d4;
+        display: flex;
+        justify-content: flex-end;
+    }
+}
+
+/**
+ * Data Types & Export Settings
+ */
+.data-types-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 20px;
+}
+
+.data-type-card {
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 15px;
+    background: #f9f9f9;
+
+    & h4 {
+        margin: 0 0 10px 0;
+        border-bottom: 1px solid #eee;
+        padding-bottom: 5px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    & .field-group {
+        margin-bottom: 10px;
+
+        &:nth-of-type(odd) {
+            background-color: #0000000f;
+            margin-inline: -1rem;
+            padding-inline: 1rem;
+            padding-block: 0.5rem;
+        }
+    }
+
+    & label.label {
+        display: block;
+        font-weight: 600;
+        font-size: 12px;
+        margin-bottom: 4px;
+    }
+
+    & .muted {
+        font-size: 11px;
+        color: #646970;
+        line-height: 1.3;
+        margin: 4px 0;
+    }
+
+    & select,
+    & input[type=text],
+    & input[type=number] {
+        width: 100%;
+    }
+}
+
+/**
+ * List View Styles
+ */
+.list-view-section {
+    margin-bottom: 30px;
+
+    & h3 {
+        margin-bottom: 15px;
+        font-size: 1.1em;
+        color: #23282d;
+    }
+}
+
+.general-settings-card {
+    background: #fff;
+    border: 1px solid #ccd0d4;
+    padding: 20px;
+    border-radius: 4px;
+    box-shadow: 0 1px 1px rgba(0, 0, 0, .04);
+    max-width: 600px;
+
+    & h4 {
+        margin-top: 0;
+    }
+
+    & .snapshot-options {
+        display: flex;
+        gap: 20px;
+        margin: 15px 0;
+
+        & label {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            cursor: pointer;
+        }
+    }
+}
+
+.config-cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    gap: 20px;
+}
+
+.config-card {
+    background: #fff;
+    border: 1px solid #ccd0d4;
+    border-radius: 4px;
+    box-shadow: 0 1px 1px rgba(0, 0, 0, .04);
+    display: flex;
+    flex-direction: column;
+
+    & .config-card-header {
+        padding: 15px 20px;
+        border-bottom: 1px solid #eee;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+
+        & h4 {
+            margin: 0;
+            font-size: 1.1em;
+        }
+    }
+
+    & .config-card-body {
+        padding: 20px;
+        flex-grow: 1;
+    }
+
+    & .config-card-footer {
+        padding: 15px 20px;
+        background: #f6f7f7;
+        border-top: 1px solid #eee;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-radius: 0 0 4px 4px;
+    }
+
+    & .config-card-meta {
+        display: grid;
+        grid-template-columns: auto 1fr;
+        gap: 10px 20px;
+
+        & .label {
+            font-weight: 600;
+            color: #646970;
+            font-size: 0.9em;
+        }
+
+        & .value {
+            color: #2c3338;
+            font-size: 0.9em;
+        }
+    }
+
+    & .edit-trigger {
+        font-weight: 600;
+        text-decoration: none;
+    }
+}
+
+.status-badge {
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 0.8em;
+    font-weight: 600;
+
+    &.active {
+        background: #e7f6ed;
+        color: #2e7d32;
+    }
+
+    &.inactive {
+        background: #fbeae5;
+        color: #d32f2f;
+    }
+}

@@ -9,7 +9,15 @@ class DT_Data_Reporting_Tab_Settings
 
     public function __construct() {
         // add_action( 'wp_ajax_dtdr_enable_config', [$this, 'enable_config'] );
-          add_action( 'admin_footer', [ $this, 'scripts' ] );
+        add_action( 'admin_enqueue_scripts', [ $this, 'enqueue_assets' ] );
+    }
+
+    public function enqueue_assets( $hook ) {
+        if ( is_admin() && isset( $_GET['page'] ) && 'disciple-tools-data-reporting' === sanitize_key( wp_unslash( $_GET['page'] ) ) && isset( $_GET['tab'] ) && 'settings' === sanitize_key( wp_unslash( $_GET['tab'] ) ) ) {
+            $url = plugin_dir_url( dirname( dirname( __DIR__ ) ) . '/disciple-tools-data-reporting.php' );
+            wp_enqueue_style( 'dtdr-admin-settings', $url . 'assets/css/admin-settings.css', [], '1.0.0' );
+            wp_enqueue_script( 'dtdr-admin-settings', $url . 'assets/js/admin-settings.js', [ 'jquery' ], '1.0.0', true );
+        }
     }
 
     public static function ajax_enable_config() {
@@ -125,226 +133,9 @@ class DT_Data_Reporting_Tab_Settings
         wp_die(); // this is required to terminate immediately and return a proper response
     }
 
-    public function styles() {
-        ?>
-        <style>
-          /** switch **/
-          .switch [type="checkbox"] {
-              position: absolute;
-              left: -9999px;
-          }
-
-          .switch {
-              position: relative;
-          }
-          .switch label {
-              display: flex;
-              align-items: center;
-              justify-content: flex-start;
-          }
-          .switch label span:last-child {
-              position: relative;
-              width: 50px;
-              height: 26px;
-              border-radius: 15px;
-              box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.4);
-              background: #eee;
-              transition: all 0.3s;
-          }
-          .switch label span:last-child::before,
-          .switch label span:last-child::after {
-              content: "";
-              position: absolute;
-          }
-          .switch label span:last-child::before {
-              left: 1px;
-              top: 1px;
-              width: 24px;
-              height: 24px;
-              background: #fff;
-              border-radius: 50%;
-              z-index: 1;
-              transition: transform 0.3s;
-          }
-          .switch [type="checkbox"]:checked + label span:last-child {
-              background: #46b450;
-          }
-          .switch [type="checkbox"]:checked + label span:last-child::before {
-              transform: translateX(24px);
-          }
-
-          .table-config td { max-width: 50vw; }
-
-          .dialog { min-width: 50vw; }
-          .dialog .nav-tab-wrapper + .wrap,
-          .dialog .nav-tab-wrapper + .wrap table { margin-top: 0; }
-          .dialog table.accordion thead td { background: #dcdcde; }
-
-          /** Data Types Tab **/
-          .data-type-config-table label.label { display: block; font-weight: 600; }
-          .data-type-config-table .muted { opacity: 0.65; }
-
-          .data-type-config-table label.radio {
-            display: block;
-            padding-left: 2rem;
-            position: relative;
-            margin-top: 0.5rem;
-          }
-
-          .data-type-config-table label.radio input[type=radio] {
-            position: absolute;
-            left: 0;
-            top: 0.5rem;
-          }
-        </style>
-          <?php
-    }
-
-    public function scripts() {
-        ?>
-      <script type="text/javascript" >
-        jQuery(document).ready(function($) {
-          $( ".dialog" ).dialog({
-            autoOpen: false,
-            width: 'auto',
-            modal: true,
-            resizable: true,
-            closeOnEscape: true,
-            position: {
-              my: "center",
-              at: "center",
-              of: window
-            },
-            create: function () {
-              // style fix for WordPress admin
-              $('.ui-dialog-titlebar-close').addClass('ui-button');
-            },
-          });
-
-          // Dialog tabs
-          $('.dialog').on('click', '.nav-tab', function (evt) {
-            if (evt) {
-              evt.preventDefault();
-            }
-            var tabNav = $(this).closest('.nav-tab-wrapper');
-            var tabContainer = tabNav.next('.wrap');
-            tabContainer.find('.dlg-tab-content').hide();
-            var selector = this.getAttribute('href');
-            $(selector).show();
-          });
-
-          // Open config dialog
-          $('.edit-trigger').on('click', function () {
-            var key = $(this).data('key');
-            $('#dialog-' + key).dialog('open');
-          });
-
-          // Toggle Enabled option from main list table
-          $('.config-list-table').on('change', '.config-enable-checkbox', function () {
-              var self = this;
-              var data = new FormData();
-              data.append('security_headers_nonce', $('#security_headers_nonce').val());
-              data.append('action', 'dtdr_enable_config');
-              data.append('key', this.value);
-              data.append('enabled', this.checked);
-
-              // since 2.8 ajaxurl is always defined in the admin header and points to admin-ajax.php
-              fetch(ajaxurl, {
-                  method: 'POST',
-                  body: data,
-              }).then((response) => response.json())
-                  .then((data) => {
-                      if (!data || !data.success) {
-                          console.error('Error saving active state of config.', data);
-                          self.checked = !self.checked;
-                      }
-                  })
-                  .catch((error) => {
-                      console.error('Error saving active state of config.', error);
-                  });
-          });
-
-          // Dialog form submission
-          $('.dialog form').on('submit', function (evt) {
-            if (evt) {
-              evt.preventDefault();
-            }
-            const form = evt.target;
-            const formdata = new FormData(form);
-
-            const key = formdata.get('key');
-
-            // since 2.8 ajaxurl is always defined in the admin header and points to admin-ajax.php
-            fetch(ajaxurl, {
-              method: 'POST',
-              body: formdata,
-            })
-              .then((response) => response.json())
-              .then((data) => {
-                if (data.success) {
-                  // if successful, update the main table
-                  const row = $('#config-list-row-' + key);
-                  row.find('.name').text(formdata.get('name'));
-                  row.find('.provider').text(formdata.get('provider'));
-                  row.find('.enabled input').prop('checked', formdata.get('enabled') === 'on');
-
-                  // close the dialog
-                  $('#dialog-' + key).dialog('close');
-                } else {
-                  console.error('Error saving state of config:', data.message);
-                }
-              })
-              .catch((error) => {
-                console.error('Error saving state of config:', error);
-              });
-          });
-
-          // Toggle appropriate fields for each provider
-          $('.table-config').on('change', '.provider', function () {
-            $('tr[class^=provider-]').hide();
-            $('tr.provider-' + $(this).val()).show();
-          });
-
-          // Reset last exported progress
-          $('.table-config').on('click', '.last-exported-value button', function () {
-              var btn = $(this);
-              var configKey = btn.data('configKey');
-              var dataType = btn.data('dataType');
-              var data = new FormData();
-              data.append('security_headers_nonce', $('#security_headers_nonce').val());
-              data.append('action', 'dtdr_reset_progress');
-              data.append('key', configKey);
-              data.append('dataType', dataType);
-              $(this).parent().hide();
-
-              fetch(ajaxurl, {
-                  method: 'POST',
-                  body: data,
-              }).then((response) => response.json())
-                  .then(() => {
-                  })
-                  .catch((error) => {
-                      console.error('Error resetting progress:', error);
-                  });
-          });
-
-          $('.table-config').on('click', '.export-logs button', function () {
-            var btn = $(this);
-            btn.hide();
-            btn.siblings('.log-messages').show();
-          });
-        });
-      </script>
-          <?php
-    }
 
     public function content() {
           $this->save_settings();
-
-          wp_enqueue_script( 'jquery-ui-dialog' );
-          wp_enqueue_style( 'wp-jquery-ui-dialog' );
-
-          $this->styles();
         ?>
         <div class="wrap">
             <div id="poststuff">
@@ -380,57 +171,48 @@ class DT_Data_Reporting_Tab_Settings
           $configurations_ext = apply_filters( 'dt_data_reporting_configurations', array() );
 
         ?>
-
-        <table class="widefat">
-          <thead>
-          <tr><th>General Settings</th></tr>
-          </thead>
-          <tbody>
-          <tr>
-            <td>
+        <div class="config-list-view">
+          <!-- General Settings Section -->
+          <div class="list-view-section">
+            <div class="general-settings-card">
+              <h4>General Settings</h4>
               <form method="POST" action="">
                 <?php wp_nonce_field( 'security_headers', 'security_headers_nonce' ); ?>
                 <input type="hidden" name="action" value="dtdr_save_settings" />
 
-                <div>
-                  <h3>Enable Snapshot Generation</h3>
-                  <input type="checkbox" id="interval_month" name="interval[]" value="month"
-                    <?php checked( in_array( 'month', $snapshots ) ); ?>>
-                  <label for="interval_month">Month</label><br>
-
-                  <input type="checkbox" id="interval_quarter" name="interval[]" value="quarter"
-                    <?php checked( in_array( 'quarter', $snapshots ) ); ?>>
-                  <label for="interval_quarter">Quarter</label><br>
-
-                  <input type="checkbox" id="interval_year" name="interval[]" value="year"
-                    <?php checked( in_array( 'year', $snapshots ) ); ?>>
-                  <label for="interval_year">Year</label><br>
+                <div class="field-group">
+                  <label class="label">Enable Snapshot Generation</label>
+                  <p class="description">Select the intervals for which snapshots should be generated.</p>
+                  <div class="snapshot-options">
+                    <label for="interval_month">
+                      <input type="checkbox" id="interval_month" name="interval[]" value="month" <?php checked( in_array( 'month', $snapshots ) ); ?>>
+                      Month
+                    </label>
+                    <label for="interval_quarter">
+                      <input type="checkbox" id="interval_quarter" name="interval[]" value="quarter" <?php checked( in_array( 'quarter', $snapshots ) ); ?>>
+                      Quarter
+                    </label>
+                    <label for="interval_year">
+                      <input type="checkbox" id="interval_year" name="interval[]" value="year" <?php checked( in_array( 'year', $snapshots ) ); ?>>
+                      Year
+                    </label>
+                  </div>
                 </div>
 
-                <button type="submit" class="button button-primary">Save Settings</button>
+                <button type="submit" class="button button-primary">Save General Settings</button>
               </form>
-            </td>
-          </tr>
-          </tbody>
-        </table>
-        <br/>
+            </div>
+          </div>
 
-        <!-- Custom Configuration -->
-        <table class="wp-list-table widefat striped config-list-table">
-            <thead>
-            <tr>
-                <th scope="col" class="column-enabled">Enabled</th>
-                <th scope="col" class="column-name">Name</th>
-                <th scope="col" class="column-provider">Provider</th>
-                <th scope="col" class="column-schedule"></th>
-                <th scope="col" class="column-actions"></th>
-            </tr>
-            </thead>
-            <tbody>
-          <?php foreach ( $configurations as $key => $config ): ?>
+          <!-- Custom Configurations Section -->
+          <div class="list-view-section">
+            <h3>Custom Configurations</h3>
+            <div class="config-cards-grid">
+              <?php foreach ( $configurations as $key => $config ): ?>
                 <?php $config_provider = isset( $config['provider'] ) ? $config['provider'] : 'api'; ?>
-              <tr id="config-list-row-<?php echo esc_attr( $key ) ?>">
-                  <td class="enabled">
+                <div class="config-card" id="config-list-row-<?php echo esc_attr( $key ) ?>">
+                  <div class="config-card-header">
+                    <h4 class="name"><?php echo esc_html( isset( $config['name'] ) ? $config['name'] : '(new config)' ) ?></h4>
                     <span class="switch">
                       <input type="checkbox"
                              class="config-enable-checkbox"
@@ -443,370 +225,303 @@ class DT_Data_Reporting_Tab_Settings
                         <span></span>
                       </label>
                     </span>
-                  </td>
-                  <td class="name"><?php echo esc_html( isset( $config['name'] ) ? $config['name'] : '(new config)' ) ?></td>
-                  <td class="provider"><?php echo esc_html( $config_provider ) ?></td>
-                  <td></td>
-                  <td><a href="javascript:;" class="edit-trigger" data-key="<?php echo esc_attr( $key ) ?>">Edit</a></td>
-              </tr>
-            <?php endforeach; ?>
-            </tbody>
-        </table>
+                  </div>
+                  <div class="config-card-body">
+                    <div class="config-card-meta">
+                      <span class="label">Provider</span>
+                      <span class="value provider"><?php echo esc_html( $config_provider ) ?></span>
 
-        <!-- External Configurations -->
-        <?php if ( !empty( $configurations_ext ) ): ?>
-        <h3>External Configurations</h3>
-        <table class="wp-list-table widefat striped itsec-log-entries itsec-logs-color">
-          <thead>
-          <tr>
-            <th scope="col" class="column-name">Name</th>
-            <th scope="col" class="column-provider">Provider</th>
-            <th scope="col" class="column-enabled">Enabled</th>
-            <th scope="col" class="column-schedule"></th>
-            <th scope="col" class="column-actions"></th>
-          </tr>
-          </thead>
-          <tbody>
-            <?php foreach ( $configurations_ext as $key => $config ): ?>
-                <?php $config_provider = isset( $config['provider'] ) ? $config['provider'] : 'api'; ?>
-            <tr>
-              <td><?php echo esc_html( $config['name'] ) ?></td>
-              <td><?php echo esc_html( $config_provider ) ?></td>
-              <td><?php echo isset( $config['active'] ) && $config['active'] == 1 ? '&check; Yes' : '&cross; No' ?></td>
-              <td></td>
-              <td><a href="javascript:;" class="edit-trigger" data-key="<?php echo esc_attr( $key ) ?>">View Details</a></td>
-            </tr>
-          <?php endforeach; ?>
-          </tbody>
-        </table>
-        <br>
-      <?php endif; ?>
+                      <?php if ( $config_provider === 'api' && ! empty( $config['url'] ) ) : ?>
+                        <span class="label">Endpoint</span>
+                        <span class="value url" style="word-break: break-all;"><?php echo esc_url( $config['url'] ) ?></span>
+                      <?php endif; ?>
 
-        <?php $this->edit_dialogs( $configurations ); ?>
-        <?php $this->external_config_dialogs( $configurations_ext ); ?>
+                      <span class="label">Status</span>
+                      <span class="value status-text"><?php echo isset( $config['active'] ) && $config['active'] == 1 ? 'Enabled' : 'Disabled' ?></span>
+                    </div>
+                  </div>
+                  <div class="config-card-footer">
+                    <span></span>
+                    <a href="javascript:;" class="button button-secondary edit-trigger" data-key="<?php echo esc_attr( $key ) ?>">Edit Configuration</a>
+                  </div>
+                </div>
+              <?php endforeach; ?>
+            </div>
+          </div>
+
+          <!-- External Configurations Section -->
+          <?php if ( !empty( $configurations_ext ) ): ?>
+            <div class="list-view-section">
+              <h3>External Configurations</h3>
+              <div class="config-cards-grid">
+                <?php foreach ( $configurations_ext as $key => $config ): ?>
+                  <?php $config_provider = isset( $config['provider'] ) ? $config['provider'] : 'api'; ?>
+                  <div class="config-card">
+                    <div class="config-card-header">
+                      <h4 class="name"><?php echo esc_html( $config['name'] ) ?></h4>
+                      <span class="status-badge <?php echo isset( $config['active'] ) && $config['active'] == 1 ? 'active' : 'inactive' ?>">
+                        <?php echo isset( $config['active'] ) && $config['active'] == 1 ? '&check; Active' : '&cross; Inactive' ?>
+                      </span>
+                    </div>
+                    <div class="config-card-body">
+                      <div class="config-card-meta">
+                        <span class="label">Provider</span>
+                        <span class="value"><?php echo esc_html( $config_provider ) ?></span>
+
+                        <?php if ( $config_provider === 'api' && ! empty( $config['url'] ) ) : ?>
+                          <span class="label">Endpoint</span>
+                          <span class="value" style="word-break: break-all;"><?php echo esc_url( $config['url'] ) ?></span>
+                        <?php endif; ?>
+                      </div>
+                    </div>
+                    <div class="config-card-footer">
+                      <span></span>
+                      <a href="javascript:;" class="button button-secondary edit-trigger" data-key="<?php echo esc_attr( $key ) ?>">View Details</a>
+                    </div>
+                  </div>
+                <?php endforeach; ?>
+              </div>
+            </div>
+          <?php endif; ?>
+        </div>
+
+        <?php $this->edit_forms( $configurations ); ?>
+        <?php $this->external_config_forms( $configurations_ext ); ?>
         <?php
     }
 
-    public function edit_dialogs( $configurations ) {
+    public function edit_forms( $configurations ) {
           $providers = apply_filters( 'dt_data_reporting_providers', array() );
-
           $post_types = DT_Posts::get_post_types();
 
-          echo "<div style='display:none;'>";
         foreach ( $configurations as $key => $config ):
             $config['key'] = $key;
             $config_provider = isset( $config['provider'] ) ? $config['provider'] : 'api'; ?>
 
-        <div class="dialog" id="dialog-<?php echo esc_attr( $key ) ?>">
+        <a href="#" class="back-to-list">&larr; Back to configurations</a>
+        <div class="config-edit-view" id="edit-view-<?php echo esc_attr( $key ) ?>">
           <form method="POST" action="">
-                  <?php wp_nonce_field( 'security_headers', 'security_headers_nonce' ); ?>
-            <input type="hidden" name="action" value="dtdr_save_config" />
-            <input type="hidden" name="key" value="<?php echo esc_attr( $key ) ?>" />
-            <h2 class="nav-tab-wrapper">
-              <a href="#dlg-tab-general-<?php echo esc_attr( $key )?>" class="nav-tab">General</a>
-              <a href="#dlg-tab-provider-<?php echo esc_attr( $key )?>" class="nav-tab">Provider</a>
-              <a href="#dlg-tab-data-types-<?php echo esc_attr( $key )?>" class="nav-tab">Data Types</a>
-            </h2>
-            <div class="wrap">
-              <!-- General Tab -->
-              <div id="dlg-tab-general-<?php echo esc_attr( $key ) ?>" class="dlg-tab-content">
-                <table class="form-table table-config">
-                  <tr>
-                    <th>
-                      <label for="dlg_name_<?php echo esc_attr( $key ) ?>">Name</label>
-                    </th>
-                    <td>
-                      <input type="text"
-                             name="name"
-                             id="dlg_name_<?php echo esc_attr( $key ) ?>"
-                             value="<?php echo esc_attr( isset( $config['name'] ) ? $config['name'] : '' ) ?>"
-                             style="width: 100%;" />
-                      <div class="muted">Label to identify this configuration. This can be anything that helps you understand or remember this configuration.</div>
-                    </td>
-                  </tr>
-                  <tr>
-                    <th>
-                      <label for="dlg_enabled_<?php echo esc_attr( $key ) ?>">Enabled</label>
-                    </th>
-                    <td>
-                      <span class="switch">
-                        <input type="checkbox"
-                               class="config-enable-checkbox"
-                               id="dlg_enabled_<?php echo esc_attr( $key ) ?>"
-                               name="enabled"
-                                     <?php echo isset( $config['active'] ) && $config['active'] == 1 ? 'checked' : '' ?>
-                        />
-                        <label for="dlg_enabled_<?php echo esc_attr( $key ) ?>">
-                          <span></span>
-                        </label>
-                      </span>
-                      <div class="muted">When checked, this configuration is active and will be exported.</div>
-                    </td>
-                  </tr>
-                </table>
+            <div class="config-edit-view-container">
+              <div class="config-edit-sidebar">
+                <ul>
+                  <li><a href="#section-general-<?php echo esc_attr( $key ) ?>" class="sidebar-nav">General Settings</a></li>
+                  <li><a href="#section-provider-<?php echo esc_attr( $key ) ?>" class="sidebar-nav">Connection Settings</a></li>
+                  <li class="sidebar-section-header">Data Export</li>
+                  <?php foreach ( $post_types as $post_type ):
+                    $post_type_settings = DT_Posts::get_post_settings( $post_type );
+                    $post_type_label = $post_type_settings['label_plural'];
+                    ?>
+                    <li class="sidebar-sub-item">
+                      <a href="#section-data-<?php echo esc_attr( $post_type ) ?>-<?php echo esc_attr( $key ) ?>" class="sidebar-nav"><?php echo esc_html( $post_type_label ) ?></a>
+                    </li>
+                  <?php endforeach; ?>
+                </ul>
               </div>
-              <!-- Provider Tab -->
-              <div id="dlg-tab-provider-<?php echo esc_attr( $key ) ?>" class="dlg-tab-content" style="display: none;">
-                <table class="form-table table-config">
-                  <tr>
-                    <th>
-                      <label for="dlg_provider_<?php echo esc_attr( $key ) ?>">Provider</label>
-                    </th>
-                    <td>
-                      <select name="provider"
-                              id="dlg_provider_<?php echo esc_attr( $key ) ?>"
-                              class="provider">
-                        <option value="api" <?php echo $config_provider == 'api' ? 'selected' : '' ?>>API</option>
+              <div class="config-edit-content">
+                <?php wp_nonce_field( 'security_headers', 'security_headers_nonce' ); ?>
+                <input type="hidden" name="action" value="dtdr_save_config" />
+                <input type="hidden" name="key" value="<?php echo esc_attr( $key ) ?>" />
 
-                              <?php if ( !empty( $providers ) ): ?>
-                                    <?php foreach ( $providers as $provider_key => $provider ): ?>
-                            <option
-                              value="<?php echo esc_attr( $provider_key ) ?>"
-                                        <?php echo $config_provider == $provider_key ? 'selected' : '' ?>
-                            >
-                                        <?php echo esc_html( $provider['name'] ) ?>
-                            </option>
-                          <?php endforeach; ?>
-                        <?php endif; ?>
-                      </select>
-                    </td>
-                  </tr>
-                  <tr class="provider-api <?php echo $config_provider == 'api' ? '' : 'hide' ?>">
-                    <th>
-                      <label for="dlg_endpoint_url_<?php echo esc_attr( $key ) ?>">Endpoint URL</label>
-                    </th>
-                    <td>
-                      <input type="text"
-                             name="url"
-                             id="dlg_endpoint_url_<?php echo esc_attr( $key ) ?>"
-                             value="<?php echo esc_attr( isset( $config['url'] ) ? $config['url'] : '' ) ?>"
-                             style="width: 100%;" />
-                      <div class="muted">API endpoint that should receive your data in JSON format. With a Google Cloud setup, this would be the URL for an HTTP Cloud Function.</div>
-                    </td>
-                  </tr>
-                  <tr class="provider-api <?php echo $config_provider == 'api' ? '' : 'hide' ?>">
-                    <th>
-                      <label for="dlg_token_<?php echo esc_attr( $key ) ?>">Token</label>
-                    </th>
-                    <td>
-                      <input type="text"
-                             name="token"
-                             id="dlg_token_<?php echo esc_attr( $key ) ?>"
-                             value="<?php echo esc_attr( isset( $config['token'] ) ? $config['token'] : '' ) ?>"
-                             style="width: 100%;" />
-                      <div class="muted">Optional, depending on required authentication for your endpoint. Token will be sent as an Authorization header to prevent public/anonymous access.</div>
-                    </td>
-                  </tr>
+                <!-- General Section -->
+                <div id="section-general-<?php echo esc_attr( $key ) ?>" class="config-section">
+                  <h2>General Settings</h2>
+                  <table class="form-table">
+                    <tr>
+                      <th><label for="dlg_name_<?php echo esc_attr( $key ) ?>">Name</label></th>
+                      <td>
+                        <input type="text" name="name" id="dlg_name_<?php echo esc_attr( $key ) ?>" value="<?php echo esc_attr( isset( $config['name'] ) ? $config['name'] : '' ) ?>" class="regular-text" />
+                        <p class="description">Label to identify this configuration.</p>
+                      </td>
+                    </tr>
+                    <tr>
+                      <th><label for="dlg_enabled_<?php echo esc_attr( $key ) ?>">Enabled</label></th>
+                      <td>
+                        <span class="switch">
+                          <input type="checkbox" class="config-enable-checkbox" id="dlg_enabled_<?php echo esc_attr( $key ) ?>" name="enabled" <?php echo isset( $config['active'] ) && $config['active'] == 1 ? 'checked' : '' ?> />
+                          <label for="dlg_enabled_<?php echo esc_attr( $key ) ?>"><span></span></label>
+                        </span>
+                        <p class="description">When checked, this configuration is active and will be exported.</p>
+                      </td>
+                    </tr>
+                  </table>
+                </div>
 
-                  <!-- Provider Fields -->
-                        <?php
-                        if ( !empty( $providers ) ) {
-                            foreach ( $providers as $provider_key => $provider ) {
-                                if ( isset( $provider['fields'] ) && !empty( $provider['fields'] ) ) {
-                                    foreach ( $provider['fields'] as $field_key => $field ) {
-                                        ?>
-                          <tr class="provider-<?php echo esc_attr( $provider_key ) ?>  <?php echo $provider_key == $config_provider ? '' : 'hide' ?>">
-                            <th>
-                              <label for="dlg_<?php echo esc_attr( $field_key ) ?>_<?php echo esc_attr( $key ) ?>"><?php echo esc_html( $field['label'] ) ?></label>
-                            </th>
-                            <td>
-                                        <?php if ( $field['type'] == 'text' ): ?>
-                                <input type="text"
-                                       name="<?php echo esc_attr( $field_key ) ?>"
-                                       id="dlg_<?php echo esc_attr( $field_key ) ?>_<?php echo esc_attr( $key ) ?>"
-                                       value="<?php echo esc_attr( isset( $config[$field_key] ) ? $config[$field_key] : '' ) ?>"
-                              <?php endif; ?>
+                <!-- Provider Section -->
+                <div id="section-provider-<?php echo esc_attr( $key ) ?>" class="config-section" style="display: none;">
+                  <h2>Connection Settings</h2>
+                  <table class="form-table">
+                    <tr>
+                      <th><label for="dlg_provider_<?php echo esc_attr( $key ) ?>">Provider</label></th>
+                      <td>
+                        <select name="provider" id="dlg_provider_<?php echo esc_attr( $key ) ?>" class="provider">
+                          <option value="api" <?php echo $config_provider == 'api' ? 'selected' : '' ?>>API</option>
+                          <?php if ( !empty( $providers ) ): ?>
+                            <?php foreach ( $providers as $provider_key => $provider ): ?>
+                              <option value="<?php echo esc_attr( $provider_key ) ?>" <?php echo $config_provider == $provider_key ? 'selected' : '' ?>>
+                                <?php echo esc_html( $provider['name'] ) ?>
+                              </option>
+                            <?php endforeach; ?>
+                          <?php endif; ?>
+                        </select>
+                      </td>
+                    </tr>
+                    <tr class="provider-field provider-api <?php echo $config_provider == 'api' ? '' : 'hide' ?>">
+                      <th><label for="dlg_endpoint_url_<?php echo esc_attr( $key ) ?>">Endpoint URL</label></th>
+                      <td>
+                        <input type="text" name="url" id="dlg_endpoint_url_<?php echo esc_attr( $key ) ?>" value="<?php echo esc_attr( isset( $config['url'] ) ? $config['url'] : '' ) ?>" class="large-text" />
+                        <p class="description">API endpoint that should receive your data in JSON format.</p>
+                      </td>
+                    </tr>
+                    <tr class="provider-field provider-api <?php echo $config_provider == 'api' ? '' : 'hide' ?>">
+                      <th><label for="dlg_token_<?php echo esc_attr( $key ) ?>">Token</label></th>
+                      <td>
+                        <input type="text" name="token" id="dlg_token_<?php echo esc_attr( $key ) ?>" value="<?php echo esc_attr( isset( $config['token'] ) ? $config['token'] : '' ) ?>" class="large-text" />
+                        <p class="description">Optional, for Authorization header.</p>
+                      </td>
+                    </tr>
 
-                                        <?php if ( isset( $field['helpText'] ) ): ?>
-                                <div class="muted"><?php echo esc_html( $field['helpText'] ) ?></div>
-                              <?php endif; ?>
-                            </td>
-                          </tr>
-                                        <?php
-                                    }
-                                }
-                            }
+                    <?php if ( !empty( $providers ) ) {
+                      foreach ( $providers as $provider_key => $provider ) {
+                        if ( isset( $provider['fields'] ) && !empty( $provider['fields'] ) ) {
+                          foreach ( $provider['fields'] as $field_key => $field ) { ?>
+                            <tr class="provider-field provider-<?php echo esc_attr( $provider_key ) ?> <?php echo $provider_key == $config_provider ? '' : 'hide' ?>">
+                              <th><label for="dlg_<?php echo esc_attr( $field_key ) ?>_<?php echo esc_attr( $key ) ?>"><?php echo esc_html( $field['label'] ) ?></label></th>
+                              <td>
+                                <?php if ( $field['type'] == 'text' ): ?>
+                                  <input type="text" name="<?php echo esc_attr( $field_key ) ?>" id="dlg_<?php echo esc_attr( $field_key ) ?>_<?php echo esc_attr( $key ) ?>" value="<?php echo esc_attr( isset( $config[$field_key] ) ? $config[$field_key] : '' ) ?>" class="large-text" />
+                                <?php endif; ?>
+                                <?php if ( isset( $field['helpText'] ) ): ?>
+                                  <p class="description"><?php echo esc_html( $field['helpText'] ) ?></p>
+                                <?php endif; ?>
+                              </td>
+                            </tr>
+                          <?php }
                         }
-                        ?>
-                </table>
-              </div>
-              <!-- Data Types Tab -->
-              <div id="dlg-tab-data-types-<?php echo esc_attr( $key ) ?>" class="dlg-tab-content" style="display: none;">
-                      <?php foreach ( $post_types as $post_type ): ?>
-                            <?php
-                            $post_type_settings = DT_Posts::get_post_settings( $post_type );
-                            $post_type_label = $post_type_settings['label_plural'];
-                            $activity_type = rtrim( $post_type, 's' ) . '_activity';
-                            $snapshot_type = rtrim( $post_type, 's' ) . '_snapshots';
-                            $post_schedule_enabled = isset( $config['data_types'][$post_type] ) && isset( $config['data_types'][$post_type]['schedule'] ) && $config['data_types'][$post_type]['schedule'] == 'daily';
-                            $activity_schedule_enabled = isset( $config['data_types'][$activity_type] ) && isset( $config['data_types'][$activity_type]['schedule'] ) && $config['data_types'][$activity_type]['schedule'] == 'daily';
-                            $snapshot_schedule_enabled = isset( $config['data_types'][$snapshot_type] ) && isset( $config['data_types'][$snapshot_type]['schedule'] ) && $config['data_types'][$snapshot_type]['schedule'] == 'daily';
-                            ?>
-                  <table class="widefat striped table-config accordion data-type-config-table <?php echo $post_schedule_enabled ? '' : 'collapsed' ?>">
-                    <thead>
-                    <tr>
-                      <td><a href="javascript:;" class="toggle">
-                            <?php echo esc_html( $post_type_label ) ?>
-                          <img src="<?php echo esc_html( get_template_directory_uri() . '/dt-assets/images/chevron_down.svg' ) ?>" class="icon closed"/>
-                          <img src="<?php echo esc_html( get_template_directory_uri() . '/dt-assets/images/chevron_up.svg' ) ?>" class="icon open"/>
-                        </a></td>
-                    </tr>
-                    </thead>
-                    <tbody>
-                            <?php $this->post_type_config_settings( $config, $post_type ) ?>
-                    </tbody>
+                      }
+                    } ?>
                   </table>
-                  <table class="widefat striped table-config accordion data-type-config-table <?php echo $activity_schedule_enabled ? '' : 'collapsed' ?>">
-                    <thead>
-                    <tr>
-                      <td><a href="javascript:;" class="toggle">
-                            <?php echo esc_html( $post_type_label ) ?> Activity
-                          <img src="<?php echo esc_html( get_template_directory_uri() . '/dt-assets/images/chevron_down.svg' ) ?>" class="icon closed"/>
-                          <img src="<?php echo esc_html( get_template_directory_uri() . '/dt-assets/images/chevron_up.svg' ) ?>" class="icon open"/>
-                        </a></td>
-                    </tr>
-                    </thead>
-                    <tbody>
-                            <?php $this->post_type_config_settings( $config, $activity_type ) ?>
-                    </tbody>
-                  </table>
-                  <table class="widefat striped table-config accordion data-type-config-table <?php echo $snapshot_schedule_enabled ? '' : 'collapsed' ?>">
-                    <thead>
-                    <tr>
-                      <td><a href="javascript:;" class="toggle">
-                            <?php echo esc_html( $post_type_label ) ?> Snapshots
-                          <img src="<?php echo esc_html( get_template_directory_uri() . '/dt-assets/images/chevron_down.svg' ) ?>" class="icon closed"/>
-                          <img src="<?php echo esc_html( get_template_directory_uri() . '/dt-assets/images/chevron_up.svg' ) ?>" class="icon open"/>
-                        </a></td>
-                    </tr>
-                    </thead>
-                    <tbody>
-                            <?php $this->post_type_config_settings( $config, $snapshot_type ) ?>
-                    </tbody>
-                  </table>
+                </div>
+
+                <!-- Data Types Section -->
+                <?php foreach ( $post_types as $post_type ):
+                  $post_type_settings = DT_Posts::get_post_settings( $post_type );
+                  $post_type_label = $post_type_settings['label_plural'];
+                  $activity_type = rtrim( $post_type, 's' ) . '_activity';
+                  $snapshot_type = rtrim( $post_type, 's' ) . '_snapshots';
+                  ?>
+                  <div id="section-data-<?php echo esc_attr( $post_type ) ?>-<?php echo esc_attr( $key ) ?>" class="config-section" style="display: none;">
+                    <h2><?php echo esc_html( $post_type_label ) ?> Export Settings</h2>
+                    <p class="description">Configure which <?php echo esc_html( strtolower( $post_type_label ) ) ?> data should be exported.</p>
+                    <div class="data-types-grid">
+                      <div class="data-type-card">
+                        <h4><?php echo esc_html( $post_type_label ) ?></h4>
+                        <?php $this->post_type_config_settings( $config, $post_type ) ?>
+                      </div>
+                      <div class="data-type-card">
+                        <h4><?php echo esc_html( $post_type_label ) ?> Activity</h4>
+                        <?php $this->post_type_config_settings( $config, $activity_type ) ?>
+                      </div>
+                      <div class="data-type-card">
+                        <h4><?php echo esc_html( $post_type_label ) ?> Snapshots</h4>
+                        <?php $this->post_type_config_settings( $config, $snapshot_type ) ?>
+                      </div>
+                    </div>
+                  </div>
                 <?php endforeach; ?>
               </div>
             </div>
-
-            <br>
-            <button type="submit" class="button right">Save Settings</button>
+            <div class="config-edit-footer">
+              <button type="submit" class="button button-primary button-large">Save All Settings</button>
+            </div>
           </form>
         </div>
-            <?php endforeach;
-          echo '</div>';
+        <?php endforeach;
     }
 
-    public function external_config_dialogs( $configurations ) {
+    public function external_config_forms( $configurations ) {
         if ( empty( $configurations ) ) {
             return;
         }
           $providers = apply_filters( 'dt_data_reporting_providers', array() );
-
           $post_types = DT_Posts::get_post_types();
-
-          echo "<div style='display:none;'>";
 
         foreach ( $configurations as $key => $config ):
             $config['key'] = $key;
-
-            $type_configs = isset( $config['data_types'] ) ? $config['data_types'] : [];
-            $default_type_config = [
-            'all_data' => 0,
-            'limit' => 500
-            ];
             $config_provider = isset( $config['provider'] ) ? $config['provider'] : 'api'; ?>
 
-      <div class="dialog" id="dialog-<?php echo esc_attr( $key ) ?>">
-                <?php wp_nonce_field( 'security_headers', 'security_headers_nonce' ); ?>
-        <input type="hidden" name="action" value="dtdr_save_config" />
-        <input type="hidden" name="key" value="<?php echo esc_attr( $key ) ?>" />
-        <h2 class="nav-tab-wrapper">
-          <a href="#dlg-tab-general-<?php echo esc_attr( $key )?>" class="nav-tab">General</a>
-          <a href="#dlg-tab-data-types-<?php echo esc_attr( $key )?>" class="nav-tab">Data Types</a>
-        </h2>
-        <div class="wrap">
-          <!-- General Tab -->
-          <div id="dlg-tab-general-<?php echo esc_attr( $key ) ?>" class="dlg-tab-content">
-            <table class="form-table table-config">
-              <tr>
-                <th>
-                  <label>Name</label>
-                </th>
-                <td>
-                        <?php echo esc_html( isset( $config['name'] ) ? $config['name'] : '' ) ?>
-                </td>
-              </tr>
-              <tr>
-                <th>
-                  <label>Endpoint URL</label>
-                </th>
-                <td>
-                        <?php echo esc_html( isset( $config['url'] ) ? $config['url'] : '' ) ?>
-                </td>
-              </tr>
-
-                    <?php if ( isset( $config['token'] ) ): ?>
-                <tr>
-                  <th>
-                    <label>Token</label>
-                  </th>
-                  <td>
-                        <?php echo esc_html( isset( $config['token'] ) ? $config['token'] : '' ) ?>
-                  </td>
-                </tr>
-              <?php endif; ?>
-
-              <tr>
-                <th>
-                  <label>Is Active</label>
-                </th>
-                <td>
-                        <?php echo isset( $config['active'] ) && $config['active'] == 1 ? 'Yes' : 'No' ?>
-                </td>
-              </tr>
-            </table>
+      <a href="#" class="back-to-list">&larr; Back to configurations</a>
+      <div class="config-edit-view" id="edit-view-<?php echo esc_attr( $key ) ?>">
+        <div class="config-edit-view-container">
+          <div class="config-edit-sidebar">
+            <ul>
+              <li><a href="#section-general-<?php echo esc_attr( $key ) ?>" class="sidebar-nav">General Info</a></li>
+              <li class="sidebar-section-header">Data Export</li>
+              <?php foreach ( $post_types as $post_type ):
+                $post_type_settings = DT_Posts::get_post_settings( $post_type );
+                $post_type_label = $post_type_settings['label_plural'];
+                ?>
+                <li class="sidebar-sub-item">
+                  <a href="#section-data-<?php echo esc_attr( $post_type ) ?>-<?php echo esc_attr( $key ) ?>" class="sidebar-nav"><?php echo esc_html( $post_type_label ) ?></a>
+                </li>
+              <?php endforeach; ?>
+            </ul>
           </div>
-          <!-- Data Types Tab -->
-          <div id="dlg-tab-data-types-<?php echo esc_attr( $key ) ?>" class="dlg-tab-content" style="display: none;">
-                  <?php foreach ( $post_types as $post_type ): ?>
-                        <?php
-                        $post_type_settings = DT_Posts::get_post_settings( $post_type );
-                        $post_type_label = $post_type_settings['label_plural'];
-                        $activity_type = rtrim( $post_type, 's' ) . '_activity';
-                        $post_schedule_enabled = isset( $config['data_types'][$post_type] ) && isset( $config['data_types'][$post_type]['schedule'] ) && $config['data_types'][$post_type]['schedule'] == 'daily';
-                        $activity_schedule_enabled = isset( $config['data_types'][$activity_type] ) && isset( $config['data_types'][$activity_type]['schedule'] ) && $config['data_types'][$activity_type]['schedule'] == 'daily';
-                        ?>
-              <table class="widefat striped table-config accordion data-type-config-table <?php echo $post_schedule_enabled ? '' : 'collapsed' ?>">
-                <thead>
+          <div class="config-edit-content">
+
+            <!-- General Section -->
+            <div id="section-general-<?php echo esc_attr( $key ) ?>" class="config-section">
+              <h2>General Information</h2>
+              <table class="form-table">
                 <tr>
-                  <td><a href="javascript:;" class="toggle">
-                        <?php echo esc_html( $post_type_label ) ?>
-                    </a></td>
+                  <th><label>Name</label></th>
+                  <td><?php echo esc_html( isset( $config['name'] ) ? $config['name'] : '' ) ?></td>
                 </tr>
-                </thead>
-                <tbody>
-                        <?php $this->post_type_config_settings_external( $config, $post_type ) ?>
-                </tbody>
-              </table>
-              <table class="widefat striped table-config accordion data-type-config-table <?php echo $activity_schedule_enabled ? '' : 'collapsed' ?>">
-                <thead>
                 <tr>
-                  <td><a href="javascript:;" class="toggle">
-                        <?php echo esc_html( $post_type_label ) ?> Activity
-                    </a></td>
+                  <th><label>Endpoint URL</label></th>
+                  <td><?php echo esc_html( isset( $config['url'] ) ? $config['url'] : '' ) ?></td>
                 </tr>
-                </thead>
-                <tbody>
-                        <?php $this->post_type_config_settings_external( $config, $activity_type ) ?>
-                </tbody>
+                <?php if ( isset( $config['token'] ) ): ?>
+                  <tr>
+                    <th><label>Token</label></th>
+                    <td><?php echo esc_html( $config['token'] ) ?></td>
+                  </tr>
+                <?php endif; ?>
+                <tr>
+                  <th><label>Status</label></th>
+                  <td><?php echo isset( $config['active'] ) && $config['active'] == 1 ? 'Active' : 'Inactive' ?></td>
+                </tr>
               </table>
+            </div>
+
+            <!-- Data Types Section -->
+            <?php foreach ( $post_types as $post_type ):
+              $post_type_settings = DT_Posts::get_post_settings( $post_type );
+              $post_type_label = $post_type_settings['label_plural'];
+              $activity_type = rtrim( $post_type, 's' ) . '_activity';
+              $snapshot_type = rtrim( $post_type, 's' ) . '_snapshots';
+              ?>
+              <div id="section-data-<?php echo esc_attr( $post_type ) ?>-<?php echo esc_attr( $key ) ?>" class="config-section" style="display: none;">
+                <h2><?php echo esc_html( $post_type_label ) ?> Export Settings</h2>
+                <div class="data-types-grid">
+                  <div class="data-type-card">
+                    <h4><?php echo esc_html( $post_type_label ) ?></h4>
+                    <?php $this->post_type_config_settings_external( $config, $post_type ) ?>
+                  </div>
+                  <div class="data-type-card">
+                    <h4><?php echo esc_html( $post_type_label ) ?> Activity</h4>
+                    <?php $this->post_type_config_settings_external( $config, $activity_type ) ?>
+                  </div>
+                  <div class="data-type-card">
+                    <h4><?php echo esc_html( $post_type_label ) ?> Snapshots</h4>
+                    <?php $this->post_type_config_settings_external( $config, $snapshot_type ) ?>
+                  </div>
+                </div>
+              </div>
             <?php endforeach; ?>
           </div>
         </div>
       </div>
-            <?php endforeach;
-
-          echo '</div>';
+      <?php endforeach;
     }
 
     public function post_type_config_settings( $config, $data_type ) {
@@ -830,58 +545,8 @@ class DT_Data_Reporting_Tab_Settings
           ),
           );
             ?>
-        <tr>
-          <td>
-            <label class="label">Export Style</label>
-            <label class="radio">
-              <input type="radio"
-                     name="data_types[<?php echo esc_attr( $data_type ) ?>][all_data]"
-                     value="1"
-                     class="data-type-all-data"
-                   <?php echo $type_config['all_data'] == 1 ? 'checked' : '' ?>
-                     />
-              All Data
-              <div class="muted">Sends all data whenever an export is run.</div>
-            </label>
-            <label class="radio">
-              <input type="radio"
-                     name="data_types[<?php echo esc_attr( $data_type ) ?>][all_data]"
-                     value="0"
-                     class="data-type-all-data"
-                   <?php echo $type_config['all_data'] == 0 ? 'checked' : '' ?>
-                     />
-              Last Updated
-              <div class="muted">Only sends the data that has changed since the last export with a maximum number of records configured below.</div>
-            </label>
-
-
-          <?php if ( isset( $config_progress[$key] ) && isset( $config_progress[$key][$data_type] ) ): ?>
-              <div class="last-exported-value">
-                Exported Until: <?php echo esc_html( $config_progress[$key][$data_type] ) ?>
-                <button type="button"
-                        data-config-key="<?php echo esc_attr( $key ) ?>"
-                        data-data-type="<?php echo esc_attr( $data_type ) ?>">Reset</button>
-              </div>
-            <?php endif;  ?>
-          </td>
-        </tr>
-        <tr>
-          <td>
-            <label class="label">Max Records</label>
-            <input type="text"
-                   placeholder="Max records"
-                   name="data_types[<?php echo esc_attr( $data_type ) ?>][limit]"
-                   class="data-type-limit"
-                   value="<?php echo esc_attr( isset( $type_config['limit'] ) ? $type_config['limit'] : $default_type_config['limit'] ) ?>"
-            />
-            <div class="muted">When exporting only Last Updated records, this is the max number of records that will be sent at one time.</div>
-
-          </td>
-        </tr>
-
-        <tr>
-          <td>
-            <label class="label">Export Daily</label>
+        <div class="field-group">
+            <label class="label">Daily Export</label>
             <span class="switch">
               <input type="checkbox"
                      class="config-enable-checkbox"
@@ -894,32 +559,84 @@ class DT_Data_Reporting_Tab_Settings
                 <span></span>
               </label>
             </span>
-            <div class="muted">Enable scheduled exports for this type to be run on a daily basis. Data will automatically be sent to your provider without manual triggering it.</div>
+            <p class="muted">Enable scheduled exports for this type to be run on a daily basis. Data will automatically be sent to your provider without manual triggering it.</p>
+        </div>
 
-          </td>
-        </tr>
-
-        <?php if ( isset( $export_logs[$key] ) && isset( $export_logs[$key][$data_type] ) ): ?>
-        <tr>
-          <td>
-            <div class="export-logs">
-              <button type="button">View Last Export Logs</button>
-              <div class="log-messages" style="display: none;">
-                <div class="result">Result: <?php echo esc_html( $export_logs[$key][$data_type]['success'] ? 'Success' : 'Fail' ) ?></div>
-                <div class="date">Date: <?php echo esc_html( isset( $export_logs[$key][$data_type]['date'] ) ? $export_logs[$key][$data_type]['date'] : 'Unknown' ) ?></div>
-                <ul class="api-log">
-                  <?php foreach ( $export_logs[$key][$data_type]['messages'] as $message ) {
-                        $message_type = isset( $message['type'] ) ? $message['type'] : '';
-                        $content = isset( $message['message'] ) ? $message['message'] : '';
-                        echo "<li class='" . esc_attr( $message_type ) . "'>" . wp_kses( $content, $allowed_html ) . '</li>';
-                  } ?>
-                </ul>
-              </div>
+        <div class="field-group">
+            <label class="label">Export Style</label>
+            <div class="export-style-options">
+                <label>
+                    <input type="radio" name="data_types[<?php echo esc_attr( $data_type ) ?>][all_data]" value="1" <?php checked( $type_config['all_data'], 1 ); ?>>
+                    <strong>All Data</strong>
+                    <p class="muted" style="margin-top: 5px;">Sends all data whenever an export is run.</p>
+                </label>
+                <label style="margin-top: 10px; display: block;">
+                    <input type="radio" name="data_types[<?php echo esc_attr( $data_type ) ?>][all_data]" value="0" <?php checked( $type_config['all_data'], 0 ); ?>>
+                    <strong>Last Updated Only</strong>
+                    <p class="muted" style="margin-top: 5px;">Only sends the data that has changed since the last export with a maximum number of records configured below.</p>
+                </label>
             </div>
-          </td>
-        </tr>
+        </div>
+
+        <div class="field-group">
+            <label class="label">Max Records</label>
+            <input type="number"
+                   name="data_types[<?php echo esc_attr( $data_type ) ?>][limit]"
+                   value="<?php echo esc_attr( isset( $type_config['limit'] ) ? $type_config['limit'] : $default_type_config['limit'] ) ?>"
+            />
+            <p class="muted">When exporting only Last Updated records, this is the max number of records that will be sent at one time.</p>
+        </div>
+
+        <?php
+        $has_progress = isset( $config_progress[$key] ) && isset( $config_progress[$key][$data_type] );
+        $has_logs = isset( $export_logs[$key] ) && isset( $export_logs[$key][$data_type] );
+        if ( $has_progress || $has_logs ) :
+        ?>
+        <div class="field-group">
+            <label class="label">Last Export</label>
+            <div class="last-export-status-row" style="display: flex; align-items: center; gap: 10px;">
+                <?php if ( $has_progress ): ?>
+                    <div class="muted last-exported-value">
+                        <?php echo esc_html( $config_progress[$key][$data_type] ) ?>
+                    </div>
+                <?php endif; ?>
+
+                <?php if ( $has_logs ): ?>
+                    <div class="status-badge <?php echo $export_logs[$key][$data_type]['success'] ? 'active' : 'inactive' ?>" style="padding: 2px 8px; margin: 0;">
+                        <?php echo esc_html( $export_logs[$key][$data_type]['success'] ? 'Success' : 'Fail' ) ?>
+                    </div>
+                <?php endif; ?>
+            </div>
+
+            <div class="last-export-controls" style="margin-top: 5px; display: flex; gap: 5px; align-items: center;">
+                <?php if ( $has_logs ): ?>
+                    <div class="export-logs">
+                        <button type="button" class="button button-small view-logs-trigger">View Logs</button>
+                    </div>
+                <?php endif; ?>
+
+                <?php if ( $has_progress ): ?>
+                    <div class="last-exported-value">
+                        <button type="button" class="button button-small"
+                                data-config-key="<?php echo esc_attr( $key ) ?>"
+                                data-data-type="<?php echo esc_attr( $data_type ) ?>">Reset</button>
+                    </div>
+                <?php endif; ?>
+            </div>
+
+            <?php if ( $has_logs ): ?>
+                <div class="log-messages" style="display: none; font-size: 10px; margin-top: 5px;">
+                    <ul class="api-log" style="margin: 0; padding: 10px; background: #eee;">
+                        <?php foreach ( array_slice( $export_logs[$key][$data_type]['messages'], -3 ) as $message ) {
+                            $content = isset( $message['message'] ) ? $message['message'] : '';
+                            echo "<li>" . wp_kses( $content, $allowed_html ) . "</li>";
+                        } ?>
+                    </ul>
+                </div>
+            <?php endif; ?>
+        </div>
         <?php endif; ?>
-                    <?php
+    <?php
     }
 
     public function post_type_config_settings_external( $config, $data_type ) {
@@ -943,66 +660,68 @@ class DT_Data_Reporting_Tab_Settings
           ),
           );
             ?>
-        <tr>
-          <td>
+        <div class="field-group">
+            <label class="label">Daily Export</label>
+            <div><?php echo isset( $type_config['schedule'] ) && $type_config['schedule'] == 'daily' ? '✓ Enabled' : 'Disabled' ?></div>
+            <p class="muted">Enable scheduled exports for this type to be run on a daily basis.</p>
+        </div>
+
+        <div class="field-group">
             <label class="label">Export Style</label>
-          <?php if ( $type_config['all_data'] == 1 ): ?>
-              All Data
-            <?php else : ?>
-              Last Updated
-              (Max records: <?php echo esc_html( isset( $type_config['limit'] ) ? $type_config['limit'] : $default_type_config['limit'] ) ?>)
+            <div><?php echo $type_config['all_data'] == 1 ? 'All Data' : 'Last Updated Only' ?></div>
+            <p class="muted"><?php echo $type_config['all_data'] == 1 ? 'Sends all data whenever an export is run.' : 'Only sends the data that has changed since the last export.' ?></p>
+        </div>
 
-                <?php if ( isset( $config_progress[$key] ) && isset( $config_progress[$key][$data_type] ) ): ?>
-                <div class="last-exported-value">
-                  Exported Until: <?php echo esc_html( $config_progress[$key][$data_type] ) ?>
-                  <button type="button"
-                          data-config-key="<?php echo esc_attr( $key ) ?>"
-                          data-data-type="<?php echo esc_attr( $data_type ) ?>">Reset</button>
-                </div>
-              <?php endif; ?>
-            <?php endif; ?>
-
-
-          <?php if ( isset( $config_progress[$key] ) && isset( $config_progress[$key][$data_type] ) ): ?>
-              <div class="last-exported-value">
-                Exported Until: <?php echo esc_html( $config_progress[$key][$data_type] ) ?>
-                <button type="button"
-                        data-config-key="<?php echo esc_attr( $key ) ?>"
-                        data-data-type="<?php echo esc_attr( $data_type ) ?>">Reset</button>
-              </div>
-            <?php endif;  ?>
-          </td>
-        </tr>
-
-        <?php if ( isset( $type_config['schedule'] ) && $type_config['schedule'] == 'daily' ): ?>
-          <tr>
-            <td>
-                <p>&check; Automatic daily export</p>
-            </td>
-          </tr>
-        <?php endif; ?>
-
-        <?php if ( isset( $export_logs[$key] ) && isset( $export_logs[$key][$data_type] ) ): ?>
-        <tr>
-          <td>
-            <div class="export-logs">
-              <button type="button">View Last Export Logs</button>
-              <div class="log-messages" style="display: none;">
-                <div class="result">Result: <?php echo esc_html( $export_logs[$key][$data_type]['success'] ? 'Success' : 'Fail' ) ?></div>
-                <div class="date">Date: <?php echo esc_html( isset( $export_logs[$key][$data_type]['date'] ) ? $export_logs[$key][$data_type]['date'] : 'Unknown' ) ?></div>
-                <ul class="api-log">
-                  <?php foreach ( $export_logs[$key][$data_type]['messages'] as $message ) {
-                        $message_type = isset( $message['type'] ) ? $message['type'] : '';
-                        $content = isset( $message['message'] ) ? $message['message'] : '';
-                        echo "<li class='" . esc_attr( $message_type ) . "'>" . wp_kses( $content, $allowed_html ) . '</li>';
-                  } ?>
-                </ul>
-              </div>
+        <?php if ( $type_config['all_data'] == 0 ): ?>
+            <div class="field-group">
+                <label class="label">Max Records</label>
+                <div><?php echo esc_html( isset( $type_config['limit'] ) ? $type_config['limit'] : $default_type_config['limit'] ) ?></div>
+                <p class="muted">Max number of records that will be sent at one time.</p>
             </div>
-          </td>
-        </tr>
         <?php endif; ?>
-                    <?php
+
+        <?php
+        $has_progress = isset( $config_progress[$key] ) && isset( $config_progress[$key][$data_type] );
+        $has_logs = isset( $export_logs[$key] ) && isset( $export_logs[$key][$data_type] );
+        if ( $has_progress || $has_logs ) :
+        ?>
+        <div class="field-group">
+            <label class="label">Last Export</label>
+            <div class="last-export-status-row" style="display: flex; align-items: center; gap: 10px;">
+                <?php if ( $has_progress ): ?>
+                    <div class="muted last-exported-value">
+                        <?php echo esc_html( $config_progress[$key][$data_type] ) ?>
+                    </div>
+                <?php endif; ?>
+
+                <?php if ( $has_logs ): ?>
+                    <div class="status-badge <?php echo $export_logs[$key][$data_type]['success'] ? 'active' : 'inactive' ?>" style="padding: 2px 8px; margin: 0;">
+                        <?php echo esc_html( $export_logs[$key][$data_type]['success'] ? 'Success' : 'Fail' ) ?>
+                    </div>
+                <?php endif; ?>
+            </div>
+
+            <div class="last-export-controls" style="margin-top: 5px; display: flex; gap: 5px; align-items: center;">
+                <?php if ( $has_logs ): ?>
+                    <div class="export-logs">
+                        <button type="button" class="button button-small view-logs-trigger">View Logs</button>
+                    </div>
+                <?php endif; ?>
+            </div>
+
+            <?php if ( $has_logs ): ?>
+                <div class="log-messages" style="display: none; font-size: 10px; margin-top: 5px;">
+                    <ul class="api-log" style="margin: 0; padding: 10px; background: #eee;">
+                        <?php foreach ( array_slice( $export_logs[$key][$data_type]['messages'], -3 ) as $message ) {
+                            $content = isset( $message['message'] ) ? $message['message'] : '';
+                            echo "<li>" . wp_kses( $content, $allowed_html ) . "</li>";
+                        } ?>
+                    </ul>
+                </div>
+            <?php endif; ?>
+        </div>
+        <?php endif; ?>
+    <?php
     }
 
     public function save_settings() {

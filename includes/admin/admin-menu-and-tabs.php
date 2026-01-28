@@ -62,6 +62,8 @@ class DT_Data_Reporting_Menu {
         require_once( plugin_dir_path( __FILE__ ) . './admin-tab-settings.php' );
         require_once( plugin_dir_path( __FILE__ ) . './admin-tab-snapshots.php' );
 
+        new DT_Data_Reporting_Tab_Settings();
+
         // init settings to setup ajax hooks
         add_action( 'wp_ajax_dtdr_enable_config', [ $this, 'ajax_enable_config' ] );
         add_action( 'wp_ajax_dtdr_save_config', [ $this, 'ajax_save_config' ] );
