@@ -209,7 +209,7 @@ class DT_Data_Reporting_Tab_Settings
             <h3>Custom Configurations</h3>
             <div class="config-cards-grid">
               <?php foreach ( $configurations as $key => $config ): ?>
-                <?php $config_provider = isset( $config['provider'] ) ? $config['provider'] : 'api'; ?>
+                    <?php $config_provider = isset( $config['provider'] ) ? $config['provider'] : 'api'; ?>
                 <div class="config-card" id="config-list-row-<?php echo esc_attr( $key ) ?>">
                   <div class="config-card-header">
                     <h4 class="name"><?php echo esc_html( isset( $config['name'] ) ? $config['name'] : '(new config)' ) ?></h4>
@@ -255,7 +255,7 @@ class DT_Data_Reporting_Tab_Settings
               <h3>External Configurations</h3>
               <div class="config-cards-grid">
                 <?php foreach ( $configurations_ext as $key => $config ): ?>
-                  <?php $config_provider = isset( $config['provider'] ) ? $config['provider'] : 'api'; ?>
+                    <?php $config_provider = isset( $config['provider'] ) ? $config['provider'] : 'api'; ?>
                   <div class="config-card">
                     <div class="config-card-header">
                       <h4 class="name"><?php echo esc_html( $config['name'] ) ?></h4>
@@ -308,9 +308,9 @@ class DT_Data_Reporting_Tab_Settings
                   <li><a href="#section-provider-<?php echo esc_attr( $key ) ?>" class="sidebar-nav">Connection Settings</a></li>
                   <li class="sidebar-section-header">Data Export</li>
                   <?php foreach ( $post_types as $post_type ):
-                    $post_type_settings = DT_Posts::get_post_settings( $post_type );
-                    $post_type_label = $post_type_settings['label_plural'];
-                    ?>
+                        $post_type_settings = DT_Posts::get_post_settings( $post_type );
+                        $post_type_label = $post_type_settings['label_plural'];
+                        ?>
                     <li class="sidebar-sub-item">
                       <a href="#section-data-<?php echo esc_attr( $post_type ) ?>-<?php echo esc_attr( $key ) ?>" class="sidebar-nav"><?php echo esc_html( $post_type_label ) ?></a>
                     </li>
@@ -356,9 +356,9 @@ class DT_Data_Reporting_Tab_Settings
                         <select name="provider" id="dlg_provider_<?php echo esc_attr( $key ) ?>" class="provider">
                           <option value="api" <?php echo $config_provider == 'api' ? 'selected' : '' ?>>API</option>
                           <?php if ( !empty( $providers ) ): ?>
-                            <?php foreach ( $providers as $provider_key => $provider ): ?>
+                                <?php foreach ( $providers as $provider_key => $provider ): ?>
                               <option value="<?php echo esc_attr( $provider_key ) ?>" <?php echo $config_provider == $provider_key ? 'selected' : '' ?>>
-                                <?php echo esc_html( $provider['name'] ) ?>
+                                    <?php echo esc_html( $provider['name'] ) ?>
                               </option>
                             <?php endforeach; ?>
                           <?php endif; ?>
@@ -381,34 +381,34 @@ class DT_Data_Reporting_Tab_Settings
                     </tr>
 
                     <?php if ( !empty( $providers ) ) {
-                      foreach ( $providers as $provider_key => $provider ) {
-                        if ( isset( $provider['fields'] ) && !empty( $provider['fields'] ) ) {
-                          foreach ( $provider['fields'] as $field_key => $field ) { ?>
+                        foreach ( $providers as $provider_key => $provider ) {
+                            if ( isset( $provider['fields'] ) && !empty( $provider['fields'] ) ) {
+                                foreach ( $provider['fields'] as $field_key => $field ) { ?>
                             <tr class="provider-field provider-<?php echo esc_attr( $provider_key ) ?> <?php echo $provider_key == $config_provider ? '' : 'hide' ?>">
                               <th><label for="dlg_<?php echo esc_attr( $field_key ) ?>_<?php echo esc_attr( $key ) ?>"><?php echo esc_html( $field['label'] ) ?></label></th>
                               <td>
-                                <?php if ( $field['type'] == 'text' ): ?>
+                                        <?php if ( $field['type'] == 'text' ): ?>
                                   <input type="text" name="<?php echo esc_attr( $field_key ) ?>" id="dlg_<?php echo esc_attr( $field_key ) ?>_<?php echo esc_attr( $key ) ?>" value="<?php echo esc_attr( isset( $config[$field_key] ) ? $config[$field_key] : '' ) ?>" class="large-text" />
                                 <?php endif; ?>
-                                <?php if ( isset( $field['helpText'] ) ): ?>
+                                        <?php if ( isset( $field['helpText'] ) ): ?>
                                   <p class="description"><?php echo esc_html( $field['helpText'] ) ?></p>
                                 <?php endif; ?>
                               </td>
                             </tr>
-                          <?php }
+                                  <?php }
+                            }
                         }
-                      }
                     } ?>
                   </table>
                 </div>
 
                 <!-- Data Types Section -->
                 <?php foreach ( $post_types as $post_type ):
-                  $post_type_settings = DT_Posts::get_post_settings( $post_type );
-                  $post_type_label = $post_type_settings['label_plural'];
-                  $activity_type = rtrim( $post_type, 's' ) . '_activity';
-                  $snapshot_type = rtrim( $post_type, 's' ) . '_snapshots';
-                  ?>
+                    $post_type_settings = DT_Posts::get_post_settings( $post_type );
+                    $post_type_label = $post_type_settings['label_plural'];
+                    $activity_type = rtrim( $post_type, 's' ) . '_activity';
+                    $snapshot_type = rtrim( $post_type, 's' ) . '_snapshots';
+                    ?>
                   <div id="section-data-<?php echo esc_attr( $post_type ) ?>-<?php echo esc_attr( $key ) ?>" class="config-section" style="display: none;">
                     <h2><?php echo esc_html( $post_type_label ) ?> Export Settings</h2>
                     <p class="description">Configure which <?php echo esc_html( strtolower( $post_type_label ) ) ?> data should be exported.</p>
@@ -457,9 +457,9 @@ class DT_Data_Reporting_Tab_Settings
               <li><a href="#section-general-<?php echo esc_attr( $key ) ?>" class="sidebar-nav">General Info</a></li>
               <li class="sidebar-section-header">Data Export</li>
               <?php foreach ( $post_types as $post_type ):
-                $post_type_settings = DT_Posts::get_post_settings( $post_type );
-                $post_type_label = $post_type_settings['label_plural'];
-                ?>
+                    $post_type_settings = DT_Posts::get_post_settings( $post_type );
+                    $post_type_label = $post_type_settings['label_plural'];
+                    ?>
                 <li class="sidebar-sub-item">
                   <a href="#section-data-<?php echo esc_attr( $post_type ) ?>-<?php echo esc_attr( $key ) ?>" class="sidebar-nav"><?php echo esc_html( $post_type_label ) ?></a>
                 </li>
@@ -495,11 +495,11 @@ class DT_Data_Reporting_Tab_Settings
 
             <!-- Data Types Section -->
             <?php foreach ( $post_types as $post_type ):
-              $post_type_settings = DT_Posts::get_post_settings( $post_type );
-              $post_type_label = $post_type_settings['label_plural'];
-              $activity_type = rtrim( $post_type, 's' ) . '_activity';
-              $snapshot_type = rtrim( $post_type, 's' ) . '_snapshots';
-              ?>
+                $post_type_settings = DT_Posts::get_post_settings( $post_type );
+                $post_type_label = $post_type_settings['label_plural'];
+                $activity_type = rtrim( $post_type, 's' ) . '_activity';
+                $snapshot_type = rtrim( $post_type, 's' ) . '_snapshots';
+                ?>
               <div id="section-data-<?php echo esc_attr( $post_type ) ?>-<?php echo esc_attr( $key ) ?>" class="config-section" style="display: none;">
                 <h2><?php echo esc_html( $post_type_label ) ?> Export Settings</h2>
                 <div class="data-types-grid">
@@ -591,7 +591,7 @@ class DT_Data_Reporting_Tab_Settings
         $has_progress = isset( $config_progress[$key] ) && isset( $config_progress[$key][$data_type] );
         $has_logs = isset( $export_logs[$key] ) && isset( $export_logs[$key][$data_type] );
         if ( $has_progress || $has_logs ) :
-        ?>
+            ?>
         <div class="field-group">
             <label class="label">Last Export</label>
             <div class="last-export-status-row" style="display: flex; align-items: center; gap: 10px;">
@@ -629,14 +629,14 @@ class DT_Data_Reporting_Tab_Settings
                     <ul class="api-log" style="margin: 0; padding: 10px; background: #eee;">
                         <?php foreach ( array_slice( $export_logs[$key][$data_type]['messages'], -3 ) as $message ) {
                             $content = isset( $message['message'] ) ? $message['message'] : '';
-                            echo "<li>" . wp_kses( $content, $allowed_html ) . "</li>";
+                            echo '<li>' . wp_kses( $content, $allowed_html ) . '</li>';
                         } ?>
                     </ul>
                 </div>
             <?php endif; ?>
         </div>
         <?php endif; ?>
-    <?php
+        <?php
     }
 
     public function post_type_config_settings_external( $config, $data_type ) {
@@ -684,7 +684,7 @@ class DT_Data_Reporting_Tab_Settings
         $has_progress = isset( $config_progress[$key] ) && isset( $config_progress[$key][$data_type] );
         $has_logs = isset( $export_logs[$key] ) && isset( $export_logs[$key][$data_type] );
         if ( $has_progress || $has_logs ) :
-        ?>
+            ?>
         <div class="field-group">
             <label class="label">Last Export</label>
             <div class="last-export-status-row" style="display: flex; align-items: center; gap: 10px;">
@@ -714,14 +714,14 @@ class DT_Data_Reporting_Tab_Settings
                     <ul class="api-log" style="margin: 0; padding: 10px; background: #eee;">
                         <?php foreach ( array_slice( $export_logs[$key][$data_type]['messages'], -3 ) as $message ) {
                             $content = isset( $message['message'] ) ? $message['message'] : '';
-                            echo "<li>" . wp_kses( $content, $allowed_html ) . "</li>";
+                            echo '<li>' . wp_kses( $content, $allowed_html ) . '</li>';
                         } ?>
                     </ul>
                 </div>
             <?php endif; ?>
         </div>
         <?php endif; ?>
-    <?php
+        <?php
     }
 
     public function save_settings() {
