@@ -131,7 +131,7 @@ class DT_Data_Reporting_Tools
             'Created' => null,
             );
 
-            if ( isset( $result['post_date'] ) && !empty( $result['post_date'] ) ) {
+            if ( isset( $result['post_date'] ) && !empty( $result['post_date'] ) && is_numeric( $result['post_date'] ) ) {
                 $post['Created'] = gmdate( 'Y-m-d H:i:s', $result['post_date'] );
             }
 
@@ -391,7 +391,7 @@ class DT_Data_Reporting_Tools
 
           // Theme v1.0.0 changes post_date to a proper date object we need to format
             if ( $is_dt_1_0 && isset( $result['post_date']['timestamp'] ) ) {
-                $post['Created'] = !empty( $result['post_date']['timestamp'] ) ? gmdate( 'Y-m-d H:i:s', $result['post_date']['timestamp'] ) : '';
+                $post['Created'] = !empty( $result['post_date']['timestamp'] ) && is_numeric( $result['post_date']['timestamp'] ) ? gmdate( 'Y-m-d H:i:s', $result['post_date']['timestamp'] ) : '';
             }
 
           // Loop over all fields to parse/format each
@@ -790,8 +790,8 @@ class DT_Data_Reporting_Tools
                     $field_value = $result[$field_key]['id'];
                     break;
                 case 'date':
-                    $field_value = !empty( $result[$field_key]['timestamp'] ) ? gmdate( 'Y-m-d H:i:s', $result[$field_key]['timestamp'] ) : '';
-                    break;
+                    $field_value = !empty( $result[$field_key]['timestamp'] ) && is_numeric( $result[$field_key]['timestamp'] ) ? gmdate( 'Y-m-d H:i:s', $result[$field_key]['timestamp'] ) : '';
+                break;
                 case 'location':
                     // Map country and admin1 data from location_grid table to restrict
                     // location to only admin level 1 (first level within a country, like states/provinces)
@@ -883,7 +883,7 @@ class DT_Data_Reporting_Tools
                     $field_value = $result[$field_key];
                 break;
                 case 'date':
-                    $field_value = !empty( $result[$field_key] ) ? gmdate( 'Y-m-d H:i:s', $result[$field_key] ) : '';
+                    $field_value = !empty( $result[$field_key] ) && is_numeric( $result[$field_key] ) ? gmdate( 'Y-m-d H:i:s', $result[$field_key] ) : $result[$field_key];
                 break;
                 case 'location':
                   // Map country and admin1 data from location_grid table to restrict
