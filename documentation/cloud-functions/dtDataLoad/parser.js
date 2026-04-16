@@ -1,4 +1,4 @@
-const stringify = require('csv-stringify');
+const { stringify } = require('csv-stringify');
 
 const fieldWhitelist = {
   contacts: [

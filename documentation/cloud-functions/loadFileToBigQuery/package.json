@@ -1,17 +1,21 @@
 {
   "name": "load-file-to-bigquery",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "description": "",
   "main": "index.js",
+  "engines": {
+    "node": ">=24.0.0"
+  },
   "scripts": {
-    "deploy": "gcloud functions deploy load-file-to-bigquery --entry-point loadFileToBigQuery --runtime nodejs16 --trigger-resource reporting-data-transfer --trigger-event google.storage.object.finalize --env-vars-file .env.prod.yaml --region europe-west2",
-    "test": "jest"
+    "deploy": "gcloud functions deploy load-file-to-bigquery --gen2 --entry-point loadFileToBigQuery --runtime nodejs24 --trigger-location BUCKET_LOCATION --trigger-event-filters=\"type=google.cloud.storage.object.v1.finalized\" --trigger-event-filters=\"bucket=BUCKET_NAME\" --env-vars-file .env.prod.yaml --region europe-west2",
+    "test": "npx jest --no-watchman"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@google-cloud/bigquery": "^5.1.0",
-    "@google-cloud/storage": "^5.1.2",
+    "@google-cloud/bigquery": "^8.1.1",
+    "@google-cloud/functions-framework": "^5.0.2",
+    "@google-cloud/storage": "^7.19.0",
     "byline": "^5.0.0"
   }
 }

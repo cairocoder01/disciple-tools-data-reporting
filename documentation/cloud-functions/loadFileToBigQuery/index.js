@@ -1,4 +1,4 @@
-// Import the Google Cloud client libraries
+const functions = require('@google-cloud/functions-framework');
 const {BigQuery} = require('@google-cloud/bigquery');
 const {Storage} = require('@google-cloud/storage');
 const {fixTagsFormat} = require('./parser');
@@ -10,30 +10,25 @@ const storage = new Storage();
 
 /**
  * Migration to fix `tags` field from being a string to being a repeated string
- * @param event
- * @param context
- * @returns {Promise<void>}
+ * @param {Object} cloudEvent CloudEvent payload.
  */
-exports.fixTagsFormat = async (event, context) => {
+functions.cloudEvent('fixTagsFormat', async (cloudEvent) => {
 
-  const gcsEvent = event;
+  const gcsEvent = cloudEvent.data;
   const bucketName = gcsEvent.bucket;
   const filename = gcsEvent.name;
   console.log(`Processing file: ${bucketName}/${filename}`);
   const bucket = storage.bucket(bucketName);
   const file = bucket.file(filename);
 
-  // get dataset from environment
-  const datasetId = process.env.BQ_DATASET;
-
   // check for migrateTags metadata (1=not migrated, 0=migrated->exit)
-  const shouldMigrate = event.metadata && event.metadata.migrateTags;
-  const fields = event.metadata && event.metadata.fields;
+  const shouldMigrate = gcsEvent.metadata && gcsEvent.metadata.migrateTags;
+  const fields = gcsEvent.metadata && gcsEvent.metadata.fields;
   console.log(`shouldMigrate: ${JSON.stringify(shouldMigrate)}`);
   if (shouldMigrate === '1') {
     // read/edit `fields` metadata
     console.log('Migrating file metadata...');
-    const newMetadata = {metadata: event.metadata};
+    const newMetadata = {metadata: gcsEvent.metadata};
     newMetadata.metadata.fields = fields.replace('{"name":"tags","type":"STRING"}', '{"name":"tags","type":"STRING","mode":"REPEATED"}');
     newMetadata.metadata.migrateTags = '0';
     newMetadata.metadata.skipDedup = 'true';
@@ -50,27 +45,17 @@ exports.fixTagsFormat = async (event, context) => {
         metadata: newMetadata
       });
     }
-
-
-    /*file.setMetadata(newMetadata, function(err) {
-      if (err) {
-        console.error(err);
-      } else {
-        console.log('Updated metadata');
-      }
-    });*/
-
   }
-}
+});
+
 /**
  * Triggered from a change to a Cloud Storage bucket.
  *
- * @param {!Object} event Event payload.
- * @param {!Object} context Metadata for the event.
+ * @param {Object} cloudEvent CloudEvent payload.
  */
-exports.loadFileToBigQuery = async (event, context) => {
+functions.cloudEvent('loadFileToBigQuery', async (cloudEvent) => {
   try {
-    const gcsEvent = event;
+    const gcsEvent = cloudEvent.data;
     const bucketName = gcsEvent.bucket;
     const filename = gcsEvent.name;
     console.log(`Processing file: ${bucketName}/${filename}`);
@@ -105,14 +90,13 @@ exports.loadFileToBigQuery = async (event, context) => {
         });
       } else {
         // get schema from metadata of json files
-        fields = JSON.parse(event.metadata && event.metadata.fields);
-        // console.log(fields);
+        fields = JSON.parse(gcsEvent.metadata && gcsEvent.metadata.fields);
       }
     }
 
     // send file to bigquery load method
-    const shouldSkipDedup = event.metadata && event.metadata.skipDedup && event.metadata.skipDedup == 'true';
-    const shouldTruncate = event.metadata && event.metadata.truncate && event.metadata.truncate == 'true';
+    const shouldSkipDedup = gcsEvent.metadata && gcsEvent.metadata.skipDedup && gcsEvent.metadata.skipDedup == 'true';
+    const shouldTruncate = gcsEvent.metadata && gcsEvent.metadata.truncate && gcsEvent.metadata.truncate == 'true';
     let writeDisposition = 'WRITE_APPEND';
     if (shouldTruncate) {
       writeDisposition = 'WRITE_TRUNCATE';
@@ -153,39 +137,35 @@ exports.loadFileToBigQuery = async (event, context) => {
     console.log(`gs://${bucketName}/${filename} deleted.`);
 
     // trigger bigquery query to remove duplicates
-    const sortField = event.metadata && event.metadata.sortField;
+    const sortField = gcsEvent.metadata && gcsEvent.metadata.sortField;
+    const groupBy = gcsEvent.metadata && gcsEvent.metadata.groupByFields;
     if (!shouldSkipDedup && !shouldTruncate && sortField) {
       console.log('Running dedup query');
-      let groupByFields = 'id';
+      let groupByFields = groupBy ?? 'id';
       if (tableId.startsWith('dt_')) {
         groupByFields = 'id, site';
       }
       await dedupTable(tableId, sortField, groupByFields);
     }
-
-    // console.log(gcsEvent);
-    // console.log(context);
   } catch (err) {
     console.error(err);
     console.error(new Error(err.message));
   }
-};
+});
 
 function getHeaderRow(bucketName, filename) {
   return new Promise((resolve, reject) => {
 
     let headerRow;
-    gcsStream = storage.bucket(bucketName).file(filename).createReadStream();
-    lineStream = byline.createStream(gcsStream, { encoding: 'utf8' });
+    const gcsStream = storage.bucket(bucketName).file(filename).createReadStream();
+    const lineStream = byline.createStream(gcsStream, { encoding: 'utf8' });
     lineStream.on('data', (line) => {
       if (!headerRow) {
         headerRow = line;
       }
-      // console.log(line);
     }).on('end', () => {
       resolve(headerRow);
     }).on('error', (err) => {
-      // console.error(err);
       reject(err);
     });
   });

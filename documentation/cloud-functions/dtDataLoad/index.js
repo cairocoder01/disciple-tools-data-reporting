@@ -1,17 +1,13 @@
+const functions = require('@google-cloud/functions-framework');
 const moment = require('moment');
 const storage = require('./storage');
 const parser = require('./parser');
 const firestore = require('./firestore');
 
 /**
- * HTTP Cloud Function.
- *
- * @param {Object} req Cloud Function request context.
- *                     More info: https://expressjs.com/en/api.html#req
- * @param {Object} res Cloud Function response context.
- *                     More info: https://expressjs.com/en/api.html#res
+ * HTTP Cloud Function (2nd Gen).
  */
-exports.dtDataLoad = async (req, res) => {
+const dtDataLoad = async (req, res) => {
   if (req.method === 'POST') {
     const data = (req.body) || {};
 
@@ -54,11 +50,15 @@ exports.dtDataLoad = async (req, res) => {
 
       // set metadata for truncate and sort field
       const isActivity = data.type.includes('_activity');
+      const isSnapshots = data.type.includes('_snapshots');
       const metadata = {
         fields: JSON.stringify(fields),
-        sortField: isActivity ? 'date' : 'last_modified',
+        sortField: isActivity ? 'date' : (isSnapshots ? 'snapshot_date' : 'last_modified'),
         truncate: !!data.truncate,
       };
+      if (isSnapshots) {
+        metadata.groupByFields = 'id, period, site';
+      }
 
       const prefix = config && config.prefix ? config.prefix : 'dt';
       const filename = `${prefix}_${data.type}_${moment().format('YYYYMMDDHHmmssSSS')}.json`;
@@ -76,14 +76,17 @@ exports.dtDataLoad = async (req, res) => {
     }
   }
 
-  return res.status(400);
+  return res.status(400).send();
 };
+
+functions.http('dtDataLoad', dtDataLoad);
+exports.dtDataLoad = dtDataLoad;
 
 
 async function isValidIpAddress(req, res) {
   if (process.env.ENABLE_FIRESTORE_WHITELIST === "1") {
-    var xForwardedFor = (req.headers['x-forwarded-for'] || '').replace(/:\d+$/, '');
-    var ip = xForwardedFor || req.connection.remoteAddress;
+    var xForwardedFor = (req.headers['x-forwarded-for'] || '').split(',')[0].trim();
+    var ip = xForwardedFor || req.socket.remoteAddress;
 
     const ipaddresses = await firestore.getWhitelistIPs();
 
