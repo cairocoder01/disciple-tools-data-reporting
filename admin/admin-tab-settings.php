@@ -87,7 +87,8 @@ class DT_Data_Reporting_Tab_Settings
                     continue;
                 }
 
-                $configurations[$key][$field] = $value;
+                // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
+                $configurations[$key][$field] = wp_unslash( $value );
             }
 
             update_option( 'dt_data_reporting_configurations', json_encode( $configurations ) );
@@ -341,6 +342,13 @@ class DT_Data_Reporting_Tab_Settings
                           <label for="dlg_enabled_<?php echo esc_attr( $key ) ?>"><span></span></label>
                         </span>
                         <p class="description">When checked, this configuration is active and will be exported.</p>
+                      </td>
+                    </tr>
+                    <tr>
+                      <th><label for="dlg_custom_<?php echo esc_attr( $key ) ?>">Custom Data</label></th>
+                      <td>
+                        <textarea name="custom" id="dlg_custom_<?php echo esc_attr( $key ) ?>" rows="4" class="large-text code"><?php echo esc_textarea( isset( $config['custom'] ) ? $config['custom'] : '' ) ?></textarea>
+                        <p class="description">Optional custom data included with each API export. Will be parsed as JSON if possible, otherwise sent as a string.</p>
                       </td>
                     </tr>
                   </table>

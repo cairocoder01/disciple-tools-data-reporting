@@ -1100,6 +1100,14 @@ class DT_Data_Reporting_Tools
             $type_config = isset( $type_configs[$type] ) ? $type_configs[$type] : [];
             $all_data = !isset( $type_config['all_data'] ) || boolval( $type_config['all_data'] );
 
+            // Parse custom data: attempt JSON decode, fall back to raw string
+            $custom = null;
+            if ( isset( $config['custom'] ) && $config['custom'] !== '' ) {
+                $custom_raw = $config['custom'];
+                $custom_decoded = json_decode( $custom_raw, true );
+                $custom = ( json_last_error() === JSON_ERROR_NONE ) ? $custom_decoded : $custom_raw;
+            }
+
             $args = array(
                 'method' => 'POST',
                 'timeout'     => 45,
@@ -1107,6 +1115,9 @@ class DT_Data_Reporting_Tools
                     'Content-Type' => 'application/json; charset=utf-8'
                 ),
                 'body' => json_encode(array(
+                    'configuration' => isset( $config['name'] ) ? $config['name'] : '',
+                    'site' => self::get_current_site_base_url(),
+                    'custom' => $custom,
                     'columns' => $columns,
                     'items' => $rows,
                     'type' => $type,

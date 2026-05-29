@@ -412,15 +412,25 @@ class DT_Data_Reporting_Tab_Getting_Started
             <h3 id="api-documentation">API Documentation</h3>
             <p>The data from this plugin will be sent to the Endpoint URL (configured in Settings tab) using an HTTP POST request. The body (sent with content-type of application/json; charset=utf-8) of the request will have the format:</p>
             <pre><code style="display:block;">{
-  column<span class="hljs-variable">s:</span> [{         // Array of <span class="hljs-keyword">all</span> fields that have been exported
-    key: <span class="hljs-built_in">string</span>,      // field key <span class="hljs-keyword">as</span> defined by D.T theme/plugin
-    name: <span class="hljs-built_in">string</span>,     // field name <span class="hljs-keyword">as</span> defined by D.T theme/plugin
-    <span class="hljs-built_in">type</span>: <span class="hljs-built_in">string</span>,     // field <span class="hljs-built_in">type</span> <span class="hljs-keyword">as</span> defined by D.T theme/plugin
-    bq_type: <span class="hljs-built_in">string</span>,  // BigQuery column <span class="hljs-built_in">type</span> based <span class="hljs-keyword">on</span> field <span class="hljs-built_in">type</span>
-    bq_mode: <span class="hljs-built_in">string</span>,  // BigQuery column <span class="hljs-keyword">mode</span> (<span class="hljs-keyword">e</span>.g. NULLABLE, REPEATED)
-  }], //
-  item<span class="hljs-variable">s:</span> [],          // <span class="hljs-keyword">all</span> of the structured data <span class="hljs-keyword">for</span> your selected data <span class="hljs-built_in">type</span>
-  <span class="hljs-built_in">type</span>: <span class="hljs-built_in">string</span>,       // <span class="hljs-keyword">e</span>.g. contacts, contact_activity
+  configuration: string,     // name of the configuration that triggered this export
+  site: string,              // base URL of the source D.T site
+  custom: any | null,        // value of the configuration's Custom Data field
+                             //   - parsed as JSON when the field contains valid JSON
+                             //     (returned as an object, array, number, or boolean)
+                             //   - sent as the raw string when JSON parsing fails
+                             //   - null when the field is empty
+  columns: [{                // array of all fields that have been exported
+    key: string,             // field key as defined by D.T theme/plugin
+    name: string,            // field name as defined by D.T theme/plugin
+    type: string,            // field type as defined by D.T theme/plugin
+    bq_type: string,         // BigQuery column type based on field type
+    bq_mode: string,         // BigQuery column mode (e.g. NULLABLE, REPEATED)
+  }],
+  items: [],                 // all of the structured data for your selected data type
+  type: string,              // e.g. contacts, contact_activity
+  truncate: boolean,         // true when exporting all data (receivers may use this
+                             // as a hint to replace existing data); false when only
+                             // exporting records changed since the last export
 }
 </code></pre>
             <p>No specific return value is required besides returning a 200 status code. Any response will be displayed on the page when manually running the API export.</p>
