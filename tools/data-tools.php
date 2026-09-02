@@ -625,9 +625,14 @@ class DT_Data_Reporting_Tools
                     case 'key_select':
                     case 'multi_select':
                     case 'tags':
-                        $keys = array_keys( $fields[$a->meta_key]['default'] );
-                        $value_friendly = $fields[$a->meta_key]['default'][$a->meta_value]['label'] ?? $a->meta_value;
-                        $value_order = array_search( $a->meta_value, $keys ) + 1;
+                        $field_options = $fields[$a->meta_key]['default'] ?? [];
+                        if ( !is_array( $field_options ) ) {
+                            $field_options = [];
+                        }
+                        $keys = array_keys( $field_options );
+                        $value_friendly = $field_options[$a->meta_value]['label'] ?? $a->meta_value;
+                        $key_index = array_search( $a->meta_value, $keys );
+                        $value_order = ( $key_index === false ) ? 0 : $key_index + 1;
                         break;
                     default:
                         break;
