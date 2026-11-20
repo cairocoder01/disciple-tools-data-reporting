@@ -689,6 +689,12 @@ class DT_Data_Reporting_Tools
             $where .= ' AND s.snapshot_date >= %s';
             $params[] = $filter['snapshot_date']['start'] ?? '2000-01-01 00:00:00';
         }
+        foreach ( self::$filter_fields as $filter_key ) {
+            if ( isset( $filter[$filter_key] ) && is_array( $filter[$filter_key] ) ) {
+                $where .= " AND s.post_id IN ( SELECT post_id FROM `$wpdb->postmeta` WHERE meta_key = %s AND meta_value IN ( " . dt_array_to_sql( $filter[$filter_key] ) . ' ) )';
+                $params[] = $filter_key;
+            }
+        }
         $query = "SELECT s.*
         FROM `$table` as s
         $where
