@@ -24,6 +24,10 @@ $wordpress_root_path = preg_replace( '/wp-content(?!.*wp-content).*/', '', __DIR
 require_once( $wordpress_root_path . 'wp-load.php' );
 require_once( plugin_dir_path( __FILE__ ) . '../tools/data-tools.php' );
 
+if ( !current_user_can( 'manage_dt' ) || !isset( $_GET['_wpnonce'] ) || !wp_verify_nonce( sanitize_key( wp_unslash( $_GET['_wpnonce'] ) ), 'dtdr_export' ) ) {
+    wp_die( esc_html__( 'You do not have permission to export this data.', 'disciple-tools-data-reporting' ), 403 );
+}
+
 function get_post_activity( $post_type ) {
     global $wpdb;
     $post_settings = apply_filters( 'dt_get_post_type_settings', array(), $post_type );
