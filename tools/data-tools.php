@@ -454,6 +454,11 @@ class DT_Data_Reporting_Tools
             $filter['sort'] = 'last_modified';
         }
 
+        // Personal contacts are private to their owner and never exported
+        if ( $post_type === 'contacts' ) {
+            $filter['type'] = array_merge( $filter['type'] ?? [], [ '-personal' ] );
+        }
+
         $posts = DT_Posts::list_posts( $post_type, $filter, false );
         if ( is_wp_error( $posts ) ) {
             $error_message = $posts->get_error_message() ?? '';
@@ -465,9 +470,9 @@ class DT_Data_Reporting_Tools
             $retrieved_posts = sizeof( $posts['posts'] );
             while ( $retrieved_posts < $posts['total'] ) {
                 $filter['offset'] = sizeof( $posts['posts'] );
-                $next_posts = DT_Posts::list_posts( $post_type, $filter );
+                $next_posts = DT_Posts::list_posts( $post_type, $filter, false );
                 if ( is_wp_error( $next_posts ) ) {
-                    $error_message = $posts->get_error_message() ?? '';
+                    $error_message = $next_posts->get_error_message() ?? '';
                     throw new Exception( $error_message );
                 }
                 $posts['posts'] = array_merge( $posts['posts'], $next_posts['posts'] );
@@ -512,7 +517,8 @@ class DT_Data_Reporting_Tools
         $post_filter_subquery = "SELECT
             DISTINCT post_id
             FROM `$wpdb->postmeta`
-            WHERE 1=1 ";
+            WHERE 1=1
+            AND post_id NOT IN ( SELECT post_id FROM `$wpdb->postmeta` WHERE meta_key = 'type' AND meta_value = 'personal' ) ";
         foreach( self::$filter_fields as $filter_key ) {
             if ( in_array($filter_key, ['sort', 'limit', 'offset']) ) {
                 continue;
@@ -546,6 +552,7 @@ class DT_Data_Reporting_Tools
         $query_activity_where = "
             WHERE `object_type` = %s
                  AND meta_key NOT IN ( $hidden_keys )
+                 AND meta_key NOT LIKE '%%\\_magic\\_key'
                  AND object_id IN ( $post_filter_subquery ) ";
 
         // Query wp_comments table
@@ -638,12 +645,18 @@ class DT_Data_Reporting_Tools
                         break;
                 }
             }
+            // Site-link activity stores the link's secret site key in user_caps; export the link title instead
+            $user_name = $a->user_caps;
+            if ( is_string( $user_name ) && strlen( $user_name ) === 32 && ctype_xdigit( $user_name ) ) {
+                $site_link_id = class_exists( 'Site_Link_System' ) ? Site_Link_System::get_post_id_by_site_key( $user_name ) : false;
+                $user_name = $site_link_id ? get_the_title( $site_link_id ) : '';
+            }
             $activity_simple[] = array(
                 'id' => $a->id,
                 'meta_id' => $a->meta_id,
                 'post_id' => $a->object_id,
                 'user_id' => $a->user_id,
-                'user_name' => $a->user_caps,
+                'user_name' => $user_name,
                 'action_type' => $a->action,
                 'action_field' => $a->meta_key,
                 'action_value' => $a->meta_value,
@@ -673,7 +686,7 @@ class DT_Data_Reporting_Tools
         $wpdb->query( "SET time_zone='+00:00';" );
 
         $table = $wpdb->prefix . 'dt_post_snapshots';
-        $where = 'WHERE s.post_type=%s';
+        $where = "WHERE s.post_type=%s AND s.post_id NOT IN ( SELECT post_id FROM `$wpdb->postmeta` WHERE meta_key = 'type' AND meta_value = 'personal' )";
         $params = [ $post_type ];
         if ( isset( $filter['snapshot_date'] ) && isset( $filter['snapshot_date']['start'] ) ) {
             $start = $filter['snapshot_date']['start'];
@@ -681,6 +694,12 @@ class DT_Data_Reporting_Tools
 
             $where .= ' AND s.snapshot_date >= %s';
             $params[] = $filter['snapshot_date']['start'] ?? '2000-01-01 00:00:00';
+        }
+        foreach ( self::$filter_fields as $filter_key ) {
+            if ( isset( $filter[$filter_key] ) && is_array( $filter[$filter_key] ) ) {
+                $where .= " AND s.post_id IN ( SELECT post_id FROM `$wpdb->postmeta` WHERE meta_key = %s AND meta_value IN ( " . dt_array_to_sql( $filter[$filter_key] ) . ' ) )';
+                $params[] = $filter_key;
+            }
         }
         $query = "SELECT s.*
         FROM `$table` as s
@@ -1100,6 +1119,19 @@ class DT_Data_Reporting_Tools
                 'success' => false,
                 'messages' => array(),
             ];
+
+            // Only send to https endpoints whose host resolves to a public IP
+            $url = $config['url'] ?? '';
+            $host = wp_parse_url( $url, PHP_URL_HOST );
+            $ip = $host ? gethostbyname( $host ) : '';
+            if ( wp_parse_url( $url, PHP_URL_SCHEME ) !== 'https' || !filter_var( $ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE ) ) {
+                $export_result['messages'][] = [
+                    'type' => 'error',
+                    'message' => __( 'Error: the endpoint URL must start with https:// and point to a public host.', 'disciple-tools-data-reporting' ),
+                ];
+                return $export_result;
+            }
+
             // Get the settings for this data type from the config
             $type_configs = isset( $config['data_types'] ) ? $config['data_types'] : [];
             $type_config = isset( $type_configs[$type] ) ? $type_configs[$type] : [];
@@ -1116,6 +1148,7 @@ class DT_Data_Reporting_Tools
             $args = array(
                 'method' => 'POST',
                 'timeout'     => 45,
+                'redirection' => 0,
                 'headers' => array(
                     'Content-Type' => 'application/json; charset=utf-8'
                 ),
@@ -1132,11 +1165,11 @@ class DT_Data_Reporting_Tools
 
             // Add auth token if it is part of the config
             if ( isset( $config['token'] ) ) {
-                $args['headers']['Authorization'] = 'Bearer ' . $config['token'];
+                $args['headers']['Authorization'] = 'Bearer ' . str_replace( [ "\r", "\n" ], '', $config['token'] );
             }
 
             // POST the data to the endpoint
-            $result = wp_remote_post( $config['url'], $args );
+            $result = wp_safe_remote_post( $url, $args );
 
             if ( is_wp_error( $result ) ) {
                 // Handle endpoint error
@@ -1149,8 +1182,8 @@ class DT_Data_Reporting_Tools
             } else {
                 // Success
                 $status_code = wp_remote_retrieve_response_code( $result );
-                $export_result['success'] = true;
-                if ( $status_code !== 200 ) {
+                $export_result['success'] = $status_code >= 200 && $status_code < 300;
+                if ( !$export_result['success'] ) {
                     $export_result['messages'][] = [
                         'type' => 'error',
                         'message' => "Error: Status Code $status_code",
@@ -1163,7 +1196,7 @@ class DT_Data_Reporting_Tools
                 }
                 // $result_body = json_decode($result['body']);
                 $export_result['messages'][] = [
-                    'message' => $result['body'],
+                    'message' => mb_substr( wp_strip_all_tags( wp_remote_retrieve_body( $result ) ), 0, 250 ),
                 ];
 
                 dt_activity_insert([

@@ -108,6 +108,12 @@ class DT_Data_Reporting {
             wp_schedule_event( time(), 'daily', 'dt_dr_cron_hook' );
         }
         add_action( 'dt_dr_cron_hook', [ $this, 'cron_export' ] );
+        add_action( 'dt_post_deleted', [ $this, 'delete_post_snapshots' ], 10, 2 );
+    }
+
+    public function delete_post_snapshots( $post_type, $post_id ) {
+        require_once( plugin_dir_path( __FILE__ ) . './tools/snapshot-tools.php' );
+        DT_Data_Reporting_Snapshot_Tools::delete_post_snapshots( (int) $post_id );
     }
 
     public function cron_export() {
@@ -119,9 +125,15 @@ class DT_Data_Reporting {
         $current_user = wp_get_current_user();
         $current_user->add_cap( 'access_contacts' );
         $current_user->add_cap( 'view_any_contacts' );
-        DT_Data_Reporting_Tools::run_scheduled_exports();
+        try {
+            DT_Data_Reporting_Tools::run_scheduled_exports();
 
-        DT_Data_Reporting_Snapshot_Tools::run_snapshot_task();
+            DT_Data_Reporting_Snapshot_Tools::run_snapshot_task();
+        } finally {
+            // Other cron callbacks in this request must not inherit these capabilities
+            $current_user->remove_cap( 'access_contacts' );
+            $current_user->remove_cap( 'view_any_contacts' );
+        }
     }
 
     /**
