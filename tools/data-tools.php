@@ -1182,8 +1182,8 @@ class DT_Data_Reporting_Tools
             } else {
                 // Success
                 $status_code = wp_remote_retrieve_response_code( $result );
-                $export_result['success'] = true;
-                if ( $status_code !== 200 ) {
+                $export_result['success'] = $status_code >= 200 && $status_code < 300;
+                if ( !$export_result['success'] ) {
                     $export_result['messages'][] = [
                         'type' => 'error',
                         'message' => "Error: Status Code $status_code",
