@@ -1107,6 +1107,19 @@ class DT_Data_Reporting_Tools
                 'success' => false,
                 'messages' => array(),
             ];
+
+            // Only send to https endpoints whose host resolves to a public IP
+            $url = $config['url'] ?? '';
+            $host = wp_parse_url( $url, PHP_URL_HOST );
+            $ip = $host ? gethostbyname( $host ) : '';
+            if ( wp_parse_url( $url, PHP_URL_SCHEME ) !== 'https' || !filter_var( $ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE ) ) {
+                $export_result['messages'][] = [
+                    'type' => 'error',
+                    'message' => __( 'Error: the endpoint URL must start with https:// and point to a public host.', 'disciple-tools-data-reporting' ),
+                ];
+                return $export_result;
+            }
+
             // Get the settings for this data type from the config
             $type_configs = isset( $config['data_types'] ) ? $config['data_types'] : [];
             $type_config = isset( $type_configs[$type] ) ? $type_configs[$type] : [];
@@ -1123,6 +1136,7 @@ class DT_Data_Reporting_Tools
             $args = array(
                 'method' => 'POST',
                 'timeout'     => 45,
+                'redirection' => 0,
                 'headers' => array(
                     'Content-Type' => 'application/json; charset=utf-8'
                 ),
@@ -1139,11 +1153,11 @@ class DT_Data_Reporting_Tools
 
             // Add auth token if it is part of the config
             if ( isset( $config['token'] ) ) {
-                $args['headers']['Authorization'] = 'Bearer ' . $config['token'];
+                $args['headers']['Authorization'] = 'Bearer ' . str_replace( [ "\r", "\n" ], '', $config['token'] );
             }
 
             // POST the data to the endpoint
-            $result = wp_remote_post( $config['url'], $args );
+            $result = wp_safe_remote_post( $url, $args );
 
             if ( is_wp_error( $result ) ) {
                 // Handle endpoint error
@@ -1170,7 +1184,7 @@ class DT_Data_Reporting_Tools
                 }
                 // $result_body = json_decode($result['body']);
                 $export_result['messages'][] = [
-                    'message' => $result['body'],
+                    'message' => mb_substr( wp_strip_all_tags( wp_remote_retrieve_body( $result ) ), 0, 250 ),
                 ];
 
                 dt_activity_insert([
