@@ -546,6 +546,7 @@ class DT_Data_Reporting_Tools
         $query_activity_where = "
             WHERE `object_type` = %s
                  AND meta_key NOT IN ( $hidden_keys )
+                 AND meta_key NOT LIKE '%%\\_magic\\_key'
                  AND object_id IN ( $post_filter_subquery ) ";
 
         // Query wp_comments table
@@ -638,12 +639,18 @@ class DT_Data_Reporting_Tools
                         break;
                 }
             }
+            // Site-link activity stores the link's secret site key in user_caps; export the link title instead
+            $user_name = $a->user_caps;
+            if ( is_string( $user_name ) && strlen( $user_name ) === 32 && ctype_xdigit( $user_name ) ) {
+                $site_link_id = class_exists( 'Site_Link_System' ) ? Site_Link_System::get_post_id_by_site_key( $user_name ) : false;
+                $user_name = $site_link_id ? get_the_title( $site_link_id ) : '';
+            }
             $activity_simple[] = array(
                 'id' => $a->id,
                 'meta_id' => $a->meta_id,
                 'post_id' => $a->object_id,
                 'user_id' => $a->user_id,
-                'user_name' => $a->user_caps,
+                'user_name' => $user_name,
                 'action_type' => $a->action,
                 'action_field' => $a->meta_key,
                 'action_value' => $a->meta_value,
