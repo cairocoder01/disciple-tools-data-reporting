@@ -454,6 +454,11 @@ class DT_Data_Reporting_Tools
             $filter['sort'] = 'last_modified';
         }
 
+        // Personal contacts are private to their owner and never exported
+        if ( $post_type === 'contacts' ) {
+            $filter['type'] = array_merge( $filter['type'] ?? [], [ '-personal' ] );
+        }
+
         $posts = DT_Posts::list_posts( $post_type, $filter, false );
         if ( is_wp_error( $posts ) ) {
             $error_message = $posts->get_error_message() ?? '';
@@ -512,7 +517,8 @@ class DT_Data_Reporting_Tools
         $post_filter_subquery = "SELECT
             DISTINCT post_id
             FROM `$wpdb->postmeta`
-            WHERE 1=1 ";
+            WHERE 1=1
+            AND post_id NOT IN ( SELECT post_id FROM `$wpdb->postmeta` WHERE meta_key = 'type' AND meta_value = 'personal' ) ";
         foreach( self::$filter_fields as $filter_key ) {
             if ( in_array($filter_key, ['sort', 'limit', 'offset']) ) {
                 continue;
@@ -680,7 +686,7 @@ class DT_Data_Reporting_Tools
         $wpdb->query( "SET time_zone='+00:00';" );
 
         $table = $wpdb->prefix . 'dt_post_snapshots';
-        $where = 'WHERE s.post_type=%s';
+        $where = "WHERE s.post_type=%s AND s.post_id NOT IN ( SELECT post_id FROM `$wpdb->postmeta` WHERE meta_key = 'type' AND meta_value = 'personal' )";
         $params = [ $post_type ];
         if ( isset( $filter['snapshot_date'] ) && isset( $filter['snapshot_date']['start'] ) ) {
             $start = $filter['snapshot_date']['start'];
