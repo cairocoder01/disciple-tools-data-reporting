@@ -125,9 +125,15 @@ class DT_Data_Reporting {
         $current_user = wp_get_current_user();
         $current_user->add_cap( 'access_contacts' );
         $current_user->add_cap( 'view_any_contacts' );
-        DT_Data_Reporting_Tools::run_scheduled_exports();
+        try {
+            DT_Data_Reporting_Tools::run_scheduled_exports();
 
-        DT_Data_Reporting_Snapshot_Tools::run_snapshot_task();
+            DT_Data_Reporting_Snapshot_Tools::run_snapshot_task();
+        } finally {
+            // Other cron callbacks in this request must not inherit these capabilities
+            $current_user->remove_cap( 'access_contacts' );
+            $current_user->remove_cap( 'view_any_contacts' );
+        }
     }
 
     /**

@@ -470,9 +470,9 @@ class DT_Data_Reporting_Tools
             $retrieved_posts = sizeof( $posts['posts'] );
             while ( $retrieved_posts < $posts['total'] ) {
                 $filter['offset'] = sizeof( $posts['posts'] );
-                $next_posts = DT_Posts::list_posts( $post_type, $filter );
+                $next_posts = DT_Posts::list_posts( $post_type, $filter, false );
                 if ( is_wp_error( $next_posts ) ) {
-                    $error_message = $posts->get_error_message() ?? '';
+                    $error_message = $next_posts->get_error_message() ?? '';
                     throw new Exception( $error_message );
                 }
                 $posts['posts'] = array_merge( $posts['posts'], $next_posts['posts'] );
