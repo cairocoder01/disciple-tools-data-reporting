@@ -114,7 +114,7 @@ class DT_Data_Reporting_Tab_Manual_Export
             echo '<h2>Export Configurations</h2>';
             foreach ( $configurations as $key => $config ) {
                 $preview_link_config = 'admin.php?page='.$this->token.'&tab=preview&config='.$key.'&type=';
-                $api_action_link_config = 'admin.php?page='.$this->token.'&tab=api-send&config='.$key.'&type=';
+                $api_action_link_config = 'admin.php?page='.$this->token.'&tab=api-send&config='.$key.'&_wpnonce='.wp_create_nonce( 'dtdr_api_send' ).'&type=';
                 ?>
           <table class="widefat striped table-export-config">
             <thead>

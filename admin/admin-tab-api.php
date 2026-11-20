@@ -39,6 +39,8 @@ class DT_Data_Reporting_Tab_API
         $settings_link = 'admin.php?page='.$this->token.'&tab=settings';
         if ( empty( $this->config ) ) {
             echo "<p>Configuration could not be found. Please update in <a href='" . esc_attr( $settings_link ) . "'>Settings</a></p>";
+        } else if ( !isset( $_GET['_wpnonce'] ) || !wp_verify_nonce( sanitize_key( wp_unslash( $_GET['_wpnonce'] ) ), 'dtdr_api_send' ) ) {
+            echo '<p>' . esc_html__( 'This link has expired. Start the export again from the Manual Export tab.', 'disciple-tools-data-reporting' ) . '</p>';
         } else {
             // Fetch details for this provider
             $providers = apply_filters( 'dt_data_reporting_providers', array() );
