@@ -29,13 +29,13 @@ exports.validateAuthKey = async (token) => {
     const doc = snapshot.docs[0].data();
     if (doc.scopes) {
       // ensure site config has scope for this process
-      return (doc.scopes||[]).includes('dtDataLoad');
+      return (doc.scopes||[]).includes('dtDataLoad') ? doc : null;
     } else {
       // success if `scopes` doesn't exist on site
-      return true;
+      return doc;
     }
   }
-  return false;
+  return null;
 }
 
 exports.getSiteConfig = async (site) => {
@@ -45,7 +45,7 @@ exports.getSiteConfig = async (site) => {
     .get();
 
   if (!snapshot.empty && snapshot.docs.length) {
-    console.debug(`getSiteConfig(${site}): ${JSON.stringify(snapshot.docs[0].data())}`);
+    console.debug(`getSiteConfig(${site}): found`);
     return snapshot.docs[0].data();
   }
 
