@@ -42,7 +42,7 @@ beforeEach(() => {
   firestore.getSiteConfig.mockClear();
   resMock.status.mockClear();
   resMock.send.mockClear();
-  process.env = {};
+  process.env = { ENABLE_FIRESTORE_AUTH_KEY: '0' };
 });
 
 describe('authorization', () => {
@@ -127,12 +127,28 @@ describe('authorization', () => {
     expect(resMock.status).toHaveBeenCalled();
     expect(resMock.status).toHaveBeenCalledWith(200);
   });
+    test('checks the last x-forwarded-for entry, not a client-supplied one', async () => {
+      process.env.ENABLE_FIRESTORE_WHITELIST = '1';
+      firestore.getWhitelistIPs.mockImplementationOnce(() => Promise.resolve(['1.2.3.4']));
+      await dtDataLoad({
+        method: 'POST',
+        headers: {
+          'x-forwarded-for': '1.2.3.4, 9.9.9.9',
+        },
+        body: {
+          columns,
+          items: sampleData,
+          type: 'contacts',
+        },
+      }, resMock);
+      expect(resMock.status).toHaveBeenCalledWith(403);
+    });
   });
 
   describe('auth keys', () => {
     test('calls validateAuthKey with key from Authorization header', async () => {
       process.env.ENABLE_FIRESTORE_AUTH_KEY = '1';
-      firestore.validateAuthKey.mockImplementationOnce(() => Promise.resolve(true));
+      firestore.validateAuthKey.mockImplementationOnce(() => Promise.resolve({ site: 'my.site' }));
       await dtDataLoad({
         method: 'POST',
         headers: {
@@ -149,7 +165,7 @@ describe('authorization', () => {
     });
     test('calls validateAuthKey with key from authorization header', async () => {
       process.env.ENABLE_FIRESTORE_AUTH_KEY = '1';
-      firestore.validateAuthKey.mockImplementationOnce(() => Promise.resolve(true));
+      firestore.validateAuthKey.mockImplementationOnce(() => Promise.resolve({ site: 'my.site' }));
       await dtDataLoad({
         method: 'POST',
         headers: {
@@ -166,7 +182,7 @@ describe('authorization', () => {
     });
     test('allow if auth key is valid', async () => {
       process.env.ENABLE_FIRESTORE_AUTH_KEY = '1';
-      firestore.validateAuthKey.mockImplementationOnce(() => Promise.resolve(true));
+      firestore.validateAuthKey.mockImplementationOnce(() => Promise.resolve({ site: 'my.site' }));
       await dtDataLoad({
         method: 'POST',
         headers: {
@@ -184,7 +200,7 @@ describe('authorization', () => {
     });
     test('block if auth key is invalid', async () => {
       process.env.ENABLE_FIRESTORE_AUTH_KEY = '1';
-      firestore.validateAuthKey.mockImplementationOnce(() => Promise.resolve(false));
+      firestore.validateAuthKey.mockImplementationOnce(() => Promise.resolve(null));
       await dtDataLoad({
         method: 'POST',
         headers: {
@@ -199,6 +215,58 @@ describe('authorization', () => {
       expect(firestore.validateAuthKey).toHaveBeenCalled();
       expect(resMock.status).toHaveBeenCalled();
       expect(resMock.status).toHaveBeenCalledWith(403);
+    });
+    test('require auth key when the setting is missing', async () => {
+      process.env = {};
+      await dtDataLoad({
+        method: 'POST',
+        headers: {},
+        body: {
+          columns,
+          items: sampleData,
+          type: 'contacts',
+        },
+      }, resMock);
+      expect(resMock.status).toHaveBeenCalledWith(401);
+      expect(storage.uploadFile).not.toHaveBeenCalled();
+    });
+    test('block if auth key belongs to another site', async () => {
+      process.env.ENABLE_FIRESTORE_AUTH_KEY = '1';
+      firestore.validateAuthKey.mockImplementationOnce(() => Promise.resolve({ site: 'other.site', prefix: 'other' }));
+      await dtDataLoad({
+        method: 'POST',
+        headers: {
+          'Authorization': 'Bearer my-auth-key',
+        },
+        body: {
+          columns,
+          items: sampleData,
+          type: 'contacts',
+        },
+      }, resMock);
+      expect(resMock.status).toHaveBeenCalledWith(403);
+      expect(resMock.send).toHaveBeenCalledWith({
+        error: 'Unauthorized access',
+        code: 104,
+      });
+      expect(storage.uploadFile).not.toHaveBeenCalled();
+    });
+    test('uses the site config of the auth key', async () => {
+      process.env.ENABLE_FIRESTORE_AUTH_KEY = '1';
+      firestore.validateAuthKey.mockImplementationOnce(() => Promise.resolve({ site: 'my.site', prefix: 'mine' }));
+      await dtDataLoad({
+        method: 'POST',
+        headers: {
+          'Authorization': 'Bearer my-auth-key',
+        },
+        body: {
+          columns,
+          items: sampleData,
+          type: 'contacts',
+        },
+      }, resMock);
+      expect(firestore.getSiteConfig).not.toHaveBeenCalled();
+      expect(storage.uploadFile.mock.calls[0][1]).toContain('mine_contacts');
     });
     test('block if auth key is empty', async () => {
       process.env.ENABLE_FIRESTORE_AUTH_KEY = '1';
@@ -241,6 +309,19 @@ describe('payload validation', () => {
       error: 'Invalid payload: Missing type'
     });
   });
+  test('returns error if type is not a plain identifier', async () => {
+    await dtDataLoad({
+      method: 'POST',
+      body: {
+        columns,
+        items: sampleData,
+        type: '../contacts',
+      },
+    }, resMock);
+    expect(resMock.status).toHaveBeenCalledWith(400);
+    expect(storage.uploadFile).not.toHaveBeenCalled();
+  });
+
   test('returns error if missing columns', async () => {
     await dtDataLoad({
       method: 'POST',
@@ -566,6 +647,10 @@ describe('storage.uploadFile arguments', () => {
     });
   });
   test('sets metadata.truncate from body: true', async () => {
+    firestore.getSiteConfig.mockImplementationOnce(() => Promise.resolve({
+      site: 'my.site',
+      prefix: 'custom',
+    }));
     await dtDataLoad({
       method: 'POST',
       body: {
@@ -582,6 +667,20 @@ describe('storage.uploadFile arguments', () => {
     expect(metadata).not.toBeNull();
     expect(metadata).toMatchObject({
       truncate: true,
+    });
+  });
+  test('ignores truncate for the shared default prefix', async () => {
+    await dtDataLoad({
+      method: 'POST',
+      body: {
+        columns,
+        items: sampleData,
+        type: 'contacts',
+        truncate: true,
+      },
+    }, resMock);
+    expect(storage.uploadFile.mock.calls[0][3]).toMatchObject({
+      truncate: false,
     });
   });
   test('sets metadata.truncate from body: false', async () => {
@@ -619,7 +718,7 @@ describe('storage.uploadFile arguments', () => {
     expect(uploadArgs[0]).toEqual('my-bucket-name');
   });
   test('sets bucket name from default', async () => {
-    process.env =  {};
+    process.env =  { ENABLE_FIRESTORE_AUTH_KEY: '0' };
     await dtDataLoad({
       method: 'POST',
       body: {

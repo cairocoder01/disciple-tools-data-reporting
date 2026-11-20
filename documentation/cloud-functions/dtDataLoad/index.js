@@ -4,6 +4,9 @@ const storage = require('./storage');
 const parser = require('./parser');
 const firestore = require('./firestore');
 
+// `type` becomes part of the storage filename and the BigQuery table name
+const VALID_TYPE = /^[a-z0-9_]+$/;
+
 /**
  * HTTP Cloud Function (2nd Gen).
  */
@@ -16,8 +19,9 @@ const dtDataLoad = async (req, res) => {
       if (!await isValidIpAddress(req, res)) {
         return;
       }
-      // Authorize: auth keys
-      if (!await isValidAuthKey(req, res)) {
+      // Authorize: auth keys. Resolves to the site document the key belongs to, or null when auth is disabled
+      const authSite = await authorizeKey(req, res);
+      if (authSite === false) {
         return;
       }
 
@@ -40,9 +44,25 @@ const dtDataLoad = async (req, res) => {
           error: 'Invalid payload: Missing type'
         });
       }
+      if (!VALID_TYPE.test(data.type)) {
+        res.status(400);
+        return res.send({
+          error: 'Invalid payload: Invalid type'
+        });
+      }
+
+      // An auth key may only load data for its own site
+      if (authSite && (!authSite.site || data.items.some((item) => item.site !== authSite.site))) {
+        res.status(403);
+        return res.send({
+          error: 'Unauthorized access',
+          code: 104,
+        });
+      }
 
       const site = data.items[0]['site'];
-      const config = site ? await firestore.getSiteConfig(site) : null;
+      const config = authSite || (site ? await firestore.getSiteConfig(site) : null);
+      const prefix = config && config.prefix ? config.prefix : 'dt';
 
       const fields = parser.getFieldSchema(data.columns, config, data.type);
       const rows = parser.jsonToRows(data.columns, data.items, config, data.type);
@@ -54,13 +74,13 @@ const dtDataLoad = async (req, res) => {
       const metadata = {
         fields: JSON.stringify(fields),
         sortField: isActivity ? 'date' : (isSnapshots ? 'snapshot_date' : 'last_modified'),
-        truncate: !!data.truncate,
+        // Tables with the shared default prefix hold several sites' rows, so only a site's own prefix may be truncated
+        truncate: !!data.truncate && prefix !== 'dt',
       };
       if (isSnapshots) {
         metadata.groupByFields = 'id, period, site';
       }
 
-      const prefix = config && config.prefix ? config.prefix : 'dt';
       const filename = `${prefix}_${data.type}_${moment().format('YYYYMMDDHHmmssSSS')}.json`;
 
       const bucketName = process.env.BUCKET_NAME || 'dt-data-load';
@@ -72,7 +92,7 @@ const dtDataLoad = async (req, res) => {
     } catch(err) {
       console.error(err);
       res.status(404);
-      return res.send({ error: 'unable to store', err });
+      return res.send({ error: 'unable to store' });
     }
   }
 
@@ -85,8 +105,9 @@ exports.dtDataLoad = dtDataLoad;
 
 async function isValidIpAddress(req, res) {
   if (process.env.ENABLE_FIRESTORE_WHITELIST === "1") {
-    var xForwardedFor = (req.headers['x-forwarded-for'] || '').split(',')[0].trim();
-    var ip = xForwardedFor || req.socket.remoteAddress;
+    // Google's front end appends the caller's address, so the last entry is the one the client cannot set
+    var forwardedFor = (req.headers['x-forwarded-for'] || '').split(',').map((ip) => ip.trim()).filter(Boolean);
+    var ip = forwardedFor.length ? forwardedFor[forwardedFor.length - 1] : req.socket.remoteAddress;
 
     const ipaddresses = await firestore.getWhitelistIPs();
 
@@ -103,8 +124,9 @@ async function isValidIpAddress(req, res) {
   return true;
 }
 
-async function isValidAuthKey(req, res) {
-  if (process.env.ENABLE_FIRESTORE_AUTH_KEY === "1") {
+async function authorizeKey(req, res) {
+  // Auth keys are required unless explicitly disabled
+  if (process.env.ENABLE_FIRESTORE_AUTH_KEY !== "0") {
     var authKey = (
       req.headers['authorization']
       || req.headers['Authorization']
@@ -120,15 +142,16 @@ async function isValidAuthKey(req, res) {
       return false;
     }
 
-    const isValid = await firestore.validateAuthKey(authKey);
-    if (!isValid) {
+    const siteDoc = await firestore.validateAuthKey(authKey);
+    if (!siteDoc) {
       res.status(403);
       res.send({
         error: 'Unauthorized access',
         code: 103,
       });
+      return false;
     }
-    return isValid;
+    return siteDoc;
   }
-  return true;
+  return null;
 }
