@@ -125,7 +125,13 @@ fputcsv( $output, $columns );
 
 // loop over the rows, outputting them
 foreach ( $items as $row ) {
-    fputcsv( $output, $row );
+    // Prefix text a spreadsheet would read as a formula
+    fputcsv( $output, array_map( function ( $value ) {
+        if ( is_string( $value ) && $value !== '' && !is_numeric( $value ) && in_array( $value[0], [ '=', '+', '-', '@', "\t", "\r" ], true ) ) {
+            return "'" . $value;
+        }
+        return $value;
+    }, $row ) );
 }
 
 dt_activity_insert([
