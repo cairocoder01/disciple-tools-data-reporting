@@ -108,6 +108,12 @@ class DT_Data_Reporting {
             wp_schedule_event( time(), 'daily', 'dt_dr_cron_hook' );
         }
         add_action( 'dt_dr_cron_hook', [ $this, 'cron_export' ] );
+        add_action( 'dt_post_deleted', [ $this, 'delete_post_snapshots' ], 10, 2 );
+    }
+
+    public function delete_post_snapshots( $post_type, $post_id ) {
+        require_once( plugin_dir_path( __FILE__ ) . './tools/snapshot-tools.php' );
+        DT_Data_Reporting_Snapshot_Tools::delete_post_snapshots( (int) $post_id );
     }
 
     public function cron_export() {
