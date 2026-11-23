@@ -39,7 +39,7 @@ class DT_Data_Reporting_Tab_Snapshots
 
         $this->settings_selection();
 
-        if ( isset( $_GET['button'] ) && $_GET['button'] === 'run' ) {
+        if ( isset( $_GET['button'] ) && $_GET['button'] === 'run' && isset( $_GET['dtdr_snapshot_nonce'] ) && wp_verify_nonce( sanitize_key( wp_unslash( $_GET['dtdr_snapshot_nonce'] ) ), 'dtdr_snapshot_run' ) ) {
             DT_Data_Reporting_Snapshot_Tools::run_snapshot_task();
         }
 
@@ -127,6 +127,7 @@ class DT_Data_Reporting_Tab_Snapshots
 
         </div>
 
+        <?php wp_nonce_field( 'dtdr_snapshot_run', 'dtdr_snapshot_nonce', false ); ?>
         <input type="submit" value="View Snapshots" class="button">
         <button type="submit" name="button" value="run" class="button">Run</button>
       </form>

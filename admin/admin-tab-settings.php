@@ -21,6 +21,9 @@ class DT_Data_Reporting_Tab_Settings
     }
 
     public static function ajax_enable_config() {
+        if ( !current_user_can( 'manage_dt' ) ) {
+            wp_send_json( [ 'success' => false, 'message' => __( 'Permission denied', 'disciple-tools-data-reporting' ) ], 403 );
+        }
         $key = isset( $_POST['key'] ) ? sanitize_key( wp_unslash( $_POST['key'] ) ) : null;
         $enabled = isset( $_POST['enabled'] ) ? sanitize_key( wp_unslash( $_POST['enabled'] ) ) : null;
         $enabled = filter_var( $enabled, FILTER_VALIDATE_BOOLEAN );
@@ -55,6 +58,9 @@ class DT_Data_Reporting_Tab_Settings
     }
 
     public static function ajax_save_config() {
+        if ( !current_user_can( 'manage_dt' ) ) {
+            wp_send_json( [ 'success' => false, 'message' => __( 'Permission denied', 'disciple-tools-data-reporting' ) ], 403 );
+        }
         $key = isset( $_POST['key'] ) ? sanitize_key( wp_unslash( $_POST['key'] ) ) : 'default';
         $excluded_fields = [ 'key', 'action', '_wp_http_referer', 'security_headers_nonce', 'enabled' ];
         $response_code = 400;
@@ -83,7 +89,7 @@ class DT_Data_Reporting_Tab_Settings
 
             foreach ( $_POST as $field => $value ) {
                 // skip system fields so they don't get saved
-                if ( array_key_exists( $field, $excluded_fields ) ) {
+                if ( in_array( $field, $excluded_fields, true ) ) {
                     continue;
                 }
 
@@ -104,6 +110,9 @@ class DT_Data_Reporting_Tab_Settings
     }
 
     public static function ajax_reset_progress() {
+        if ( !current_user_can( 'manage_dt' ) ) {
+            wp_send_json( [ 'success' => false, 'message' => __( 'Permission denied', 'disciple-tools-data-reporting' ) ], 403 );
+        }
         $key = isset( $_POST['key'] ) ? sanitize_key( wp_unslash( $_POST['key'] ) ) : null;
 
         $response_code = 400;

@@ -263,6 +263,8 @@ class DT_Data_Reporting_Snapshot_Tools
 
         // initialize snapshots with previous period data
         $snapshots = array_map( function ( $snapshot ) use ( $period ) {
+            $snapshot['post_title'] = '';
+            $snapshot['post_content'] = self::remove_identifying_values( $snapshot['post_content'] ?? [] );
             $snapshot['period'] = $period['name'];
             $snapshot['period_start'] = $period['start'];
             $snapshot['period_end'] = $period['end'];
@@ -306,14 +308,6 @@ class DT_Data_Reporting_Snapshot_Tools
                 self::update_snapshot_value( $post, $field_settings_by_type[$post_type], $activity_log );
 
                 $snapshot['post_content'] = $post;
-
-                // set post_title
-                if ( !isset( $snapshot['post_title'] ) ) {
-                    $snapshot['post_title'] = $activity_log['object_name'];
-                }
-                if ( !isset( $snapshot['post_content']['name'] ) ) {
-                    $snapshot['post_content']['name'] = $activity_log['object_name'];
-                }
 
                 $snapshots[$post_id] = $snapshot;
             }
@@ -405,7 +399,7 @@ class DT_Data_Reporting_Snapshot_Tools
         $actions = [ 'field_update', 'connected to', 'disconnected from ' ];
         if ( in_array( $action, $actions ) ) {
             if ( !is_array( $post ) ) {
-                dt_write_log( 'Post is not an array: ' . json_encode( $post ) );
+                dt_write_log( 'Post is not an array: ' . gettype( $post ) );
             }
             if ( !isset( $post['post_date'] ) ) {
                 $post['post_date'] = $activity['hist_time'];
@@ -426,7 +420,6 @@ class DT_Data_Reporting_Snapshot_Tools
                         $post[$meta_key] = [];
                     } else if ( !is_array( $post[$meta_key] ) ) {
                         dt_write_log( "Post key is not an array: $meta_key | {$post['ID']}" );
-                        dt_write_log( json_encode( $post ) );
                     }
 
                     if ( $meta_value === 'value_deleted' ) {
@@ -453,31 +446,7 @@ class DT_Data_Reporting_Snapshot_Tools
                     }
                     break;
                 case 'communication_channel':
-                case '':
-                    // some communication channel activity don't have a field_type for some reason.
-                    // The meta key is in the format contact_address_89a.
-                    // The actual field key is sometimes in object_subtype, but sometimes that also has a suffix.
-                    // So we'll just look for contact_* in the meta key and store it as an array field.
-                    $meta_key_parts = explode( '_', $meta_key );
-                    if ( count( $meta_key_parts ) > 1 && $meta_key_parts[0] == 'contact' ) {
-                        // only process contact_* fields
-                        $meta_key = implode( '_', [ $meta_key_parts[0], $meta_key_parts[1] ] );
-
-                        // Use the same logic as for multi-value fields above
-                        if ( !isset( $post[$meta_key] ) ) {
-                            $post[$meta_key] = [];
-                        }
-
-                        if ( $meta_value === 'value_deleted' ) {
-                            $old_value = $activity['old_value'];
-                            $post[$meta_key] = array_values( array_filter( $post[$meta_key], function ( $value ) use ( $old_value ) {
-                                return $value !== $old_value;
-                            } ) );
-                        } else {
-                            $post[$meta_key][] = $meta_value;
-                        }
-                    }
-                    break;
+                case '': // communication channel values are PII and never exported
                 case 'details': // communication_channel fields add a details record that we don't need
                 case 'hash': // magic links create hash fields that we don't need
                     break;
@@ -496,8 +465,38 @@ class DT_Data_Reporting_Snapshot_Tools
                     }
                     break;
             }
-        } else if ( $action == 'deleted' ) {
+        } else if ( $action == 'deleted' || $action == 'record_deleted' ) {
             $post['deleted'] = true;
+        }
+    }
+
+    private static function remove_identifying_values( array $post_content )
+    {
+        unset( $post_content['name'] );
+        foreach ( array_keys( $post_content ) as $key ) {
+            if ( str_starts_with( $key, 'contact_' ) ) {
+                unset( $post_content[$key] );
+            }
+        }
+        return $post_content;
+    }
+
+    /**
+     * Deletes all stored snapshots of a post.
+     * @param int $post_id
+     * @return void
+     */
+    public static function delete_post_snapshots( int $post_id )
+    {
+        global $wpdb;
+        $table_name = $wpdb->prefix . self::$table_name;
+        $table_exists = (bool) $wpdb->get_var( $wpdb->prepare(
+            'SELECT COUNT(1) FROM information_schema.tables WHERE table_schema = %s AND table_name = %s',
+            DB_NAME,
+            $table_name
+        ) );
+        if ( $table_exists ) {
+            $wpdb->delete( $table_name, [ 'post_id' => $post_id ], [ '%d' ] );
         }
     }
 
