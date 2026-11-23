@@ -28,6 +28,39 @@ class DT_Data_Reporting_Tools
         }
         return in_array( $field_key, self::$excluded_fields['default'] );
     }
+    /**
+     * With a Mapbox key the theme hides location_grid and shows location_grid_meta instead.
+     * location_grid is still populated (every grid meta entry also adds its grid ID there),
+     * so keep exporting it, reduced to country/admin1.
+     */
+    private static function is_hidden_for_mapbox( $field ) {
+        return ( $field['type'] ?? '' ) === 'location' && !empty( $field['mapbox'] );
+    }
+
+    /**
+     * Whether a field is included in record and snapshot exports
+     * @param string $post_type
+     * @param string $field_key
+     * @param array $field
+     * @return bool
+     */
+    private static $non_exported_field_types = [ 'communication_channel', 'location_meta', 'image', 'file_upload' ];
+
+    private static function is_exported_field( $post_type, $field_key, $field ) {
+        // communication channels are PII, location_meta holds coordinates and geocoded addresses,
+        // and image/file_upload values are photos, file names and signed storage URLs
+        if ( in_array( $field['type'] ?? '', self::$non_exported_field_types, true ) ) {
+            return false;
+        }
+        if ( self::is_excluded_field( $post_type, $field_key ) ) {
+            return false;
+        }
+        if ( !empty( $field['hidden'] ) && !self::is_included_hidden_field( $post_type, $field_key ) && !self::is_hidden_for_mapbox( $field ) ) {
+            return false;
+        }
+        return true;
+    }
+
     private static $included_hidden_fields = array(
         'contacts' => array( 'accepted', 'source_details', 'type' ),
         'default' => array( 'type' )
@@ -137,21 +170,11 @@ class DT_Data_Reporting_Tools
 
           // Loop over all fields to parse/format each
             foreach ( $fields as $field_key => $field ){
-              // skip if field is hidden, unless marked as exception above
-                if ( isset( $field['hidden'] ) && $field['hidden'] == true && !self::is_included_hidden_field( $post_type, $field_key ) ) {
-                    continue;
-                }
-              // skip if in list of excluded fields
-                if ( self::is_excluded_field( $post_type, $field_key ) ) {
+                if ( !self::is_exported_field( $post_type, $field_key, $field ) ) {
                     continue;
                 }
 
                 $type = $field['type'];
-
-              // skip communication_channel fields since they are all PII
-                if ( $type == 'communication_channel' ) {
-                    continue;
-                }
 
                 $field_value = self::get_snapshot_field_value( $result, $field_key, $type, $flatten, $fields, $locations );
 
@@ -396,21 +419,11 @@ class DT_Data_Reporting_Tools
 
           // Loop over all fields to parse/format each
             foreach ( $fields as $field_key => $field ){
-              // skip if field is hidden, unless marked as exception above
-                if ( isset( $field['hidden'] ) && $field['hidden'] == true && !self::is_included_hidden_field( $post_type, $field_key ) ) {
-                    continue;
-                }
-              // skip if in list of excluded fields
-                if ( self::is_excluded_field( $post_type, $field_key ) ) {
+                if ( !self::is_exported_field( $post_type, $field_key, $field ) ) {
                     continue;
                 }
 
                 $type = $field['type'];
-
-              // skip communication_channel fields since they are all PII
-                if ( $type == 'communication_channel' ) {
-                    continue;
-                }
 
                 $field_value = self::get_field_value( $result, $field_key, $type, $flatten, $locations );
 
@@ -498,12 +511,33 @@ class DT_Data_Reporting_Tools
         $excluded_fields = array_key_exists( $post_type, self::$excluded_fields )
           ? self::$excluded_fields[$post_type]
           : self::$excluded_fields['default'];
-        $hidden_fields = array_merge( array( 'duplicate_of' ), $excluded_fields );
+        // `title` is a legacy key some sites log name changes under
+        $hidden_fields = array_merge( array( 'duplicate_of', 'title' ), $excluded_fields );
+
+        $channel_keys = array();
+        $location_keys = array();
+        $file_keys = array();
+        foreach ( $fields as $field_key => $field ){
+            if ( in_array( $field['type'] ?? '', [ 'image', 'file_upload' ], true ) ) {
+                $file_keys[] = $field_key;
+            }
+            if ( ( $field['type'] ?? '' ) === 'communication_channel' ) {
+                $channel_keys[] = $field_key;
+            }
+            if ( ( $field['type'] ?? '' ) === 'location' ) {
+                $location_keys[] = $field_key;
+            }
+        }
 
         foreach ( $fields as $field_key => $field ){
+            // location_meta activity carries the geocoded address; the matching location_grid row records the same change
+            if ( ( $field['type'] ?? '' ) === 'location_meta' ) {
+                $hidden_fields[] = $field_key;
+                continue;
+            }
             if ( isset( $field['hidden'] ) && $field['hidden'] === true ){
                 // if field is marked as exception to hidden fields, don't exclude it here
-                if ( self::is_included_hidden_field( $post_type, $field_key ) ) {
+                if ( self::is_included_hidden_field( $post_type, $field_key ) || self::is_hidden_for_mapbox( $field ) ) {
                     continue;
                 }
                 $hidden_fields[] = $field_key;
@@ -553,6 +587,7 @@ class DT_Data_Reporting_Tools
             WHERE `object_type` = %s
                  AND meta_key NOT IN ( $hidden_keys )
                  AND meta_key NOT LIKE '%%\\_magic\\_key'
+                 AND ( field_type IS NULL OR field_type <> 'hash' )
                  AND object_id IN ( $post_filter_subquery ) ";
 
         // Query wp_comments table
@@ -621,6 +656,17 @@ class DT_Data_Reporting_Tools
         $activity = $wpdb->get_results($prepared_sql);
 
         //@phpcs:enable
+
+        // Location activity holds the exact grid ID (often city level); look up each one's admin1/country
+        $location_grid_ids = array();
+        foreach ( $activity as $a ) {
+            if ( in_array( $a->meta_key, $location_keys, true ) ) {
+                $location_grid_ids[] = $a->meta_value;
+                $location_grid_ids[] = $a->old_value;
+            }
+        }
+        $admin1_locations = self::get_admin1_locations( $location_grid_ids );
+
         $activity_simple = array();
         foreach ( $activity as $a ) {
             $a->object_note = DT_Posts::format_activity_message( $a, $post_settings );
@@ -645,6 +691,48 @@ class DT_Data_Reporting_Tools
                         break;
                 }
             }
+            $action_value = $a->meta_value;
+            $action_old_value = $a->old_value;
+            $channel_key = self::get_activity_channel_key( $a, $channel_keys, $fields );
+            if ( $channel_key !== null ) {
+                // Communication channel values are PII: keep the event, drop the values
+                $action_value = '';
+                $action_old_value = '';
+                $value_friendly = '';
+                $a->object_note = self::format_channel_activity_note( $a, $fields[$channel_key]['name'] ?? $channel_key );
+            } else if ( in_array( $a->meta_key, $file_keys, true ) || in_array( $a->field_type, [ 'image', 'file_upload' ], true ) ) {
+                // Storage keys, file names and the theme's "Uploaded file: name.jpg" note
+                $action_value = '';
+                $action_old_value = '';
+                $value_friendly = '';
+                /* translators: %s: field label, e.g. Picture */
+                $a->object_note = sprintf( __( '%s updated', 'disciple-tools-data-reporting' ), $fields[$a->meta_key]['name'] ?? $a->meta_key );
+            } else if ( in_array( $a->meta_key, $location_keys, true ) ) {
+                // Reduce to admin1/country like record exports do
+                $deleted = $a->meta_value === 'value_deleted';
+                $location = $admin1_locations[$deleted ? $a->old_value : $a->meta_value] ?? null;
+                $action_value = $deleted ? 'value_deleted' : ( $location['grid_id'] ?? '' );
+                $action_old_value = $admin1_locations[$a->old_value]['grid_id'] ?? '';
+                $value_friendly = $location['label'] ?? '';
+                $a->object_note = self::format_location_activity_note( $deleted, $value_friendly, $fields[$a->meta_key]['name'] ?? $a->meta_key );
+            } else if ( $a->field_type === 'connection' || $a->object_subtype === 'p2p' ) {
+                // The theme's connection note names the connected record; meta_value already holds its ID
+                $a->object_note = self::format_connection_activity_note( $a, $fields );
+            } else if ( str_starts_with( (string) $a->id, 'C' ) ) {
+                /**
+                 * Comment rows (conversation tabs, update-needed notices, plugin comment types) hold
+                 * free text and author names. Export only the event unless a site opts in per type.
+                 *
+                 * @param bool   $include      Whether to export the comment's content and author. Default false.
+                 * @param string $comment_type The comment type, e.g. facebook, updated_needed.
+                 * @param string $post_type    The post type being exported.
+                 */
+                if ( !apply_filters( 'dt_data_reporting_export_comment_content', false, $a->action, $post_type ) ) {
+                    $a->object_note = '';
+                    $a->user_caps = '';
+                }
+            }
+
             // Site-link activity stores the link's secret site key in user_caps; export the link title instead
             $user_name = $a->user_caps;
             if ( is_string( $user_name ) && strlen( $user_name ) === 32 && ctype_xdigit( $user_name ) ) {
@@ -659,10 +747,10 @@ class DT_Data_Reporting_Tools
                 'user_name' => $user_name,
                 'action_type' => $a->action,
                 'action_field' => $a->meta_key,
-                'action_value' => $a->meta_value,
+                'action_value' => $action_value,
                 'action_value_friendly' => $value_friendly,
                 'action_value_order' => $value_order,
-                'action_old_value' => $a->old_value,
+                'action_old_value' => $action_old_value,
                 'note' => $a->object_note,
                 'date' => $a->date,
             );
@@ -672,6 +760,108 @@ class DT_Data_Reporting_Tools
             'activity' => $activity_simple,
             'total' => $total_activities
         );
+    }
+
+    /**
+     * Communication channel activity is logged under suffixed meta keys (e.g. contact_phone_1a2,
+     * contact_phone_1a2_details), and older rows can have an empty field_type, so match on the
+     * channel field key prefix as well as field_type.
+     * @return string|null The channel field key, or null if this is not channel activity
+     */
+    private static function get_activity_channel_key( $activity, array $channel_keys, array $fields ) {
+        $meta_key = (string) ( $activity->meta_key ?? '' );
+        if ( $meta_key === '' ) {
+            return null;
+        }
+        foreach ( $channel_keys as $channel_key ) {
+            if ( $meta_key === $channel_key || str_starts_with( $meta_key, $channel_key . '_' ) ) {
+                return $channel_key;
+            }
+        }
+        // Same fallback the theme uses when formatting: unknown contact_* keys are channels
+        if ( ( $activity->field_type ?? '' ) === 'communication_channel'
+            || ( str_starts_with( $meta_key, 'contact_' ) && !isset( $fields[$meta_key] ) ) ) {
+            $parts = explode( '_', $meta_key );
+            return $parts[0] . '_' . ( $parts[1] ?? '' );
+        }
+        return null;
+    }
+
+    private static function format_channel_activity_note( $activity, $label ) {
+        if ( str_ends_with( (string) $activity->meta_key, '_details' ) ) {
+            /* translators: %s: communication channel label, e.g. Phone */
+            return sprintf( __( '%s details updated', 'disciple-tools-data-reporting' ), $label );
+        }
+        if ( $activity->meta_value === 'value_deleted' ) {
+            /* translators: %s: communication channel label, e.g. Phone */
+            return sprintf( __( '%s removed', 'disciple-tools-data-reporting' ), $label );
+        }
+        if ( empty( $activity->old_value ) ) {
+            /* translators: %s: communication channel label, e.g. Phone */
+            return sprintf( __( '%s added', 'disciple-tools-data-reporting' ), $label );
+        }
+        /* translators: %s: communication channel label, e.g. Phone */
+        return sprintf( __( '%s updated', 'disciple-tools-data-reporting' ), $label );
+    }
+
+    /**
+     * Maps location grid IDs to their admin1 (or country, when there is no admin1) location
+     * @param array $grid_ids
+     * @return array grid_id => [ 'grid_id' => admin1/country grid ID, 'label' => "{country_code}-{admin1 name}" or "{country_code}" ]
+     */
+    private static function get_admin1_locations( array $grid_ids ) {
+        global $wpdb;
+        $grid_ids = array_values( array_unique( array_filter( $grid_ids, 'is_numeric' ) ) );
+        if ( empty( $grid_ids ) ) {
+            return array();
+        }
+        // phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare
+        $rows = $wpdb->get_results( $wpdb->prepare( "
+            SELECT orig.grid_id, orig.country_code, orig.admin0_grid_id, orig.admin1_grid_id, a1.name AS admin1_name
+            FROM $wpdb->dt_location_grid orig
+            LEFT JOIN $wpdb->dt_location_grid a1 ON orig.admin1_grid_id = a1.grid_id
+            WHERE orig.grid_id IN (" . implode( ',', array_fill( 0, count( $grid_ids ), '%d' ) ) . ')',
+            $grid_ids
+        ), ARRAY_A );
+        // phpcs:enable
+
+        $locations = array();
+        foreach ( $rows as $row ) {
+            // Nothing below country level, and nothing without a country (e.g. World)
+            if ( empty( $row['country_code'] ) ) {
+                continue;
+            }
+            $has_admin1 = !empty( $row['admin1_grid_id'] ) && !empty( $row['admin1_name'] );
+            $locations[$row['grid_id']] = array(
+                'grid_id' => $has_admin1 ? $row['admin1_grid_id'] : $row['admin0_grid_id'],
+                'label' => $has_admin1 ? $row['country_code'] . '-' . $row['admin1_name'] : $row['country_code'],
+            );
+        }
+        return $locations;
+    }
+
+    private static function format_location_activity_note( $deleted, $label, $field_label ) {
+        if ( $label === '' ) {
+            /* translators: %s: location field label, e.g. Locations */
+            return sprintf( __( '%s updated', 'disciple-tools-data-reporting' ), $field_label );
+        }
+        if ( $deleted ) {
+            /* translators: 1: country code and state/province, e.g. US-New Jersey, 2: location field label, e.g. Locations */
+            return sprintf( __( '%1$s removed from %2$s', 'disciple-tools-data-reporting' ), $label, $field_label );
+        }
+        /* translators: 1: country code and state/province, e.g. US-New Jersey, 2: location field label, e.g. Locations */
+        return sprintf( __( '%1$s added to %2$s', 'disciple-tools-data-reporting' ), $label, $field_label );
+    }
+
+    private static function format_connection_activity_note( $activity, array $fields ) {
+        // object_subtype holds this post type's connection field key
+        $label = $fields[$activity->object_subtype]['name'] ?? $activity->meta_key;
+        if ( $activity->action === 'connected to' ) {
+            /* translators: 1: connection field label, e.g. Coached by, 2: connected record ID */
+            return sprintf( __( '%1$s: added #%2$s', 'disciple-tools-data-reporting' ), $label, $activity->meta_value );
+        }
+        /* translators: 1: connection field label, e.g. Coached by, 2: connected record ID */
+        return sprintf( __( '%1$s: removed #%2$s', 'disciple-tools-data-reporting' ), $label, $activity->meta_value );
     }
 
     private static function query_post_snapshots( $post_type, $filter ) {
@@ -1333,17 +1523,7 @@ class DT_Data_Reporting_Tools
         ));
 
         foreach ( $fields as $field_key => $field ) {
-            // skip if field is hidden
-            if ( isset( $field['hidden'] ) && $field['hidden'] == true && !self::is_included_hidden_field( $type, $field_key ) ) {
-                continue;
-            }
-            // skip if in list of excluded fields
-            if ( self::is_excluded_field( $type, $field_key ) ) {
-                continue;
-            }
-
-            // skip communication_channel fields since they are all PII
-            if ( $field['type'] == 'communication_channel' ) {
+            if ( !self::is_exported_field( $type, $field_key, $field ) ) {
                 continue;
             }
 

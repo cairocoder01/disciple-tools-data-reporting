@@ -453,6 +453,8 @@ class DT_Data_Reporting_Snapshot_Tools
                 case '': // communication channel values are PII and never exported
                 case 'details': // communication_channel fields add a details record that we don't need
                 case 'hash': // magic links create hash fields that we don't need
+                case 'image': // storage keys of photos, never exported
+                case 'file_upload': // file names and storage keys, never exported
                     break;
                 case 'key_select':
                 case 'date':
