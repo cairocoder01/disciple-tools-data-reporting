@@ -4,6 +4,10 @@ const {Storage} = require('@google-cloud/storage');
 const {fixTagsFormat} = require('./parser');
 const byline = require('byline');
 
+// Table and column names are interpolated into SQL, so only plain identifiers are accepted
+const IDENTIFIER = /^[A-Za-z0-9_]+$/;
+const IDENTIFIER_LIST = /^[A-Za-z0-9_]+(\s*,\s*[A-Za-z0-9_]+)*$/;
+
 // Instantiate clients
 const bigquery = new BigQuery();
 const storage = new Storage();
@@ -37,10 +41,8 @@ functions.cloudEvent('fixTagsFormat', async (cloudEvent) => {
     console.log('Migrating file content formatting...');
     const fileContent = await getFileContent(bucketName, filename);
     if (fileContent.length > 0) {
-      console.log(fileContent);
       console.log('Fixing formatting');
       const reformattedContent = fixTagsFormat(fileContent);
-      console.log(reformattedContent);
       await file.save(reformattedContent, {
         metadata: newMetadata
       });
@@ -73,6 +75,10 @@ functions.cloudEvent('loadFileToBigQuery', async (cloudEvent) => {
     }
     const tableId = match[1];
     const fileType = match[2].toUpperCase();
+    if (!IDENTIFIER.test(tableId)) {
+      console.error(new Error('Invalid table name in filename: ' + filename));
+      return;
+    }
 
     let fields = [];
     const headerRow = await getHeaderRow(bucketName, filename);
@@ -144,6 +150,10 @@ functions.cloudEvent('loadFileToBigQuery', async (cloudEvent) => {
       let groupByFields = groupBy ?? 'id';
       if (tableId.startsWith('dt_')) {
         groupByFields = 'id, site';
+      }
+      if (!IDENTIFIER.test(sortField) || !IDENTIFIER_LIST.test(groupByFields)) {
+        console.error(new Error(`Skipping dedup: invalid sortField or groupByFields for ${tableId}`));
+        return;
       }
       await dedupTable(tableId, sortField, groupByFields);
     }
