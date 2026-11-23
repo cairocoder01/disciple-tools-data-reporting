@@ -398,6 +398,10 @@ class DT_Data_Reporting_Snapshot_Tools
 
         $actions = [ 'field_update', 'connected to', 'disconnected from ' ];
         if ( in_array( $action, $actions ) ) {
+            // the record name is PII and is never stored in snapshots (renames are logged as a text field_update)
+            if ( $meta_key === 'name' ) {
+                return;
+            }
             if ( !is_array( $post ) ) {
                 dt_write_log( 'Post is not an array: ' . gettype( $post ) );
             }
