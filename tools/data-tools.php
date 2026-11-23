@@ -512,9 +512,13 @@ class DT_Data_Reporting_Tools
         $hidden_fields = array_merge( array( 'duplicate_of', 'title' ), $excluded_fields );
 
         $channel_keys = array();
+        $location_keys = array();
         foreach ( $fields as $field_key => $field ){
             if ( ( $field['type'] ?? '' ) === 'communication_channel' ) {
                 $channel_keys[] = $field_key;
+            }
+            if ( ( $field['type'] ?? '' ) === 'location' ) {
+                $location_keys[] = $field_key;
             }
         }
 
@@ -644,6 +648,17 @@ class DT_Data_Reporting_Tools
         $activity = $wpdb->get_results($prepared_sql);
 
         //@phpcs:enable
+
+        // Location activity holds the exact grid ID (often city level); look up each one's admin1/country
+        $location_grid_ids = array();
+        foreach ( $activity as $a ) {
+            if ( in_array( $a->meta_key, $location_keys, true ) ) {
+                $location_grid_ids[] = $a->meta_value;
+                $location_grid_ids[] = $a->old_value;
+            }
+        }
+        $admin1_locations = self::get_admin1_locations( $location_grid_ids );
+
         $activity_simple = array();
         foreach ( $activity as $a ) {
             $a->object_note = DT_Posts::format_activity_message( $a, $post_settings );
@@ -677,6 +692,14 @@ class DT_Data_Reporting_Tools
                 $action_old_value = '';
                 $value_friendly = '';
                 $a->object_note = self::format_channel_activity_note( $a, $fields[$channel_key]['name'] ?? $channel_key );
+            } else if ( in_array( $a->meta_key, $location_keys, true ) ) {
+                // Reduce to admin1/country like record exports do
+                $deleted = $a->meta_value === 'value_deleted';
+                $location = $admin1_locations[$deleted ? $a->old_value : $a->meta_value] ?? null;
+                $action_value = $deleted ? 'value_deleted' : ( $location['grid_id'] ?? '' );
+                $action_old_value = $admin1_locations[$a->old_value]['grid_id'] ?? '';
+                $value_friendly = $location['label'] ?? '';
+                $a->object_note = self::format_location_activity_note( $deleted, $value_friendly, $fields[$a->meta_key]['name'] ?? $a->meta_key );
             } else if ( $a->field_type === 'connection' || $a->object_subtype === 'p2p' ) {
                 // The theme's connection note names the connected record; meta_value already holds its ID
                 $a->object_note = self::format_connection_activity_note( $a, $fields );
@@ -764,6 +787,55 @@ class DT_Data_Reporting_Tools
         }
         /* translators: %s: communication channel label, e.g. Phone */
         return sprintf( __( '%s updated', 'disciple-tools-data-reporting' ), $label );
+    }
+
+    /**
+     * Maps location grid IDs to their admin1 (or country, when there is no admin1) location
+     * @param array $grid_ids
+     * @return array grid_id => [ 'grid_id' => admin1/country grid ID, 'label' => "{country_code}-{admin1 name}" or "{country_code}" ]
+     */
+    private static function get_admin1_locations( array $grid_ids ) {
+        global $wpdb;
+        $grid_ids = array_values( array_unique( array_filter( $grid_ids, 'is_numeric' ) ) );
+        if ( empty( $grid_ids ) ) {
+            return array();
+        }
+        // phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare
+        $rows = $wpdb->get_results( $wpdb->prepare( "
+            SELECT orig.grid_id, orig.country_code, orig.admin0_grid_id, orig.admin1_grid_id, a1.name AS admin1_name
+            FROM $wpdb->dt_location_grid orig
+            LEFT JOIN $wpdb->dt_location_grid a1 ON orig.admin1_grid_id = a1.grid_id
+            WHERE orig.grid_id IN (" . implode( ',', array_fill( 0, count( $grid_ids ), '%d' ) ) . ')',
+            $grid_ids
+        ), ARRAY_A );
+        // phpcs:enable
+
+        $locations = array();
+        foreach ( $rows as $row ) {
+            // Nothing below country level, and nothing without a country (e.g. World)
+            if ( empty( $row['country_code'] ) ) {
+                continue;
+            }
+            $has_admin1 = !empty( $row['admin1_grid_id'] ) && !empty( $row['admin1_name'] );
+            $locations[$row['grid_id']] = array(
+                'grid_id' => $has_admin1 ? $row['admin1_grid_id'] : $row['admin0_grid_id'],
+                'label' => $has_admin1 ? $row['country_code'] . '-' . $row['admin1_name'] : $row['country_code'],
+            );
+        }
+        return $locations;
+    }
+
+    private static function format_location_activity_note( $deleted, $label, $field_label ) {
+        if ( $label === '' ) {
+            /* translators: %s: location field label, e.g. Locations */
+            return sprintf( __( '%s updated', 'disciple-tools-data-reporting' ), $field_label );
+        }
+        if ( $deleted ) {
+            /* translators: 1: country code and state/province, e.g. US-New Jersey, 2: location field label, e.g. Locations */
+            return sprintf( __( '%1$s removed from %2$s', 'disciple-tools-data-reporting' ), $label, $field_label );
+        }
+        /* translators: 1: country code and state/province, e.g. US-New Jersey, 2: location field label, e.g. Locations */
+        return sprintf( __( '%1$s added to %2$s', 'disciple-tools-data-reporting' ), $label, $field_label );
     }
 
     private static function format_connection_activity_note( $activity, array $fields ) {
