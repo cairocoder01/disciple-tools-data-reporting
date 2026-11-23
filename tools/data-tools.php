@@ -28,6 +28,36 @@ class DT_Data_Reporting_Tools
         }
         return in_array( $field_key, self::$excluded_fields['default'] );
     }
+    /**
+     * With a Mapbox key the theme hides location_grid and shows location_grid_meta instead.
+     * location_grid is still populated (every grid meta entry also adds its grid ID there),
+     * so keep exporting it, reduced to country/admin1.
+     */
+    private static function is_hidden_for_mapbox( $field ) {
+        return ( $field['type'] ?? '' ) === 'location' && !empty( $field['mapbox'] );
+    }
+
+    /**
+     * Whether a field is included in record and snapshot exports
+     * @param string $post_type
+     * @param string $field_key
+     * @param array $field
+     * @return bool
+     */
+    private static function is_exported_field( $post_type, $field_key, $field ) {
+        // communication channels are PII, and location_meta holds coordinates and geocoded addresses
+        if ( in_array( $field['type'] ?? '', [ 'communication_channel', 'location_meta' ], true ) ) {
+            return false;
+        }
+        if ( self::is_excluded_field( $post_type, $field_key ) ) {
+            return false;
+        }
+        if ( !empty( $field['hidden'] ) && !self::is_included_hidden_field( $post_type, $field_key ) && !self::is_hidden_for_mapbox( $field ) ) {
+            return false;
+        }
+        return true;
+    }
+
     private static $included_hidden_fields = array(
         'contacts' => array( 'accepted', 'source_details', 'type' ),
         'default' => array( 'type' )
@@ -137,21 +167,11 @@ class DT_Data_Reporting_Tools
 
           // Loop over all fields to parse/format each
             foreach ( $fields as $field_key => $field ){
-              // skip if field is hidden, unless marked as exception above
-                if ( isset( $field['hidden'] ) && $field['hidden'] == true && !self::is_included_hidden_field( $post_type, $field_key ) ) {
-                    continue;
-                }
-              // skip if in list of excluded fields
-                if ( self::is_excluded_field( $post_type, $field_key ) ) {
+                if ( !self::is_exported_field( $post_type, $field_key, $field ) ) {
                     continue;
                 }
 
                 $type = $field['type'];
-
-              // skip communication_channel fields since they are all PII
-                if ( $type == 'communication_channel' ) {
-                    continue;
-                }
 
                 $field_value = self::get_snapshot_field_value( $result, $field_key, $type, $flatten, $fields, $locations );
 
@@ -396,21 +416,11 @@ class DT_Data_Reporting_Tools
 
           // Loop over all fields to parse/format each
             foreach ( $fields as $field_key => $field ){
-              // skip if field is hidden, unless marked as exception above
-                if ( isset( $field['hidden'] ) && $field['hidden'] == true && !self::is_included_hidden_field( $post_type, $field_key ) ) {
-                    continue;
-                }
-              // skip if in list of excluded fields
-                if ( self::is_excluded_field( $post_type, $field_key ) ) {
+                if ( !self::is_exported_field( $post_type, $field_key, $field ) ) {
                     continue;
                 }
 
                 $type = $field['type'];
-
-              // skip communication_channel fields since they are all PII
-                if ( $type == 'communication_channel' ) {
-                    continue;
-                }
 
                 $field_value = self::get_field_value( $result, $field_key, $type, $flatten, $locations );
 
@@ -509,9 +519,14 @@ class DT_Data_Reporting_Tools
         }
 
         foreach ( $fields as $field_key => $field ){
+            // location_meta activity carries the geocoded address; the matching location_grid row records the same change
+            if ( ( $field['type'] ?? '' ) === 'location_meta' ) {
+                $hidden_fields[] = $field_key;
+                continue;
+            }
             if ( isset( $field['hidden'] ) && $field['hidden'] === true ){
                 // if field is marked as exception to hidden fields, don't exclude it here
-                if ( self::is_included_hidden_field( $post_type, $field_key ) ) {
+                if ( self::is_included_hidden_field( $post_type, $field_key ) || self::is_hidden_for_mapbox( $field ) ) {
                     continue;
                 }
                 $hidden_fields[] = $field_key;
@@ -1421,17 +1436,7 @@ class DT_Data_Reporting_Tools
         ));
 
         foreach ( $fields as $field_key => $field ) {
-            // skip if field is hidden
-            if ( isset( $field['hidden'] ) && $field['hidden'] == true && !self::is_included_hidden_field( $type, $field_key ) ) {
-                continue;
-            }
-            // skip if in list of excluded fields
-            if ( self::is_excluded_field( $type, $field_key ) ) {
-                continue;
-            }
-
-            // skip communication_channel fields since they are all PII
-            if ( $field['type'] == 'communication_channel' ) {
+            if ( !self::is_exported_field( $type, $field_key, $field ) ) {
                 continue;
             }
 
