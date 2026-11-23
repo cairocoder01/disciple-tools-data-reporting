@@ -498,7 +498,15 @@ class DT_Data_Reporting_Tools
         $excluded_fields = array_key_exists( $post_type, self::$excluded_fields )
           ? self::$excluded_fields[$post_type]
           : self::$excluded_fields['default'];
-        $hidden_fields = array_merge( array( 'duplicate_of' ), $excluded_fields );
+        // `title` is a legacy key some sites log name changes under
+        $hidden_fields = array_merge( array( 'duplicate_of', 'title' ), $excluded_fields );
+
+        $channel_keys = array();
+        foreach ( $fields as $field_key => $field ){
+            if ( ( $field['type'] ?? '' ) === 'communication_channel' ) {
+                $channel_keys[] = $field_key;
+            }
+        }
 
         foreach ( $fields as $field_key => $field ){
             if ( isset( $field['hidden'] ) && $field['hidden'] === true ){
@@ -645,6 +653,20 @@ class DT_Data_Reporting_Tools
                         break;
                 }
             }
+            $action_value = $a->meta_value;
+            $action_old_value = $a->old_value;
+            $channel_key = self::get_activity_channel_key( $a, $channel_keys, $fields );
+            if ( $channel_key !== null ) {
+                // Communication channel values are PII: keep the event, drop the values
+                $action_value = '';
+                $action_old_value = '';
+                $value_friendly = '';
+                $a->object_note = self::format_channel_activity_note( $a, $fields[$channel_key]['name'] ?? $channel_key );
+            } else if ( $a->field_type === 'connection' || $a->object_subtype === 'p2p' ) {
+                // The theme's connection note names the connected record; meta_value already holds its ID
+                $a->object_note = self::format_connection_activity_note( $a, $fields );
+            }
+
             // Site-link activity stores the link's secret site key in user_caps; export the link title instead
             $user_name = $a->user_caps;
             if ( is_string( $user_name ) && strlen( $user_name ) === 32 && ctype_xdigit( $user_name ) ) {
@@ -659,10 +681,10 @@ class DT_Data_Reporting_Tools
                 'user_name' => $user_name,
                 'action_type' => $a->action,
                 'action_field' => $a->meta_key,
-                'action_value' => $a->meta_value,
+                'action_value' => $action_value,
                 'action_value_friendly' => $value_friendly,
                 'action_value_order' => $value_order,
-                'action_old_value' => $a->old_value,
+                'action_old_value' => $action_old_value,
                 'note' => $a->object_note,
                 'date' => $a->date,
             );
@@ -672,6 +694,59 @@ class DT_Data_Reporting_Tools
             'activity' => $activity_simple,
             'total' => $total_activities
         );
+    }
+
+    /**
+     * Communication channel activity is logged under suffixed meta keys (e.g. contact_phone_1a2,
+     * contact_phone_1a2_details), and older rows can have an empty field_type, so match on the
+     * channel field key prefix as well as field_type.
+     * @return string|null The channel field key, or null if this is not channel activity
+     */
+    private static function get_activity_channel_key( $activity, array $channel_keys, array $fields ) {
+        $meta_key = (string) ( $activity->meta_key ?? '' );
+        if ( $meta_key === '' ) {
+            return null;
+        }
+        foreach ( $channel_keys as $channel_key ) {
+            if ( $meta_key === $channel_key || str_starts_with( $meta_key, $channel_key . '_' ) ) {
+                return $channel_key;
+            }
+        }
+        // Same fallback the theme uses when formatting: unknown contact_* keys are channels
+        if ( ( $activity->field_type ?? '' ) === 'communication_channel'
+            || ( str_starts_with( $meta_key, 'contact_' ) && !isset( $fields[$meta_key] ) ) ) {
+            $parts = explode( '_', $meta_key );
+            return $parts[0] . '_' . ( $parts[1] ?? '' );
+        }
+        return null;
+    }
+
+    private static function format_channel_activity_note( $activity, $label ) {
+        if ( str_ends_with( (string) $activity->meta_key, '_details' ) ) {
+            /* translators: %s: communication channel label, e.g. Phone */
+            return sprintf( __( '%s details updated', 'disciple-tools-data-reporting' ), $label );
+        }
+        if ( $activity->meta_value === 'value_deleted' ) {
+            /* translators: %s: communication channel label, e.g. Phone */
+            return sprintf( __( '%s removed', 'disciple-tools-data-reporting' ), $label );
+        }
+        if ( empty( $activity->old_value ) ) {
+            /* translators: %s: communication channel label, e.g. Phone */
+            return sprintf( __( '%s added', 'disciple-tools-data-reporting' ), $label );
+        }
+        /* translators: %s: communication channel label, e.g. Phone */
+        return sprintf( __( '%s updated', 'disciple-tools-data-reporting' ), $label );
+    }
+
+    private static function format_connection_activity_note( $activity, array $fields ) {
+        // object_subtype holds this post type's connection field key
+        $label = $fields[$activity->object_subtype]['name'] ?? $activity->meta_key;
+        if ( $activity->action === 'connected to' ) {
+            /* translators: 1: connection field label, e.g. Coached by, 2: connected record ID */
+            return sprintf( __( '%1$s: added #%2$s', 'disciple-tools-data-reporting' ), $label, $activity->meta_value );
+        }
+        /* translators: 1: connection field label, e.g. Coached by, 2: connected record ID */
+        return sprintf( __( '%1$s: removed #%2$s', 'disciple-tools-data-reporting' ), $label, $activity->meta_value );
     }
 
     private static function query_post_snapshots( $post_type, $filter ) {
