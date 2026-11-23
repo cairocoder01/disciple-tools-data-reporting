@@ -44,9 +44,12 @@ class DT_Data_Reporting_Tools
      * @param array $field
      * @return bool
      */
+    private static $non_exported_field_types = [ 'communication_channel', 'location_meta', 'image', 'file_upload' ];
+
     private static function is_exported_field( $post_type, $field_key, $field ) {
-        // communication channels are PII, and location_meta holds coordinates and geocoded addresses
-        if ( in_array( $field['type'] ?? '', [ 'communication_channel', 'location_meta' ], true ) ) {
+        // communication channels are PII, location_meta holds coordinates and geocoded addresses,
+        // and image/file_upload values are photos, file names and signed storage URLs
+        if ( in_array( $field['type'] ?? '', self::$non_exported_field_types, true ) ) {
             return false;
         }
         if ( self::is_excluded_field( $post_type, $field_key ) ) {
@@ -513,7 +516,11 @@ class DT_Data_Reporting_Tools
 
         $channel_keys = array();
         $location_keys = array();
+        $file_keys = array();
         foreach ( $fields as $field_key => $field ){
+            if ( in_array( $field['type'] ?? '', [ 'image', 'file_upload' ], true ) ) {
+                $file_keys[] = $field_key;
+            }
             if ( ( $field['type'] ?? '' ) === 'communication_channel' ) {
                 $channel_keys[] = $field_key;
             }
@@ -580,6 +587,7 @@ class DT_Data_Reporting_Tools
             WHERE `object_type` = %s
                  AND meta_key NOT IN ( $hidden_keys )
                  AND meta_key NOT LIKE '%%\\_magic\\_key'
+                 AND ( field_type IS NULL OR field_type <> 'hash' )
                  AND object_id IN ( $post_filter_subquery ) ";
 
         // Query wp_comments table
@@ -692,6 +700,13 @@ class DT_Data_Reporting_Tools
                 $action_old_value = '';
                 $value_friendly = '';
                 $a->object_note = self::format_channel_activity_note( $a, $fields[$channel_key]['name'] ?? $channel_key );
+            } else if ( in_array( $a->meta_key, $file_keys, true ) || in_array( $a->field_type, [ 'image', 'file_upload' ], true ) ) {
+                // Storage keys, file names and the theme's "Uploaded file: name.jpg" note
+                $action_value = '';
+                $action_old_value = '';
+                $value_friendly = '';
+                /* translators: %s: field label, e.g. Picture */
+                $a->object_note = sprintf( __( '%s updated', 'disciple-tools-data-reporting' ), $fields[$a->meta_key]['name'] ?? $a->meta_key );
             } else if ( in_array( $a->meta_key, $location_keys, true ) ) {
                 // Reduce to admin1/country like record exports do
                 $deleted = $a->meta_value === 'value_deleted';
