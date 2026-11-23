@@ -665,6 +665,19 @@ class DT_Data_Reporting_Tools
             } else if ( $a->field_type === 'connection' || $a->object_subtype === 'p2p' ) {
                 // The theme's connection note names the connected record; meta_value already holds its ID
                 $a->object_note = self::format_connection_activity_note( $a, $fields );
+            } else if ( str_starts_with( (string) $a->id, 'C' ) ) {
+                /**
+                 * Comment rows (conversation tabs, update-needed notices, plugin comment types) hold
+                 * free text and author names. Export only the event unless a site opts in per type.
+                 *
+                 * @param bool   $include      Whether to export the comment's content and author. Default false.
+                 * @param string $comment_type The comment type, e.g. facebook, updated_needed.
+                 * @param string $post_type    The post type being exported.
+                 */
+                if ( !apply_filters( 'dt_data_reporting_export_comment_content', false, $a->action, $post_type ) ) {
+                    $a->object_note = '';
+                    $a->user_caps = '';
+                }
             }
 
             // Site-link activity stores the link's secret site key in user_caps; export the link title instead
